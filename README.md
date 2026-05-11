@@ -22,6 +22,26 @@ Grep: Structural Variation for Agent Rollouts*, where it characterized
 the procedural fingerprints of nine LLM coding agents across five
 paradigm-by-scaffold cells.
 
+## Modes of use
+
+Three ways `procgrep` is typically applied, ordered by how mature each
+is in the current MVP.
+
+1. **Research instrument.** Build a JSD matrix and leave-one-group-out
+   probe over a corpus of agents to characterize where procedural
+   structure lives (scaffold vs paradigm vs base model). This is the
+   primary supported mode and the one the paper exercises.
+2. **Controlled-eval harness.** Hold base model, scaffold, and
+   benchmark fixed; vary one factor (temperature, seed, RLHF variant,
+   scaffold flag). `procgrep` measures within-arm procedural
+   consistency and across-arm structural sensitivity. See the recipe
+   under "Controlled evaluations" below.
+3. **Deployment signal.** Run the Level 1 pattern matcher against
+   procedural prefixes (first K atoms) of live trajectories to flag
+   runs heading toward known failure shapes (stuck edit loops,
+   missing localize-before-edit, missing tests-before-submit). Cheap,
+   works alongside any agent, useful as an early-stop or warning.
+
 ## Capabilities
 
 1. **Canonicalize heterogeneous trace formats** into a shared atom
@@ -29,8 +49,8 @@ paradigm-by-scaffold cells.
    Moatless; custom adapters plug in through a `TraceAdapter` protocol.
 2. **Learn a BPE motif vocabulary** from a corpus of canonical-atom
    sequences. Vocabulary size `V` is configurable; the learned
-   vocabulary is a persisted, hashable artifact that downstream
-   commands consume by file path.
+   vocabulary is a persisted artifact that downstream commands consume
+   by file path.
 3. **Encode trajectories as motif-frequency distributions** under a
    fixed vocabulary, with L1 normalization.
 4. **Compute Jensen-Shannon divergence** between fingerprints at any
@@ -42,7 +62,7 @@ paradigm-by-scaffold cells.
 7. **Match procedural patterns** against trace sequences via a YAML
    rule format. Each rule is a regex over the atom sequence with a
    `must_hold` flag. The compositional invariant DSL (procedural-DSPy)
-   is future work; this library ships the pattern-matcher only.
+   is future work; this library ships the pattern matcher only.
 
 ## Use-cases
 
@@ -66,7 +86,7 @@ and rank motifs by their contribution to the divergence.
 Within one scaffold cell, you have agents trained under different
 paradigms (for example, dense-RLHF vs extended-thinking). Fingerprint
 each, compare the motif distributions, and surface paradigm-specific
-signatures like stuck-edit-loops.
+signatures like stuck edit loops.
 
 ### 4. Saturation and coverage probing
 
@@ -82,6 +102,21 @@ per arm. `procgrep` measures within-arm procedural consistency and
 across-arm structural sensitivity to the factor, including a
 leave-one-arm-out predictive probe.
 
+**Recipe.** Three steps:
+
+1. **Hold fixed.** Base model, scaffold, benchmark task set. Anything
+   not under study stays constant across arms.
+2. **Vary one factor.** Pick 3 to 8 levels (for example, T in
+   {0, 0.2, 0.4, 0.6, 0.8, 1.0}). Capture N traces per arm. N >= 30
+   is a safe default; the seed-sensitivity study in
+   [STUDIES.md](STUDIES.md) establishes a principled floor.
+3. **Encode and compare.** Assign each trace a `group` label equal to
+   its arm. Fit one shared BPE vocabulary across all arms (so the
+   vocabulary itself is not an arm-specific confound). Compute the
+   JSD matrix over arm-mean fingerprints, then run
+   `leave_one_group_out` with `label_field="group"` to test whether
+   each arm is structurally novel.
+
 ## Non-goals (MVP)
 
 - No compositional invariant DSL with temporal operators. The pattern
@@ -91,6 +126,29 @@ leave-one-arm-out predictive probe.
 - No live agent execution or model calls. `procgrep` is a post-hoc
   analysis library.
 - No web dashboard. Figures emit as static PNG or SVG.
+
+## How does this relate to DSPy?
+
+`procgrep` and DSPy operate on different layers and are complementary,
+not competing.
+
+- **DSPy** is a natural-language layer instrument: it compiles and
+  optimizes prompts and demonstrations that an agent receives.
+- **`procgrep`** is a procedural-layer instrument: it characterizes
+  the tool-call trajectory the agent produces *after* it has read its
+  prompt.
+
+`procgrep` does not depend on DSPy and does not call any LLM. The two
+are useful together in the controlled-eval setting: a researcher can
+optimize an agent with DSPy and use `procgrep` to measure whether the
+NL-layer optimization produced a procedural-layer shift, or whether
+procedure is mostly determined by scaffold and model rather than
+prompt. The case study sketched as "DSPy compile-time procedural
+audit" in [STUDIES.md](STUDIES.md) walks through this.
+
+The name "procedural-DSPy" appears in the paper's future-work section
+as a label for a compositional invariant DSL with temporal operators
+over the procedural layer. That DSL is not part of the MVP.
 
 ## Installation
 
@@ -114,7 +172,7 @@ pre-commit install
 ```bash
 # Canonicalize raw traces into atom sequences.
 procgrep canonicalize \
-    --input traces/raw/*.jsonl \
+    --input traces/raw.jsonl \
     --adapter swe-agent \
     --output traces/canonical.jsonl
 
@@ -137,32 +195,49 @@ procgrep jsd \
     --output jsd_matrix.json
 ```
 
-### Python: fingerprint + compare two agents
+The library ships a tiny synthetic corpus and rule file under
+[`examples/`](examples/) so the pipeline above can be run end-to-end
+without supplying your own traces.
+
+### Python: fingerprint and compare two agents
+
+There are two equivalent entry points. The public API takes already-
+adapted `Trace` objects; the `procgrep.io` helpers handle JSONL
+serialization for callers that prefer to work with file paths.
 
 ```python
-from pathlib import Path
+from procgrep import canonicalize, encode, fit_bpe, jsd_matrix
+from procgrep.io import read_jsonl
 
-from procgrep import canonicalize, encode, fit_bpe, jsd_matrix, load_traces
+# Read raw scaffold-specific JSONL and canonicalize via a built-in adapter.
+raw_records = list(read_jsonl("traces/raw.jsonl"))
+traces = canonicalize(raw_records, adapter="swe-agent")
 
-traces = load_traces(Path("traces/raw"))
-atoms = canonicalize(traces, adapter="swe-agent")
+# Learn a vocabulary over the canonical atom sequences.
+vocab = fit_bpe((t.atoms for t in traces), vocab_size=200, seed=0)
 
-vocab = fit_bpe(atoms, vocab_size=200, seed=0)
-fingerprints = encode(atoms, vocab=vocab)
-
+# Encode and compute the JSD matrix.
+fingerprints = encode(traces, vocab=vocab)
 matrix = jsd_matrix(fingerprints, group_by="agent")
-print(matrix.to_records())
+for record in matrix.to_records():
+    print(record)
 ```
 
 ### Python: match a procedural pattern
 
 ```python
-from procgrep import load_patterns, match_patterns
+from procgrep import canonicalize, load_patterns, match_patterns
+from procgrep.io import read_jsonl
 
-patterns = load_patterns("rules/stuck_edit_loop.yaml")
-report = match_patterns(atoms, patterns)
-for trace_id, violations in report.violations.items():
-    print(trace_id, violations)
+raw_records = list(read_jsonl("traces/raw.jsonl"))
+traces = canonicalize(raw_records, adapter="swe-agent")
+
+patterns = load_patterns("examples/rules/stuck_edit_loop.yaml")
+report = match_patterns(traces, patterns)
+
+print("pass rate per rule:", report.pass_rate_per_rule)
+for trace_id, failing_rules in report.violations.items():
+    print(trace_id, failing_rules)
 ```
 
 Example rule file:
@@ -179,6 +254,13 @@ rules:
     pattern: "localize .* edit"
     must_hold: true
 ```
+
+## Suggested studies
+
+See [STUDIES.md](STUDIES.md) for a ranked list of case studies that
+`procgrep` is well-suited to, including the temperature-sweep phase
+transition, success-vs-failure procedural prefix signature, and the
+DSPy compile-time procedural audit.
 
 ## Coding-style anchors
 
