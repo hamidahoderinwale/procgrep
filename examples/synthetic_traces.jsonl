@@ -1,0 +1,6 @@
+{"trace_id": "syn-001", "agent": "editor", "group": "control", "actions": [{"action": "edit"}, {"action": "pytest"}, {"action": "edit"}, {"action": "pytest"}, {"action": "submit"}]}
+{"trace_id": "syn-002", "agent": "editor", "group": "control", "actions": [{"action": "open"}, {"action": "edit"}, {"action": "pytest"}, {"action": "submit"}]}
+{"trace_id": "syn-003", "agent": "searcher", "group": "control", "actions": [{"action": "search_dir"}, {"action": "open"}, {"action": "search_file"}, {"action": "edit"}, {"action": "pytest"}, {"action": "submit"}]}
+{"trace_id": "syn-004", "agent": "editor", "group": "treatment", "actions": [{"action": "edit"}, {"action": "edit"}, {"action": "edit"}, {"action": "edit"}, {"action": "edit"}, {"action": "edit"}, {"action": "submit"}]}
+{"trace_id": "syn-005", "agent": "searcher", "group": "treatment", "actions": [{"action": "search_dir"}, {"action": "search_file"}, {"action": "open"}, {"action": "submit"}]}
+{"trace_id": "syn-006", "agent": "editor", "group": "treatment", "actions": [{"action": "edit"}, {"action": "pytest"}, {"action": "edit"}, {"action": "pytest"}, {"action": "edit"}, {"action": "pytest"}, {"action": "submit"}]}

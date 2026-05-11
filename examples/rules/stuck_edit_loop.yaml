@@ -1,0 +1,30 @@
+rules:
+  - name: no_long_edit_loops
+    description: >
+      No run of 5 or more consecutive edit atoms without an intervening
+      test or read. Catches the "stuck edit loop" signature observed in
+      extended-thinking trajectories.
+    pattern: "(edit ){5,}"
+    must_hold: false
+
+  - name: localize_before_first_edit
+    description: >
+      A localize atom must precede the first edit atom. Encodes the
+      "look before you leap" expectation in localize-driven scaffolds.
+    pattern: "localize .* edit"
+    must_hold: true
+
+  - name: tests_run_at_least_once
+    description: >
+      The trajectory must contain at least one run_test atom. A
+      trajectory that never tests is structurally suspicious for a
+      benchmark that grades on tests passing.
+    pattern: "run_test"
+    must_hold: true
+
+  - name: ends_in_submit
+    description: >
+      The final atom must be submit. Catches truncated or crashed
+      trajectories that never reached the submission step.
+    pattern: "submit $"
+    must_hold: true
