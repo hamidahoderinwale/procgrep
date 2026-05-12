@@ -63,6 +63,20 @@ class Fingerprint:
             return np.full_like(arr, 1.0 / max(arr.size, 1))
         return np.asarray(arr / total, dtype=np.float64)
 
+    def entropy(self) -> float:
+        """Shannon entropy of the motif distribution, in nats.
+
+        Returns 0.0 for a trajectory whose mass is on a single motif;
+        returns ``log(vocab_size)`` for the uniform (empty-trajectory)
+        case. Useful as a per-trajectory diversity score; aggregate
+        statistics live in `procgrep.stats.entropies_per_group`.
+        """
+        dist = self.distribution()
+        positive = dist[dist > 0]
+        if positive.size == 0:
+            return 0.0
+        return float(-np.sum(positive * np.log(positive)))
+
 
 def encode(traces: Iterable[Trace], *, vocab: MotifVocabulary) -> list[Fingerprint]:
     """Encode an iterable of `Trace` objects under a fixed vocabulary.

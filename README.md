@@ -63,6 +63,12 @@ is in the current MVP.
    rule format. Each rule is a regex over the atom sequence with a
    `must_hold` flag. The compositional invariant DSL (procedural-DSPy)
    is future work; this library ships the pattern matcher only.
+8. **Group-level descriptive and discriminative statistics**:
+   top-K atom frequencies per group, effective vocabulary size
+   (perplexity) per group, per-trajectory entropy summarized by
+   group, and top-K motifs ranked by log-odds or by JSD
+   contribution between any two groups. Suitable for controlled-eval
+   summaries and per-cell descriptive tables.
 
 ## Use-cases
 
@@ -221,6 +227,43 @@ fingerprints = encode(traces, vocab=vocab)
 matrix = jsd_matrix(fingerprints, group_by="agent")
 for record in matrix.to_records():
     print(record)
+```
+
+### Python: group-level descriptive stats
+
+```python
+from procgrep import (
+    atom_frequencies_per_group,
+    effective_vocab_size_per_group,
+    entropies_per_group,
+    discriminative_motifs,
+    canonicalize, fit_bpe, encode,
+)
+from procgrep.io import read_jsonl
+
+traces = canonicalize(list(read_jsonl("traces/raw.jsonl")), adapter="swe-agent")
+vocab  = fit_bpe((t.atoms for t in traces), vocab_size=200, seed=0)
+fps    = encode(traces, vocab=vocab)
+
+# Which raw atoms dominate each group?
+print(atom_frequencies_per_group(traces, k=10, group_by="agent"))
+
+# How diverse is each group's procedural vocabulary?
+print(effective_vocab_size_per_group(fps, group_by="agent"))
+
+# Per-trajectory entropy summary (median, IQR, range) per group.
+print(entropies_per_group(fps, group_by="agent"))
+
+# Top motifs separating two arms.
+top = discriminative_motifs(
+    fps, vocab,
+    group_a="arm_temp_0_2",
+    group_b="arm_temp_0_8",
+    k=10,
+    ranking="log_odds",
+)
+for m in top:
+    print(m.motif, m.log_odds, m.p_a, m.p_b)
 ```
 
 ### Python: match a procedural pattern
