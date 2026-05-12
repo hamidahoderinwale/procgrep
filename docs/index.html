@@ -96,7 +96,8 @@ information, and outcome scores cannot see it.
 
 <p>
 <strong>What procgrep does.</strong> It takes the trace log of an
-LLM coding agent and produces a structural fingerprint of <em>how</em>
+LLM coding agent and produces a structural
+<dfn class="def" tabindex="0" data-def="Fingerprint: one trajectory expressed as a count vector over a learned vocabulary of action patterns. Normalized so it can be compared as a probability distribution against other fingerprints.">fingerprint</dfn> of <em>how</em>
 the agent worked, not just whether it succeeded. Given fingerprints
 from many agents, you can answer one question with quantitative
 precision: do two agents, holding some factors fixed and varying
@@ -109,10 +110,12 @@ each scaffold's tool-call vocabulary into a shared one, so different
 agents can be compared at all. Second, learn a compact representation
 of the recurring patterns in those sequences. Third, compare any two
 groups of agents by how those patterns distribute. The technical
-primitives behind each step — byte-pair encoding, Jensen-Shannon
-divergence, leave-one-group-out probes, UMAP projection, regex-based
-pattern matching — are linked in the <a href="#glossary">glossary</a>
-below.
+primitives behind each step —
+<dfn class="def" tabindex="0" data-def="Byte-pair encoding (BPE): an algorithm that finds the most frequent adjacent pair in a corpus of sequences, glues it into a new token, and repeats. Procgrep applies it to atoms, learning a compressed motif vocabulary.">byte-pair encoding</dfn>,
+<dfn class="def" tabindex="0" data-def="Jensen-Shannon divergence (JSD): a symmetric, bounded distance between two probability distributions. Values lie in [0, 1] with log base 2. Used here to compare fingerprints.">Jensen-Shannon divergence</dfn>,
+<dfn class="def" tabindex="0" data-def="Leave-one-group-out probe: train a classifier on K-1 groups and test on the held-out group. Measures predictive transfer. The paper's headline cross-scaffold result is 0 of 300 correct.">leave-one-group-out probes</dfn>,
+<dfn class="def" tabindex="0" data-def="UMAP (Uniform Manifold Approximation and Projection): a dimensionality-reduction method that projects high-dimensional vectors into 2D for visual inspection while preserving local neighborhood structure.">UMAP</dfn> projection, and regex-based pattern matching — are linked in
+the <a href="#glossary">glossary</a> below.
 </p>
 
 <p>
@@ -135,7 +138,7 @@ JSONL on disk.
 <ol class="pipeline">
   <li>
     <span class="name">canonicalize</span>
-    <span class="desc">raw scaffold traces become a canonical atom sequence</span>
+    <span class="desc">raw scaffold traces become a canonical <dfn class="def" tabindex="0" data-def="Atom sequence: an ordered list of canonical action labels (SEARCH, EDIT_SRC_PY, RUN_PYTHON_REPRO_PY, etc.). The shared alphabet across scaffolds.">atom sequence</dfn></span>
   </li>
   <li>
     <span class="name">fit_bpe</span>
