@@ -211,23 +211,71 @@ JSD lands at 0.10 to 0.19 and cross-scaffold JSD at 0.62 to 1.00</mark>.
 <h3 id="mode-controlled">2. Controlled-eval harness</h3>
 
 <p>
-Hold base model, scaffold, and benchmark fixed. Vary one factor
-(temperature, seed, RLHF variant, scaffold flag). Measure within-arm
-procedural consistency and across-arm sensitivity. The within-arm
-JSD is the noise floor; the across-arm JSD is the signal.
+<strong>The question.</strong> You changed one thing about your agent
+— bumped the temperature, swapped a system prompt, switched the
+training recipe. Did the change actually move how the agent works,
+or did it just sample noise around the same procedural shape?
 </p>
 
-<p>The recipe:</p>
+<p>
+<strong>The idea.</strong> When a change does nothing, agents in the
+same arm look about as different from each other as agents across
+arms — that is just sampling noise. When the change does something,
+across-arm differences pull away from within-arm differences. The
+ratio of those two distances is your effect size.
+</p>
+
+<p><strong>How to run it.</strong></p>
 
 <ol>
-  <li>Capture N traces per arm. N &ge; 30 is a safe default; the seed-sensitivity study in STUDIES.md establishes the principled floor.</li>
-  <li>Label each trace with its arm via the <code>group</code> field on the input record.</li>
-  <li>Fit a single shared BPE vocabulary across all arms; refitting per arm makes vocabulary an arm-specific confound and breaks the comparison.</li>
-  <li>Encode all trajectories under that vocabulary.</li>
-  <li>Compute pairwise JSD within each arm (the noise floor).</li>
-  <li>Compute JSD between arm-mean fingerprints (the signal).</li>
-  <li>Run leave-one-arm-out predictive transfer to test whether arms are structurally distinct.</li>
+  <li>
+    <strong>Hold everything fixed except one factor.</strong> Same
+    base model, same scaffold, same benchmark task set. Vary only
+    the one knob you care about: temperature, seed, RLHF variant,
+    scaffold flag. Each value of that knob is one <em>arm</em>.
+  </li>
+  <li>
+    <strong>Capture about 30 traces per arm.</strong> Below 30, the
+    within-arm noise estimate gets noisy itself. The seed-sensitivity
+    study in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a>
+    establishes the floor empirically.
+  </li>
+  <li>
+    <strong>Label every trace with its arm.</strong> Put the arm
+    name in the <code>group</code> field of each input record.
+    procgrep groups by this label everywhere downstream.
+  </li>
+  <li>
+    <strong>Fit one shared BPE vocabulary across all arms.</strong>
+    The most common mistake in this kind of analysis: fitting BPE
+    per arm. That makes the vocabulary itself different across arms,
+    and the JSD comparison loses meaning because you are comparing
+    distributions over different supports. Fit once on the combined
+    corpus.
+  </li>
+  <li>
+    <strong>Compute two divergences.</strong>
+    The within-arm JSD (the average pairwise distance between
+    fingerprints in the same arm) is the noise floor: how much
+    variation you would see even if your manipulation did nothing.
+    The across-arm JSD (the distance between arm-mean fingerprints)
+    is the signal: how much variation your manipulation actually
+    produced.
+  </li>
+  <li>
+    <strong>Compare them.</strong> If signal is at least about twice
+    the noise floor, the factor moved procedure. If they are close,
+    the factor sampled noise around the same shape.
+  </li>
+  <li>
+    <strong>Run the leave-one-arm-out probe</strong> for a
+    predictive version of the same claim. If a classifier trained on
+    every arm but one can identify the held-out arm above chance,
+    the arms are structurally distinct.
+  </li>
 </ol>
+
+<p><strong>Code.</strong></p>
 
 <pre><code><span class="code-keyword">from</span> itertools <span class="code-keyword">import</span> combinations
 <span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> canonicalize, encode, fit_bpe, jsd, jsd_matrix, leave_one_group_out
@@ -237,25 +285,29 @@ traces = <span class="code-fn">canonicalize</span>(<span class="code-fn">list</s
 vocab  = <span class="code-fn">fit_bpe</span>((t.atoms <span class="code-keyword">for</span> t <span class="code-keyword">in</span> traces), vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)
 fps    = <span class="code-fn">encode</span>(traces, vocab=vocab)
 
-<span class="code-comment"># Across-arm JSD: the signal of interest.</span>
-across = <span class="code-fn">jsd_matrix</span>(fps, group_by=<span class="code-string">"group"</span>).<span class="code-fn">to_array</span>()
+<span class="code-comment"># Signal: distance between arm-mean fingerprints.</span>
+signal = <span class="code-fn">jsd_matrix</span>(fps, group_by=<span class="code-string">"group"</span>).<span class="code-fn">to_array</span>()
 
-<span class="code-comment"># Within-arm JSD: the noise floor against which `across` is interpreted.</span>
+<span class="code-comment"># Noise floor: mean pairwise distance within each arm.</span>
 arms = <span class="code-fn">sorted</span>({fp.group <span class="code-keyword">for</span> fp <span class="code-keyword">in</span> fps})
-within = {arm: <span class="code-fn">sum</span>(<span class="code-fn">jsd</span>(a.<span class="code-fn">distribution</span>(), b.<span class="code-fn">distribution</span>())
-                <span class="code-keyword">for</span> a, b <span class="code-keyword">in</span> <span class="code-fn">combinations</span>([fp <span class="code-keyword">for</span> fp <span class="code-keyword">in</span> fps <span class="code-keyword">if</span> fp.group == arm], <span class="code-num">2</span>))
-          <span class="code-keyword">for</span> arm <span class="code-keyword">in</span> arms}
+noise = {
+    arm: <span class="code-fn">sum</span>(<span class="code-fn">jsd</span>(a.<span class="code-fn">distribution</span>(), b.<span class="code-fn">distribution</span>())
+              <span class="code-keyword">for</span> a, b <span class="code-keyword">in</span> <span class="code-fn">combinations</span>([fp <span class="code-keyword">for</span> fp <span class="code-keyword">in</span> fps <span class="code-keyword">if</span> fp.group == arm], <span class="code-num">2</span>))
+    <span class="code-keyword">for</span> arm <span class="code-keyword">in</span> arms
+}
 
+<span class="code-comment"># Predictive version of the same comparison.</span>
 probe = <span class="code-fn">leave_one_group_out</span>(fps, label_field=<span class="code-string">"group"</span>, seed=<span class="code-num">0</span>)
 </code></pre>
 
 <p>
-<strong>What you get.</strong> A calibrated signal-to-noise ratio. If
-across-arm JSD substantially exceeds within-arm JSD (rough rule of
-thumb: signal greater than twice the floor), the factor moved
-procedure. If the two are comparable, the factor sampled noise around
-the same procedural shape. The probe accuracy gives the predictive-
-transfer version of the same claim.
+<strong>What you walk away with.</strong> One number with a
+calibration: the signal-to-noise ratio. Above about 2, the factor
+you varied moved the agent's procedure. Around 1, it did not. The
+leave-one-arm-out probe is the predictive version: if the classifier
+beats chance, the arms have a procedural signature; if not, they
+do not. Two ways to read the same comparison, both with intuitive
+thresholds.
 </p>
 
 <h3 id="mode-deployment">3. Deployment signal</h3>
