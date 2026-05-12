@@ -530,6 +530,20 @@ Same code path, ~2,639 trajectories instead of six.
   </figcaption>
 </figure>
 
+<figure>
+  <img src="assets/img/history_flow_django_16041.png" alt="Per-step file-touch pattern across all nine agents on one Django benchmark instance, colored to show when each agent had the gold patch file open.">
+  <figcaption>
+    What "structurally different procedures" looks like at instance
+    level. Each row is one of the nine agents working on the same
+    Django benchmark instance; each cell is one step. Pink cells
+    mean the agent has the gold patch file open at that step; grey
+    cells mean another file. Some agents open the gold file in the
+    first few steps and stay there; some never open it; some
+    oscillate. <mark>Same task, same gold patch, nine distinct procedural
+    shapes</mark> — the kind of distinction outcome metrics cannot see.
+  </figcaption>
+</figure>
+
 <h2 id="concepts">Concepts in detail</h2>
 
 <p>
