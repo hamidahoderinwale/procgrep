@@ -624,14 +624,16 @@ probe  = <span class="code-fn">leave_one_group_out</span>(fps, label_field=<span
 <span class="code-comment"># WarpGrep changed the agent's procedure beyond changing its outcome.</span>
 </code></pre>
 
-<h3>Case studies the library has already produced</h3>
+<h3 id="recipes">Recipes (case studies the library has already produced)</h3>
 
 <p>
-Three concrete findings from the originating paper's corpus, each
-shown with the rule or code that produced it.
+Three findings from the originating paper's corpus, each presented
+as a recipe: the finding itself, then the rule or code that produced
+it. The recipes run on your own corpus unchanged; the findings below
+are what they produced on ours.
 </p>
 
-<h4>Stuck-edit-loop signature</h4>
+<h4>Recipe: find the stuck-edit-loop signature</h4>
 
 <p>
 Long Type B failure trajectories show EDIT_SRC_PY token proportion
@@ -652,7 +654,7 @@ top = <span class="code-fn">discriminative_motifs</span>(
 <span class="code-comment"># EDIT_SRC_PY tops the list with positive log-odds (more in long failures).</span>
 </code></pre>
 
-<h4>Claude-4 SHELL_CD storm</h4>
+<h4>Recipe: detect the Claude-4 SHELL_CD storm (or anything like it)</h4>
 
 <p>
 Within the SWE-agent extended-thinking cell, Claude-4 emits
@@ -677,7 +679,7 @@ $ jq '.pass_rate_per_rule.no_long_shell_cd_loop' report.json
 0.591   <span class="code-comment"># 41% of Claude-4 trajectories fail this rule</span>
 </code></pre>
 
-<h4>Canonicalization-layer Moatless audit</h4>
+<h4>Recipe: audit a canonicalization-layer gap</h4>
 
 <p>
 Procgrep flagged 99.7% of Moatless trajectories as never running a
