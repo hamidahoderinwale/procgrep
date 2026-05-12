@@ -317,6 +317,83 @@ td strong { color: var(--text); font-weight: 600; }
 .muted { color: var(--muted); }
 .faint { color: var(--faint); font-size: 13px; }
 
+/* Highlight: subtle warm tint behind key numerical findings or
+   load-bearing phrases. Use sparingly; saturation kept low so the
+   highlight reads as emphasis, not decoration. */
+mark {
+  background: #FFF1B8;
+  padding: 0 4px;
+  border-radius: 2px;
+  color: var(--text);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Mode-specific accent squares before the three h3 headings in
+   the Modes section. Each mode gets one color from the palette;
+   the square sits at the optical baseline of the heading. */
+h3#mode-research::before,
+h3#mode-controlled::before,
+h3#mode-deployment::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 10px;
+  vertical-align: 0.12em;
+}
+h3#mode-research::before    { background: #1853C7; } /* blue */
+h3#mode-controlled::before  { background: #1F6B5A; } /* teal */
+h3#mode-deployment::before  { background: #9C5018; } /* copper */
+
+/* Pill: small inline label for version, license, status indicators */
+.pill {
+  display: inline-block;
+  font-size: 11.5px;
+  padding: 1px 8px;
+  background: var(--bg-code);
+  color: var(--muted);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  border: 1px solid var(--rule);
+  vertical-align: 0.06em;
+  letter-spacing: 0.02em;
+}
+.pill.accent {
+  background: #E6EFF8;
+  color: #103E96;
+  border-color: #C7D7EA;
+}
+
+/* Heading section bar: a small colored leading rule before h2 to
+   give the eye an anchor while scanning down the page. Color
+   rotates subtly through the palette for visual rhythm without
+   shouting. */
+h2[id] {
+  position: relative;
+  padding-left: 16px;
+}
+h2[id]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4em;
+  bottom: 0.4em;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--rule);
+}
+h2#what::before        { background: #1853C7; }
+h2#pipeline::before    { background: #1F6B5A; }
+h2#modes::before       { background: #8E2C73; }
+h2#quickstart::before  { background: #1853C7; }
+h2#capabilities::before{ background: #1F6B5A; }
+h2#position::before    { background: #9C5018; }
+h2#notes::before       { background: #8E2C73; }
+h2#studies::before     { background: #1853C7; }
+h2#glossary::before    { background: #1F6B5A; }
+
 footer {
   padding: 30px 0 60px;
   border-top: 1px solid var(--rule);

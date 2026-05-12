@@ -47,7 +47,11 @@
     model calls, deterministic, interpretable.
   </div>
   <div class="meta">
-    v0.1.3 · MIT · <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>
+    <span class="pill accent">v0.1.3</span>
+    <span class="pill">MIT</span>
+    <span class="pill">Python 3.10+</span>
+    &nbsp;·&nbsp;
+    <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>
   </div>
 </header>
 
@@ -158,8 +162,8 @@ umap   = <span class="code-fn">umap_project</span>(fps, granularity=<span class=
 <strong>What you get.</strong> A JSD matrix that shows <dfn class="def" tabindex="0" data-def="Block structure: the JSD matrix displays clear rectangular blocks of low divergence along the diagonal (within-cell) with high-divergence rectangles between cells. The block layout reflects the dominant grouping axis.">block structure</dfn><span class="sidenote">The JSD matrix shows rectangular regions of low divergence (within-cell) along the diagonal and high-divergence rectangles between cells. The layout encodes the dominant grouping axis.</span> with tight within-cell
 divergence vs large cross-scaffold divergence; a probe result that
 quantifies "the held-out group is structurally novel; the classifier
-cannot predict it." On the paper's nine-agent corpus, within-cell
-JSD lands at 0.10 to 0.19 and cross-scaffold JSD at 0.62 to 1.00.
+cannot predict it." On the paper's nine-agent corpus, <mark>within-cell
+JSD lands at 0.10 to 0.19 and cross-scaffold JSD at 0.62 to 1.00</mark>.
 </p>
 
 <h3 id="mode-controlled">2. Controlled-eval harness</h3>
@@ -485,7 +489,7 @@ to upstream references for the methodological concepts.
     group, via scikit-learn's
     <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.LeaveOneGroupOut.html">LeaveOneGroupOut</a>.
     Tests predictive transfer. The paper's headline cross-scaffold
-    result is 0 of 300 correct.</dd>
+    result is <mark>0 of 300 correct</mark>.</dd>
 
   <dt>Pattern matcher (Level 1)</dt>
   <dd>Regex over the space-joined atom sequence with a <code>must_hold</code>
