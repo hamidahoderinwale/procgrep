@@ -453,11 +453,36 @@ h2#what::before        { background: #1853C7; }
 h2#pipeline::before    { background: #1F6B5A; }
 h2#modes::before       { background: #8E2C73; }
 h2#quickstart::before  { background: #1853C7; }
+h2#sample-run::before  { background: #9C5018; }
 h2#capabilities::before{ background: #1F6B5A; }
 h2#position::before    { background: #9C5018; }
 h2#notes::before       { background: #8E2C73; }
+h2#concepts::before    { background: #1F6B5A; }
 h2#studies::before     { background: #1853C7; }
 h2#glossary::before    { background: #1F6B5A; }
+
+/* Figures: clean treatment for inline images with captions */
+figure {
+  margin: 24px 0 28px;
+  padding: 0;
+}
+figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: white;
+  padding: 6px;
+}
+figure figcaption {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding-left: 12px;
+  border-left: 2px solid var(--rule);
+}
 
 footer {
   padding: 30px 0 60px;

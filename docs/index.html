@@ -28,6 +28,7 @@
 
     <span class="nav-label">Reference</span>
     <a href="#quickstart">Quickstart</a>
+    <a href="#sample-run">Sample run</a>
     <a href="#capabilities">Capabilities</a>
     <a href="#position">Positioning</a>
 
@@ -431,6 +432,87 @@ captured atom stream, not as a behavioral claim about what the agent
 did outside that stream.
 </p>
 </div>
+
+<h2 id="sample-run">Sample runs and results</h2>
+
+<p>
+Two kinds of evidence: the bundled synthetic corpus reproduces in
+seconds on any machine, and the paper's nine-agent corpus shows
+what procgrep produces at scale.
+</p>
+
+<h3 id="sample-synthetic">On the bundled synthetic corpus</h3>
+
+<p>
+Running the quickstart example against
+<code>examples/synthetic_traces.jsonl</code> (six trajectories, two
+agents, two groups):
+</p>
+
+<pre><code>$ python examples/python/01_quickstart.py
+
+loaded 6 raw records from synthetic_traces.jsonl
+canonicalized into 6 traces
+  syn-001    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'submit'</span>]
+  syn-002    agent=editor     atoms=[<span class="code-string">'open'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'submit'</span>]
+  syn-003    agent=searcher   atoms=[<span class="code-string">'search_repo'</span>, <span class="code-string">'read_file'</span>, <span class="code-string">'search_repo'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'submit'</span>]
+  syn-004    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'submit'</span>]
+  syn-005    agent=searcher   atoms=[<span class="code-string">'search_repo'</span>, <span class="code-string">'search_repo'</span>, <span class="code-string">'read_file'</span>, <span class="code-string">'submit'</span>]
+  syn-006    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'submit'</span>]
+
+learned vocabulary: 5 atoms + 6 merges = 11 tokens
+encoded 6 fingerprints; each of dimension 11
+
+pairwise JSD by agent (upper triangle only):
+  editor     vs searcher    JSD = <mark>0.7415</mark>
+</code></pre>
+
+<p>
+Two agents with disjoint procedural styles; JSD lands near the
+maximum (1.0 is the ceiling under log base 2). That is the metric
+behaving as expected.
+</p>
+
+<h3 id="sample-paper">On the paper's nine-agent corpus</h3>
+
+<p>
+Three figures from the analysis pipeline procgrep was extracted from.
+Same code path, ~2,639 trajectories instead of six.
+</p>
+
+<figure>
+  <img src="assets/img/jsd_matrix_9agents.png" alt="Pairwise JSD matrix across nine agents on SWE-bench Verified; visible block structure separates the SWE-agent base cell from extended-thinking from the three cross-scaffold cells.">
+  <figcaption>
+    Pairwise JSD across the nine agents. Within the SWE-agent base
+    cell (Claude-3, Claude-3.5, GPT-4, GPT-4o), pairwise JSD is
+    <mark>0.10 to 0.19</mark>. Across scaffolds, JSD reaches
+    <mark>0.62 to 1.00</mark>. The dense top row (Agentless+Claude-3.5)
+    is at the ceiling against every other agent, indicating a
+    procedurally disjoint motif vocabulary.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="assets/img/procedural_space_umap.png" alt="UMAP projection of all 2,639 per-trajectory fingerprints, colored by paradigm-by-scaffold cell.">
+  <figcaption>
+    Per-trajectory UMAP over the full corpus, colored by cell. Five
+    cells emerge as separated clusters; the SWE-agent base and
+    extended-thinking cells sit adjacent but visibly distinct in
+    the central region. Hyperparameters: n_neighbors=15, min_dist=0.25,
+    metric=cosine, seed=0.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="assets/img/pattern_matcher_passrates.png" alt="Per-cell pass rates for five Level 1 pattern matcher rules.">
+  <figcaption>
+    Level 1 pattern matcher rule pass rates, per cell. Five rules:
+    submit-terminated, localize-before-first-edit, no-long-edit-loops,
+    no-long-shell-cd-loops, tests-run-at-least-once. The shell-cd-loop
+    finding (extended-thinking 59% pass) is a model-class signature
+    invisible to outcome-only evaluation.
+  </figcaption>
+</figure>
 
 <h2 id="concepts">Concepts in detail</h2>
 
