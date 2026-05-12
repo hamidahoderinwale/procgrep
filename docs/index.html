@@ -388,11 +388,13 @@ or did it just sample noise around the same procedural shape?
 </p>
 
 <p>
-<strong>The idea.</strong> When a change does nothing, agents in the
-same arm look about as different from each other as agents across
-arms — that is just sampling noise. When the change does something,
-across-arm differences pull away from within-arm differences. The
-ratio of those two distances is your effect size.
+<strong>The idea.</strong> An <em>arm</em> is one value of the factor
+you varied: one temperature setting, one seed, one prompt variant.
+When the change does nothing, agents in the same arm look about as
+different from each other as agents in different arms; that is just
+sampling noise. When the change does something, across-arm
+differences pull away from within-arm differences. The ratio of
+those two distances is your effect size.
 </p>
 
 <p><strong>How to run it.</strong></p>
@@ -402,7 +404,7 @@ ratio of those two distances is your effect size.
     <strong>Hold everything fixed except one factor.</strong> Same
     base model, same scaffold, same benchmark task set. Vary only
     the one knob you care about: temperature, seed, RLHF variant,
-    scaffold flag. Each value of that knob is one <em>arm</em>.
+    scaffold flag.
   </li>
   <li>
     <strong>Capture about 30 traces per arm.</strong> Below 30, the
@@ -438,10 +440,11 @@ ratio of those two distances is your effect size.
     the factor sampled noise around the same shape.
   </li>
   <li>
-    <strong>Run the leave-one-arm-out probe</strong> for a
-    predictive version of the same claim. If a classifier trained on
-    every arm but one can identify the held-out arm above chance,
-    the arms are structurally distinct.
+    <strong>Run the leave-one-arm-out probe</strong> for a predictive
+    version of the same claim. Train a classifier on every arm except
+    one (say, every temperature setting except 0.7) and ask it to
+    identify the held-out arm from its fingerprints. If it beats
+    chance, the arms produce distinguishable procedural signatures.
   </li>
 </ol>
 
