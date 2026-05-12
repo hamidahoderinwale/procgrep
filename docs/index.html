@@ -155,7 +155,7 @@ umap   = <span class="code-fn">umap_project</span>(fps, granularity=<span class=
 </code></pre>
 
 <p>
-<strong>What you get.</strong> A JSD matrix that shows tight within-cell
+<strong>What you get.</strong> A JSD matrix that shows <dfn class="def" tabindex="0" data-def="Block structure: the JSD matrix displays clear rectangular blocks of low divergence along the diagonal (within-cell) with high-divergence rectangles between cells. The block layout reflects the dominant grouping axis.">block structure</dfn><span class="sidenote">The JSD matrix shows rectangular regions of low divergence (within-cell) along the diagonal and high-divergence rectangles between cells. The layout encodes the dominant grouping axis.</span> with tight within-cell
 divergence vs large cross-scaffold divergence; a probe result that
 quantifies "the held-out group is structurally novel; the classifier
 cannot predict it." On the paper's nine-agent corpus, within-cell
@@ -414,7 +414,7 @@ public API; no new code required. Descriptions in
 <ol>
 <li><strong>Temperature-sweep procedural phase transition.</strong> Sweep T in {0, 0.2, 0.4, 0.6, 0.8, 1.0}; identify the knee where across-arm JSD spikes.</li>
 <li><strong>Success-vs-failure procedural prefix signature.</strong> Train a classifier on the first K atoms of each trajectory; report accuracy vs K for outcome prediction.</li>
-<li><strong>DSPy compile-time procedural audit.</strong> Capture traces before and after a DSPy compile; measure whether the NL-layer optimization shifted the procedural fingerprint.</li>
+<li><strong>DSPy compile-time procedural audit.</strong> Capture traces before and after a DSPy compile; measure whether the <dfn class="def" tabindex="0" data-def="NL-layer optimization: prompt-and-demonstration tuning performed at the natural-language interface, typically by DSPy. Distinct from any change to the agent's tool-call vocabulary, which would be a procedural-layer optimization.">NL-layer optimization</dfn><span class="sidenote">Prompt-and-demonstration tuning at the natural-language interface, typically by DSPy. Distinct from any change to the agent's tool-call vocabulary; that would be a procedural-layer optimization.</span> shifted the procedural fingerprint.</li>
 <li><strong>Reasoning-budget sweep.</strong> Vary max-thinking-tokens; map the procedural-shape response.</li>
 <li><strong>Pattern-matcher cross-validation.</strong> Run rule-based pattern matching against an existing BPE-derived analysis; compare second-method results.</li>
 </ol>

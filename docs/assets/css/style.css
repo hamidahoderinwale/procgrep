@@ -369,3 +369,46 @@ dl.glossary dd a { color: var(--link); }
 }
 .note h3 { margin-top: 0; }
 .note p:last-child { margin-bottom: 0; }
+
+/* Inline term with hover tooltip and side-margin definition.
+   Usage:
+     <dfn class="def" data-def="Definition text…">term</dfn>
+     <span class="sidenote">Definition text (same or longer).</span>
+   The dfn carries the dotted-underline affordance and the hover
+   tooltip; the sidenote pairs the same definition in the right
+   margin on wide screens. */
+dfn.def {
+  font-style: normal;
+  border-bottom: 1px dotted var(--muted);
+  cursor: help;
+  text-decoration: none;
+  position: relative;
+}
+dfn.def::after {
+  content: attr(data-def);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  max-width: 320px;
+  width: max-content;
+  background: var(--text);
+  color: #F0F1F4;
+  padding: 9px 13px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-style: normal;
+  z-index: 100;
+  font-family: 'Palatino', 'Palatino Linotype', Georgia, serif;
+  line-height: 1.45;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 4px 14px rgba(20, 24, 32, 0.18);
+}
+dfn.def:hover::after,
+dfn.def:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+dfn.def[tabindex] { outline: none; }
