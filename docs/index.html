@@ -71,29 +71,42 @@
 <h2 id="what">What it does</h2>
 
 <p>
-procgrep answers one question: <em>do two agents, holding some
-factors fixed and varying others, produce structurally distinct
-procedures?</em> It canonicalizes traces into a shared atom alphabet,
-learns a <a href="https://arxiv.org/abs/1508.07909">BPE</a><span class="sidenote">Byte-pair encoding (Sennrich, Haddow, Birch, ACL 2016). Originally for subword text tokenization; here applied to atom-level sequences.</span> motif vocabulary, encodes each trajectory as a motif-frequency
-distribution, and supports cross-group comparison via
-<a href="https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence">Jensen-Shannon divergence</a><span class="sidenote">Symmetric, bounded relative of KL divergence; values in [0, 1] with log base 2. Comparing two probability distributions over the motif vocabulary.</span>, leave-one-group-out probes,
-<a href="https://arxiv.org/abs/1802.03426">UMAP</a> projection, and pattern matching.
+<strong>The problem.</strong> Outcome metrics like SWE-bench pass or
+fail compress everything an agent does into one bit. Two agents can
+solve the same task in structurally different ways. Two agents that
+fail can fail differently. The procedural layer — the sequence of
+tool calls the agent makes on its way to an answer — holds this
+information, and outcome scores cannot see it.
 </p>
 
 <p>
-Why this matters: outcome metrics like SWE-bench pass/fail compress
-everything an agent does into one bit. Two agents can resolve the
-same task in structurally different ways, and two agents that fail
-can fail differently. The procedural layer holds this information.
-procgrep is the instrument that makes it visible.
+<strong>What procgrep does.</strong> It takes the trace log of an
+LLM coding agent and produces a structural fingerprint of <em>how</em>
+the agent worked, not just whether it succeeded. Given fingerprints
+from many agents, you can answer one question with quantitative
+precision: do two agents, holding some factors fixed and varying
+others, work in structurally distinct ways?
 </p>
 
 <p>
-The library was extracted from the analysis pipeline used in
-<em>Procedural Grep: Structural Variation for Agent Rollouts</em>,
-where it characterized the procedural fingerprints of nine LLM
-coding agents across five paradigm-by-scaffold cells on
-<a href="https://www.swebench.com/">SWE-bench</a> Verified.
+<strong>How.</strong> Three steps, plain language. First, translate
+each scaffold's tool-call vocabulary into a shared one, so different
+agents can be compared at all. Second, learn a compact representation
+of the recurring patterns in those sequences. Third, compare any two
+groups of agents by how those patterns distribute. The technical
+primitives behind each step — byte-pair encoding, Jensen-Shannon
+divergence, leave-one-group-out probes, UMAP projection, regex-based
+pattern matching — are linked in the <a href="#glossary">glossary</a>
+below.
+</p>
+
+<p>
+<strong>Provenance.</strong> The library was extracted from the
+analysis pipeline used in <em>Procedural Grep: Structural Variation
+for Agent Rollouts</em>, where it characterized the procedural
+fingerprints of nine LLM coding agents across five paradigm-by-
+scaffold cells on <a href="https://www.swebench.com/">SWE-bench</a>
+Verified.
 </p>
 
 <h2 id="pipeline">The pipeline</h2>
