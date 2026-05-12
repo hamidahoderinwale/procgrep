@@ -9,7 +9,7 @@
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Arimo:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="assets/css/style.css">
 </head>
 <body id="top">
@@ -74,13 +74,33 @@ Verified.
 <h2 id="pipeline">The pipeline</h2>
 
 <p>
-Five operations, in order. Each is a pure function of typed data.
-The CLI mirrors the Python API; commands compose by reading and
-writing JSON or JSONL on disk.
+Each operation is a pure function of typed data. The CLI mirrors
+the Python API; commands compose by reading and writing JSON or
+JSONL on disk.
 </p>
 
-<ascii>raw traces  →  canonicalize  →  fit BPE  →  encode  →  compare
-   JSONL           atoms          vocab       fingerprints     JSD · UMAP · probe · patterns</ascii>
+<ol class="pipeline">
+  <li>
+    <span class="name">canonicalize</span>
+    <span class="desc">raw scaffold traces become a canonical atom sequence</span>
+  </li>
+  <li>
+    <span class="name">fit_bpe</span>
+    <span class="desc">the atom corpus yields a BPE motif vocabulary</span>
+  </li>
+  <li>
+    <span class="name">encode</span>
+    <span class="desc">each trace becomes a motif-frequency fingerprint</span>
+  </li>
+  <li>
+    <span class="name">jsd_matrix</span>
+    <span class="desc">pairwise Jensen-Shannon divergence between group-mean fingerprints</span>
+  </li>
+  <li>
+    <span class="name">probe · umap · patterns · stats</span>
+    <span class="desc">predictive transfer, projection, rule matching, descriptive statistics</span>
+  </li>
+</ol>
 
 <h2 id="modes">Three modes of use</h2>
 

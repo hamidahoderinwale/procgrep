@@ -28,9 +28,9 @@ body {
   margin: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: 'Arimo', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-size: 16px;
-  line-height: 1.6;
+  font-family: 'Palatino', 'Palatino Linotype', 'Book Antiqua', 'URW Palladio L', Georgia, serif;
+  font-size: 17px;        /* slightly larger to compensate for serif's smaller x-height */
+  line-height: 1.62;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
@@ -208,20 +208,46 @@ p code, li code, td code, h3 code {
 .code-fn      { color: var(--code-fn); }
 .code-num     { color: var(--code-num); }
 
-ascii {
-  display: block;
-  white-space: pre;
+/* Pipeline list: ordered steps with monospace function names */
+ol.pipeline {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 22px;
+  counter-reset: pipeline;
+}
+ol.pipeline li {
+  counter-increment: pipeline;
+  display: grid;
+  grid-template-columns: 28px 180px 1fr;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  margin: 0;
+}
+ol.pipeline li:last-child { border-bottom: none; }
+ol.pipeline li::before {
+  content: counter(pipeline);
+  color: var(--faint);
   font-family: 'JetBrains Mono', monospace;
-  font-size: 12.5px;
-  line-height: 1.5;
+  font-size: 12px;
+  text-align: right;
+}
+ol.pipeline li .name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  color: var(--code-keyword);
+}
+ol.pipeline li .desc {
   color: var(--muted);
-  margin: 18px 0;
-  padding: 18px 22px;
-  background: var(--bg-code);
-  border: 1px solid var(--rule);
-  border-radius: 6px;
-  overflow-x: auto;
-  tab-size: 4;
+  font-size: 0.95em;
+}
+@media (max-width: 600px) {
+  ol.pipeline li {
+    grid-template-columns: 22px 1fr;
+  }
+  ol.pipeline li .name { grid-column: 2; }
+  ol.pipeline li .desc { grid-column: 2; }
 }
 
 /* -- Tables ------------------------------------------------------ */
