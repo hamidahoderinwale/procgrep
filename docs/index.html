@@ -501,79 +501,210 @@ half that previously had no library.
 <h2 id="integrations">Integrations and case studies</h2>
 
 <p>
-procgrep is not a standalone product; it enhances existing agent
-infrastructure that already produces traces. Five concrete plug
-points and the case studies that exercise each.
+procgrep is not a standalone product. It enhances existing agent
+infrastructure that already captures traces. Five concrete plug
+points, each with an illustrative snippet showing what the
+integration actually looks like in code.
 </p>
 
-<h3>Where it plugs in</h3>
+<h3>1. Agent CI / regression testing</h3>
 
-<table>
-<thead>
-<tr><th>Existing system</th><th>What procgrep adds</th></tr>
-</thead>
-<tbody>
-<tr>
-  <td><strong>Agent CI / regression testing</strong><br>(e.g., custom test suite, GitHub Actions running an agent on a fixed task set)</td>
-  <td>Procedural-drift detection between releases. Captures the agent's fingerprint on each CI run; alerts when the fingerprint diverges from the baseline beyond the within-run noise floor. Catches scaffold or model regressions that outcome scores miss.</td>
-</tr>
-<tr>
-  <td><strong>Prompt-optimization frameworks</strong><br>(<a href="https://github.com/stanfordnlp/dspy">DSPy</a>, custom MIPRO / COPRO loops)</td>
-  <td>A procgrep-derived metric scores each candidate program by procedural distance from a target shape. The compile loop optimizes for "pass more tests <em>with a specific procedure</em>," not just "pass more tests."</td>
-</tr>
-<tr>
-  <td><strong>Agent observability platforms</strong><br>(LangSmith, Phoenix, Helicone, Weights &amp; Biases)</td>
-  <td>Procedural-fingerprint dashboards on top of LLM-call traces. Pattern-matcher rules surface "stuck edit loop," "missing localize," "shell-cd storm" as per-run flags. Complements outcome and cost dashboards.</td>
-</tr>
-<tr>
-  <td><strong>Benchmark leaderboards</strong><br>(<a href="https://www.swebench.com/">SWE-bench</a>, AgentBench, ToolBench)</td>
-  <td>A procedural-aware column on the leaderboard: not just "score 0.42" but "score 0.42 via what procedural shape." Disambiguates submissions that look identical by outcome but solve tasks structurally differently.</td>
-</tr>
-<tr>
-  <td><strong>Search subagents and tool wrappers</strong><br>(<a href="https://docs.morphllm.com/sdk/components/warp-grep">WarpGrep</a>, retrieval plugins, MCP servers)</td>
-  <td>Quantifies the procedural effect of adding a subagent or wrapper. The controlled-eval question "did this tool change the agent's procedure beyond its outcome score?" is exactly procgrep's primitive.</td>
-</tr>
-</tbody>
-</table>
+<p>
+A team running their agent on a fixed task set inside CI wants to
+catch the case where a scaffold change or vendor model update
+silently shifts behavior. procgrep computes the JSD between the
+current build's fingerprint and a stored baseline; alerts when the
+divergence exceeds the within-run noise floor.
+</p>
+
+<pre><code><span class="code-comment"># .github/workflows/agent-ci.yml</span>
+- name: capture traces
+  run: python run_agent.py --tasks fixed_set.jsonl --output traces.jsonl
+
+- name: procgrep drift check
+  run: |
+    procgrep canonicalize --input traces.jsonl --adapter swe-agent --output canonical.jsonl
+    procgrep encode --input canonical.jsonl --vocab baseline_vocab.json --output fp_current.jsonl
+    procgrep jsd --input fp_current.jsonl --group-by build --output drift.json
+    python check_drift.py drift.json --baseline 0.12 --tolerance 0.05  <span class="code-comment"># exits 1 if exceeded</span>
+</code></pre>
+
+<h3>2. Prompt-optimization frameworks</h3>
+
+<p>
+<a href="https://github.com/stanfordnlp/dspy">DSPy</a>'s compilers
+(<code>BootstrapFewShot</code>, MIPRO, COPRO) optimize against a
+user-supplied metric. The default metric is outcome accuracy.
+Wrap procgrep to also reward proximity to a target procedural shape,
+and the compile loop optimizes for "pass more tests <em>with this
+procedure</em>" instead of just "pass more tests."
+</p>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> jsd
+<span class="code-keyword">from</span> procgrep.bpe <span class="code-keyword">import</span> apply_vocab
+<span class="code-keyword">import</span> dspy
+
+<span class="code-keyword">def</span> <span class="code-fn">procedural_distance_metric</span>(example, pred, trace=<span class="code-keyword">None</span>):
+    <span class="code-comment"># pred.trace is the agent's tool-call sequence; target_dist is your reference fingerprint.</span>
+    <span class="code-keyword">if</span> <span class="code-keyword">not</span> <span class="code-fn">resolves_correctly</span>(example, pred):
+        <span class="code-keyword">return</span> <span class="code-num">0.0</span>
+    pred_dist = <span class="code-fn">fingerprint_of</span>(pred.trace, vocab=reference_vocab)
+    <span class="code-keyword">return</span> <span class="code-num">1.0</span> - <span class="code-fn">jsd</span>(pred_dist, target_dist)
+
+compiled = dspy.<span class="code-fn">MIPRO</span>(metric=procedural_distance_metric).<span class="code-fn">compile</span>(program, trainset)
+</code></pre>
+
+<h3>3. Agent observability platforms</h3>
+
+<p>
+Tools like <a href="https://docs.smith.langchain.com/">LangSmith</a>,
+<a href="https://phoenix.arize.com/">Phoenix</a>,
+<a href="https://www.helicone.ai/">Helicone</a>, and
+<a href="https://wandb.ai/">Weights &amp; Biases</a> already capture
+LLM-call traces in production. procgrep adds a procedural-fingerprint
+layer on top: dashboards see "stuck edit loop fired," "missing
+localize," "shell-cd storm" as per-run flags. Implementation: nightly
+batch over the previous day's traces.
+</p>
+
+<pre><code>$ procgrep match-patterns \
+    --input yesterday_traces.jsonl \
+    --rules rules/production.yaml \
+    --output violations.json
+
+$ jq -r '.violations | to_entries[] | "\(.key)\t\(.value | join(","))"' violations.json
+trajectory_42a3b   no_long_edit_loops,missing_localize
+trajectory_91c1d   no_long_edit_loops
+trajectory_d7e8f   shell_cd_storm
+...
+</code></pre>
+
+<h3>4. Benchmark leaderboards</h3>
+
+<p>
+<a href="https://www.swebench.com/">SWE-bench</a>, AgentBench, and
+ToolBench rank submissions by outcome. Two submissions with the
+same score can be doing structurally different things; outcome alone
+hides this. A procgrep-derived column adds the procedural axis.
+Maintainers compute it once per submission, post-acceptance.
+</p>
+
+<pre><code><span class="code-comment"># Add a column at the leaderboard level:</span>
+Submission                         Resolve%   Procedural fingerprint
+SWE-agent + GPT-4o                 <span class="code-num">34.2</span>      edit-heavy, low-search        (effective vocab ~8)
+Agentless + Claude-3.5             <span class="code-num">24.3</span>      pipeline-template, deterministic (effective vocab ~1)
+Moatless + DeepSeek-V3             <span class="code-num">19.8</span>      edit-dominated, no-test       (effective vocab ~5)
+DARS + R1                          <span class="code-num">16.7</span>      planner-style, search-heavy   (effective vocab ~12)
+</code></pre>
+
+<h3>5. Search subagents and tool wrappers</h3>
+
+<p>
+<a href="https://docs.morphllm.com/sdk/components/warp-grep">WarpGrep</a>
+is a code-search subagent for coding agents; retrieval plugins and
+MCP servers play similar roles. procgrep answers the question
+"does adding this wrapper change the agent's procedure beyond
+changing its outcome score?" by running the controlled-eval recipe
+with the wrapper on/off as the factor.
+</p>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> canonicalize, encode, fit_bpe, jsd_matrix, leave_one_group_out
+
+<span class="code-comment"># Arm A: agent without WarpGrep. Arm B: agent with WarpGrep enabled.</span>
+<span class="code-comment"># N=30 traces each, same task set, same base model.</span>
+traces = <span class="code-fn">canonicalize</span>(<span class="code-fn">read_jsonl</span>(<span class="code-string">"warp_ablation.jsonl"</span>), adapter=<span class="code-string">"swe-agent"</span>)
+vocab  = <span class="code-fn">fit_bpe</span>((t.atoms <span class="code-keyword">for</span> t <span class="code-keyword">in</span> traces), vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)
+fps    = <span class="code-fn">encode</span>(traces, vocab=vocab)
+
+<span class="code-comment"># `group` is "warp_off" or "warp_on" on each input record.</span>
+matrix = <span class="code-fn">jsd_matrix</span>(fps, group_by=<span class="code-string">"group"</span>)
+probe  = <span class="code-fn">leave_one_group_out</span>(fps, label_field=<span class="code-string">"group"</span>, seed=<span class="code-num">0</span>)
+
+<span class="code-comment"># If JSD > 2x within-arm noise and probe accuracy > chance,</span>
+<span class="code-comment"># WarpGrep changed the agent's procedure beyond changing its outcome.</span>
+</code></pre>
 
 <h3>Case studies the library has already produced</h3>
 
 <p>
-Three concrete findings from the originating paper, each grounded
-in real corpus data. The pattern generalizes; the same primitives
-apply to any agent trace.
+Three concrete findings from the originating paper's corpus, each
+shown with the rule or code that produced it.
 </p>
 
-<table>
-<thead><tr><th>Case study</th><th>Finding</th><th>How it was produced</th></tr></thead>
-<tbody>
-<tr>
-  <td><strong>Stuck-edit-loop signature</strong></td>
-  <td>Long Type B failure trajectories show EDIT_SRC_PY token proportion rising from <mark>23% to 35%</mark> and SUBMIT proportion falling from 9% to 2%. The signature is detectable from the post-localization prefix alone.</td>
-  <td>Per-cohort token-proportion analysis using <code>encode</code> + a small ad-hoc grouping. The current procgrep stats helpers (<code>discriminative_motifs</code>) reproduce this without bespoke code.</td>
-</tr>
-<tr>
-  <td><strong>Claude-4 SHELL_CD storm</strong></td>
-  <td>Within the SWE-agent extended-thinking cell, Claude-4 emits <mark>33 SHELL_CD atoms per trajectory on average</mark> (Claude-3.7-thinking: 6.7). 100% of Claude-4 trajectories use the atom; 65% contain a run of five or more. A model-class signature inside an otherwise paradigm-level cell.</td>
-  <td>Pattern matcher (<code>match_patterns</code>) with one rule, plus per-agent atom-frequency stratification.</td>
-</tr>
-<tr>
-  <td><strong>Canonicalization-layer Moatless audit</strong></td>
-  <td>Procgrep reported 99.7% of Moatless trajectories never run a test atom. Raw-trace audit found <mark>71 internal <code>RunTests</code> references in one trace's content</mark>, none surfaced by the adapter. The finding is a canonicalization-layer artifact, not a behavioral claim — exactly the kind of bug procgrep is designed to surface.</td>
-  <td>Pattern matcher with a tests-must-fire rule, followed by adapter audit when the cell-level pass rate looked implausibly low.</td>
-</tr>
-</tbody>
-</table>
+<h4>Stuck-edit-loop signature</h4>
+
+<p>
+Long Type B failure trajectories show EDIT_SRC_PY token proportion
+rising from <mark>23% to 35%</mark>, with SUBMIT falling from
+9% to 2%. Detectable from the post-localization prefix alone.
+</p>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> discriminative_motifs
+
+<span class="code-comment"># Long Type B and short Type B labeled in the `group` field.</span>
+top = <span class="code-fn">discriminative_motifs</span>(
+    long_and_short_fingerprints, vocab,
+    group_a=<span class="code-string">"long_typeB"</span>, group_b=<span class="code-string">"short_typeB"</span>,
+    k=<span class="code-num">10</span>, ranking=<span class="code-string">"log_odds"</span>,
+)
+<span class="code-keyword">for</span> m <span class="code-keyword">in</span> top:
+    <span class="code-fn">print</span>(m.motif, m.log_odds, m.p_a, m.p_b)
+<span class="code-comment"># EDIT_SRC_PY tops the list with positive log-odds (more in long failures).</span>
+</code></pre>
+
+<h4>Claude-4 SHELL_CD storm</h4>
+
+<p>
+Within the SWE-agent extended-thinking cell, Claude-4 emits
+<mark>33 SHELL_CD atoms per trajectory</mark> on average. 100% of
+Claude-4 trajectories use the atom; 65% contain a run of five or
+more consecutive SHELL_CDs. A model-class signature inside an
+otherwise paradigm-level cell, found with one YAML rule plus a
+per-agent atom-frequency table.
+</p>
+
+<pre><code><span class="code-comment"># rules/shell_cd_storm.yaml</span>
+rules:
+  - name: no_long_shell_cd_loop
+    description: <span class="code-string">"No run of 5+ consecutive SHELL_CD atoms."</span>
+    pattern: <span class="code-string">"(SHELL_CD ){5,}"</span>
+    must_hold: false
+</code></pre>
+
+<pre><code>$ procgrep match-patterns \
+    --input canonical.jsonl --rules rules/shell_cd_storm.yaml --output report.json
+$ jq '.pass_rate_per_rule.no_long_shell_cd_loop' report.json
+0.591   <span class="code-comment"># 41% of Claude-4 trajectories fail this rule</span>
+</code></pre>
+
+<h4>Canonicalization-layer Moatless audit</h4>
+
+<p>
+Procgrep flagged 99.7% of Moatless trajectories as never running a
+test atom. The raw-trace audit found <mark>71 internal
+<code>RunTests</code> references</mark> in one trace's content, none
+surfaced by the canonicalizer's adapter. The library caught its own
+canonicalization gap — exactly what procgrep is designed to surface.
+</p>
+
+<pre><code><span class="code-comment"># The pattern matcher rule that flagged the gap:</span>
+- name: tests_run_at_least_once
+  pattern: <span class="code-string">"(RUN_PYTHON_TEST_PY|RUN_PYTHON_REPRO_PY|RUN_PYTEST_*)"</span>
+  must_hold: true
+
+<span class="code-comment"># Result on the Moatless cell: pass_rate = 0.003</span>
+<span class="code-comment"># Implausibly low → adapter audit → 71 RunTests in raw trace → fix the adapter.</span>
+</code></pre>
 
 <h3>Where the integrations sit in the lifecycle</h3>
 
 <p>
-procgrep is post-hoc by design: it reads trace files and emits
-structural artifacts. Each integration point above is a different
-place in the agent lifecycle to <em>consume</em> those artifacts.
-The library does not run agents, does not call models, and does
-not require streaming infrastructure to start being useful — pointing
-it at a directory of captured JSONL traces is enough.
+procgrep is post-hoc by design. It reads trace files and emits
+structural artifacts. Each integration above is a different place
+in the agent lifecycle to consume those artifacts. The library does
+not run agents, does not call models, and does not need streaming
+infrastructure to start being useful: pointing it at a directory
+of captured JSONL is enough.
 </p>
 
 <h2 id="notes">Notes</h2>
