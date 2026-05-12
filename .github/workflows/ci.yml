@@ -54,3 +54,25 @@ jobs:
           pip install -e ".[dev]"
       - name: pytest
         run: pytest -q
+
+  examples:
+    name: examples (python 3.12)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e ".[dev]"
+      - name: run example scripts
+        run: |
+          for script in examples/python/*.py; do
+            echo "=== $script ==="
+            python "$script"
+          done

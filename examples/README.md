@@ -1,8 +1,56 @@
 # procgrep examples
 
-Tiny synthetic corpus and rule file for trying out the pipeline.
+Tiny synthetic corpus, a rule file, and runnable Python and CLI
+examples for the pipeline. All examples are runnable from the
+repository root after `pip install -e ".[dev]"`.
 
-## Quick run
+## Layout
+
+```
+examples/
+├── README.md                       (this file)
+├── synthetic_traces.jsonl          (6 trajectories, 2 agents, 2 groups)
+├── rules/
+│   └── stuck_edit_loop.yaml        (4 pattern-matcher rules)
+└── python/
+    ├── 01_quickstart.py            (end-to-end Python API)
+    ├── 02_controlled_eval.py       (within/across-arm JSD + probe)
+    ├── 03_discriminative_motifs.py (v0.1.1 stats helpers)
+    ├── 04_deployment_signal.py     (prefix-by-prefix pattern matching)
+    └── 05_custom_adapter.py        (register a TraceAdapter for a new scaffold)
+```
+
+The synthetic corpus has two agents (`editor`, `searcher`) across two
+groups (`control`, `treatment`), with one trajectory (`syn-004`)
+deliberately violating `no_long_edit_loops` so the pattern matcher
+has something to report.
+
+## Python examples
+
+Run any script directly:
+
+```bash
+python examples/python/01_quickstart.py
+python examples/python/02_controlled_eval.py
+python examples/python/03_discriminative_motifs.py
+python examples/python/04_deployment_signal.py
+python examples/python/05_custom_adapter.py
+```
+
+What each script demonstrates:
+
+| Script | Capability |
+|---|---|
+| `01_quickstart.py` | Full pipeline (`canonicalize` -> `fit_bpe` -> `encode` -> `jsd_matrix`) end to end in Python. |
+| `02_controlled_eval.py` | The controlled-eval workflow: within-arm JSD as the noise floor, across-arm JSD as the signal, leave-one-arm-out probe. |
+| `03_discriminative_motifs.py` | The v0.1.1 stats helpers: per-group atom frequencies, effective vocabulary size, per-trajectory entropy summary, top discriminative motifs between two groups. |
+| `04_deployment_signal.py` | Prefix-by-prefix pattern matching to flag a trajectory mid-stream. Simulates the runtime use of the Level 1 matcher. |
+| `05_custom_adapter.py` | Registering a `TraceAdapter` for a non-built-in scaffold and running the rest of the pipeline against its output. |
+
+## CLI quick run
+
+The Python API has a CLI mirror. Each subcommand reads inputs from
+file paths and writes outputs to file paths so commands compose.
 
 ```bash
 procgrep canonicalize \
@@ -30,8 +78,3 @@ procgrep match-patterns \
     --rules examples/rules/stuck_edit_loop.yaml \
     --output /tmp/violations.json
 ```
-
-The synthetic corpus has two agents (`editor`, `searcher`) across two
-groups (`control`, `treatment`), with one trajectory deliberately
-violating `no_long_edit_loops` so the pattern matcher has something
-to report.
