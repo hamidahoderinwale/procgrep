@@ -7,10 +7,11 @@
   --rule: #D6DBE3;        /* cool grey */
   --link: #1853C7;
   --link-hover: #103E96;
-  --maxw: 720px;
-  --sidebar-w: 200px;
-  --gutter: 48px;
-  --page-w: calc(var(--sidebar-w) + var(--gutter) + var(--maxw));
+  --maxw: 680px;
+  --sidebar-w: 180px;
+  --margin-w: 200px;
+  --gutter: 40px;
+  --page-w: calc(var(--sidebar-w) + var(--gutter) + var(--maxw) + var(--gutter) + var(--margin-w));
 
   /* Syntax colors, calibrated for cool palette and WCAG AA contrast */
   --code-comment: #7B8493;
@@ -87,6 +88,43 @@ hr {
   max-width: var(--page-w);
   margin: 0 auto;
   padding: 0 28px;
+}
+
+/* Tufte-style sidenotes: float into the right margin on wide screens,
+   inline on narrow. Use <span class="sidenote">…</span> directly
+   after the word the note belongs to. */
+.sidenote, .marginnote {
+  float: right;
+  clear: right;
+  margin-right: calc(-1 * (var(--margin-w) + var(--gutter)));
+  width: var(--margin-w);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  position: relative;
+  vertical-align: baseline;
+  margin-top: 0;
+  margin-bottom: 6px;
+  font-family: 'Palatino', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+}
+.sidenote a, .marginnote a { color: var(--link); }
+.sidenote code, .marginnote code {
+  font-size: 11.5px;
+  padding: 0 4px;
+}
+@media (max-width: 1180px) {
+  /* Inline-fallback once the layout no longer has room for a margin column. */
+  .sidenote, .marginnote {
+    float: none;
+    clear: none;
+    margin: 8px 0 14px;
+    width: auto;
+    display: block;
+    padding: 8px 12px;
+    background: var(--bg-code);
+    border-left: 2px solid var(--rule);
+    font-size: 13px;
+  }
 }
 
 aside.sidebar {
@@ -296,3 +334,38 @@ h3[id]:hover::after {
   color: var(--faint);
   font-weight: 400;
 }
+
+/* Glossary: definition list with monospace term keys */
+dl.glossary {
+  margin: 18px 0 22px;
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) 1fr;
+  gap: 12px 24px;
+}
+dl.glossary dt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  color: var(--text);
+  font-weight: 500;
+  padding-top: 2px;
+}
+dl.glossary dd {
+  margin: 0;
+  color: var(--muted);
+}
+dl.glossary dd a { color: var(--link); }
+@media (max-width: 600px) {
+  dl.glossary { grid-template-columns: 1fr; gap: 4px 0; }
+  dl.glossary dt { margin-top: 14px; }
+  dl.glossary dt:first-of-type { margin-top: 0; }
+}
+
+/* Notes section: emphasized callouts pulled from FAQ */
+.note {
+  border-left: 3px solid var(--rule);
+  padding: 12px 18px;
+  margin: 18px 0;
+  background: transparent;
+}
+.note h3 { margin-top: 0; }
+.note p:last-child { margin-bottom: 0; }

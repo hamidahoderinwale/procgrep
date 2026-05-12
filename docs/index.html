@@ -25,7 +25,9 @@
     <a href="#quickstart">Quickstart</a>
     <a href="#capabilities">Capabilities</a>
     <a href="#position">Positioning</a>
+    <a href="#notes">Notes</a>
     <a href="#studies">Studies</a>
+    <a href="#glossary">Glossary</a>
     <a href="#docs">Docs</a>
     <a href="#cite">Citing</a>
   </nav>
@@ -57,18 +59,26 @@
 procgrep answers one question: <em>do two agents, holding some
 factors fixed and varying others, produce structurally distinct
 procedures?</em> It canonicalizes traces into a shared atom alphabet,
-learns a BPE motif vocabulary, encodes each trajectory as a motif-
-frequency distribution, and supports cross-group comparison via
-Jensen-Shannon divergence, leave-one-group-out probes, UMAP
-projection, and pattern matching.
+learns a <a href="https://arxiv.org/abs/1508.07909">BPE</a><span class="sidenote">Byte-pair encoding (Sennrich, Haddow, Birch, ACL 2016). Originally for subword text tokenization; here applied to atom-level sequences.</span> motif vocabulary, encodes each trajectory as a motif-frequency
+distribution, and supports cross-group comparison via
+<a href="https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence">Jensen-Shannon divergence</a><span class="sidenote">Symmetric, bounded relative of KL divergence; values in [0, 1] with log base 2. Comparing two probability distributions over the motif vocabulary.</span>, leave-one-group-out probes,
+<a href="https://arxiv.org/abs/1802.03426">UMAP</a> projection, and pattern matching.
+</p>
+
+<p>
+Why this matters: outcome metrics like SWE-bench pass/fail compress
+everything an agent does into one bit. Two agents can resolve the
+same task in structurally different ways, and two agents that fail
+can fail differently. The procedural layer holds this information.
+procgrep is the instrument that makes it visible.
 </p>
 
 <p>
 The library was extracted from the analysis pipeline used in
 <em>Procedural Grep: Structural Variation for Agent Rollouts</em>,
 where it characterized the procedural fingerprints of nine LLM
-coding agents across five paradigm-by-scaffold cells on SWE-bench
-Verified.
+coding agents across five paradigm-by-scaffold cells on
+<a href="https://www.swebench.com/">SWE-bench</a> Verified.
 </p>
 
 <h2 id="pipeline">The pipeline</h2>
@@ -355,6 +365,44 @@ layer shift, or whether procedure is mostly determined by scaffold
 and base model rather than prompt.
 </p>
 
+<h2 id="notes">Notes</h2>
+
+<p>
+Two design questions that come up often enough to address inline.
+The fuller treatment is in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/FAQ.md">FAQ.md</a>.
+</p>
+
+<div class="note">
+<h3>Why count-based fingerprints, not embeddings</h3>
+<p>
+Three reasons. <em>Interpretability:</em> each fingerprint dimension
+is a named motif, so JSD differences attribute to specific motifs
+that a reader can name and inspect. <em>No model dependency:</em>
+the fingerprint is deterministic and reproducible without loading a
+language model. <em>Fidelity to the paper's framing:</em> the paper
+argues procedure has discrete structure, and embedding atoms with a
+continuous language model would smear that structure into a
+similarity space. Embedding-based comparison is a legitimate
+alternative methodology and a candidate v0.2 capability, but it is
+not the choice the paper commits to.
+</p>
+</div>
+
+<div class="note">
+<h3>The canonicalization-layer caveat</h3>
+<p>
+The procedural fingerprint reflects what the canonicalizer captures,
+not the agent's full behavior. A direct audit of one Moatless trace
+found 71 internal <code>RunTests</code> references inside the trace
+content, zero of which surfaced as canonical atoms because the
+Moatless adapter walks <code>action_steps</code> indexed by
+<code>action_args_class</code>, and test executions live in a
+different part of the planner tree.<span class="sidenote">This is the worked example from the paper's §Threats. The corpus-level finding "Moatless has no test atoms" is therefore a canonicalization artifact, not a behavioral claim about Moatless.</span> Read "tests run zero times in the trace" as a property of the
+captured atom stream, not as a behavioral claim about what the agent
+did outside that stream.
+</p>
+</div>
+
 <h2 id="studies">Suggested studies</h2>
 
 <p>
@@ -370,6 +418,118 @@ public API; no new code required. Descriptions in
 <li><strong>Reasoning-budget sweep.</strong> Vary max-thinking-tokens; map the procedural-shape response.</li>
 <li><strong>Pattern-matcher cross-validation.</strong> Run rule-based pattern matching against an existing BPE-derived analysis; compare second-method results.</li>
 </ol>
+
+<h2 id="glossary">Glossary</h2>
+
+<p>
+Terms used throughout this page and in the paper, with hyperlinks
+to upstream references for the methodological concepts.
+</p>
+
+<dl class="glossary">
+
+  <dt>Adapter</dt>
+  <dd>A callable that converts one scaffold's raw trace record into a
+    canonical atom sequence. See <code>procgrep.canonicalize</code> for
+    built-ins (SWE-agent, Agentless, DARS, Moatless) and
+    <code>examples/python/05_custom_adapter.py</code> for a worked example.</dd>
+
+  <dt>Atom</dt>
+  <dd>A canonical action label: the shared alphabet across scaffolds.
+    Examples: <code>SEARCH</code>, <code>EDIT_SRC_PY</code>,
+    <code>RUN_PYTHON_REPRO_PY</code>, <code>SUBMIT</code>.</dd>
+
+  <dt>BPE motif</dt>
+  <dd>A token in the learned vocabulary. May be a single atom or a
+    glued multi-atom sequence (e.g., <code>edit_run_test</code>). Algorithm:
+    <a href="https://arxiv.org/abs/1508.07909">Sennrich, Haddow, Birch (ACL 2016)</a>,
+    applied here at the atom layer rather than the subword layer.</dd>
+
+  <dt>Canonical</dt>
+  <dd>Used in the
+    <a href="https://en.wikipedia.org/wiki/Canonical_form">programming-language-theory sense</a>
+    of canonical form: a unique standard representation obtained by
+    normalizing away surface variation. Different scaffolds emit
+    different action names; all map to the same canonical atom.</dd>
+
+  <dt>Cell</dt>
+  <dd>A paradigm × scaffold combination used as the comparison unit.
+    Examples: <em>SWE-agent base</em>, <em>SWE-agent extended-thinking</em>,
+    <em>Agentless</em>, <em>DARS</em>, <em>Moatless</em>.</dd>
+
+  <dt>Controlled eval</dt>
+  <dd>Hold base model, scaffold, and benchmark fixed; vary one factor;
+    capture N traces per arm. Within-arm JSD is the noise floor;
+    across-arm JSD is the signal. See
+    <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/README.md#5-controlled-evaluations">README §5</a>.</dd>
+
+  <dt>DSPy</dt>
+  <dd>A
+    <a href="https://github.com/stanfordnlp/dspy">framework for programming foundation models</a>
+    (Khattab et al., ICLR 2024). Operates on the natural-language layer;
+    procgrep operates on the procedural layer. Complementary, not
+    competing.</dd>
+
+  <dt>Fingerprint</dt>
+  <dd>One trajectory expressed as a count vector over BPE motif tokens,
+    normalized to a probability distribution. The unit of comparison.</dd>
+
+  <dt>Jensen-Shannon divergence</dt>
+  <dd><a href="https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence">JSD</a>
+    is a symmetric, bounded relative of KL divergence. Values in
+    <code>[0, 1]</code> with log base 2. Computed pairwise between
+    fingerprints. Lin (IEEE TIT 1991) is the original reference.</dd>
+
+  <dt>Leave-one-group-out probe</dt>
+  <dd>A classifier trained on K-1 groups and tested on the held-out
+    group, via scikit-learn's
+    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.LeaveOneGroupOut.html">LeaveOneGroupOut</a>.
+    Tests predictive transfer. The paper's headline cross-scaffold
+    result is 0 of 300 correct.</dd>
+
+  <dt>Pattern matcher (Level 1)</dt>
+  <dd>Regex over the space-joined atom sequence with a <code>must_hold</code>
+    flag. procgrep ships this; the Level 2 compositional invariant DSL
+    with temporal operators (procedural-DSPy) is named in
+    <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ROADMAP.md">ROADMAP.md</a>
+    as future work.</dd>
+
+  <dt>Scaffold</dt>
+  <dd>The software harness around the LLM that mediates tool use. The
+    paper covers four:
+    <a href="https://swe-agent.com/">SWE-agent</a>,
+    <a href="https://github.com/OpenAutoCoder/Agentless">Agentless</a>,
+    DARS,
+    <a href="https://github.com/aorwall/moatless-tools">Moatless</a>.</dd>
+
+  <dt>SWE-bench</dt>
+  <dd>The <a href="https://www.swebench.com/">benchmark</a> the
+    paper's corpus is built on (Jimenez et al., ICLR 2024). 300 instances
+    on the Verified split.</dd>
+
+  <dt>Trace · trajectory</dt>
+  <dd>An agent's recorded sequence of tool calls on one task. The raw
+    input to procgrep.</dd>
+
+  <dt>UMAP</dt>
+  <dd><a href="https://arxiv.org/abs/1802.03426">Uniform Manifold Approximation and Projection</a>
+    (McInnes, Healy, Melville, 2018). Used here to project fingerprints
+    into 2D for visual inspection.</dd>
+
+  <dt>Vocabulary</dt>
+  <dd>The full set of motif tokens learned by BPE over the corpus.
+    Fixed once and shared across all fingerprints. The "shared vocabulary
+    discipline" in controlled evals refers to fitting one vocab across
+    all arms rather than per-arm.</dd>
+
+  <dt>Within-arm vs across-arm JSD</dt>
+  <dd>Two quantities reported together in a controlled eval. Within-arm
+    is the pairwise JSD between fingerprints of the same arm (noise
+    floor). Across-arm is the JSD between arm-mean fingerprints (signal).
+    Rule of thumb: signal substantially exceeding the floor (about 2x)
+    means the factor moved procedure.</dd>
+
+</dl>
 
 <h2 id="docs">Documentation</h2>
 
