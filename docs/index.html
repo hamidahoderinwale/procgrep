@@ -73,6 +73,19 @@
 <h2 id="what">What it does</h2>
 
 <p>
+<strong>Context, briefly.</strong> An
+<dfn class="def" tabindex="0" data-def="LLM coding agent: a system that uses a language model to solve programming tasks. It calls tools (search the repo, open a file, edit code, run tests, submit a patch) until it decides the task is done.">LLM coding agent</dfn> is a system that uses a language model to solve
+programming tasks: searching a repository, opening files, editing
+code, running tests, submitting a patch. Its
+<dfn class="def" tabindex="0" data-def="Trace (or trajectory): the recorded sequence of tool calls the agent made, plus optional metadata (the model's reasoning text, timestamps, observation outputs). Procgrep reads traces; it does not produce them.">trace</dfn> is the recorded sequence of those tool calls. Different
+<dfn class="def" tabindex="0" data-def="Scaffold: the software wrapper around the language model that defines which tools exist, how they are called, and how the model's outputs are parsed. Examples: SWE-agent, Agentless, DARS, Moatless.">scaffolds</dfn> wrap models differently: one might give the model a shell and a
+file-editor, another might run a fixed pipeline of localize then
+patch then test. A
+<dfn class="def" tabindex="0" data-def="Benchmark: a standardized task set the community uses to compare systems. SWE-bench Verified is 500 real GitHub issues from popular Python projects, each paired with a gold patch the agent is graded against.">benchmark</dfn> like <a href="https://www.swebench.com/">SWE-bench Verified</a> is a
+standard task set the community uses to compare systems.
+</p>
+
+<p>
 <strong>The problem.</strong> Outcome metrics like SWE-bench pass or
 fail compress everything an agent does into one bit. Two agents can
 solve the same task in structurally different ways. Two agents that
