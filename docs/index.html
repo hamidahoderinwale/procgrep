@@ -215,13 +215,16 @@ Same code path, ~2,639 trajectories instead of six.
 </figure>
 
 <figure>
-  <img src="assets/img/procedural_space_umap.png" alt="UMAP projection of all 2,639 per-trajectory fingerprints, colored by paradigm-by-scaffold cell.">
+  <img src="assets/img/procedural_space_umap.png" alt="UMAP projection of all 2,639 per-trajectory fingerprints, colored by paradigm-by-scaffold cell, with 90% density contours per cell.">
   <figcaption>
-    Per-trajectory UMAP over the full corpus, colored by cell. Five
-    cells emerge as separated clusters; the SWE-agent base and
-    extended-thinking cells sit adjacent but visibly distinct in
-    the central region. Hyperparameters: n_neighbors=15, min_dist=0.25,
-    metric=cosine, seed=0.
+    Per-trajectory UMAP over the full corpus, colored by cell, with
+    each cell's 90% density contour overlaid. Agentless, DARS, and
+    SWE-agent extended-thinking form clearly disjoint clusters at this
+    level. SWE-agent base and Moatless overlap at the top of the
+    projection: a 2D-projection adjacency that the dots-only view
+    would have hidden, even though the two cells are JSD-distinct
+    in the original 199-dim motif space. Hyperparameters:
+    n_neighbors=15, min_dist=0.25, metric=cosine, seed=0.
   </figcaption>
 </figure>
 
