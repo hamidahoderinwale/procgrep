@@ -23,17 +23,17 @@
     <span class="nav-label">Overview</span>
     <a href="#what">What it does</a>
     <a href="#pipeline">Pipeline</a>
-    <a href="#modes">Modes of use</a>
+    <a href="#sample-run">Sample runs</a>
+    <a href="#position">Where it fits</a>
 
-    <span class="nav-label">Reference</span>
+    <span class="nav-label">Use</span>
+    <a href="#modes">Modes of use</a>
+    <a href="#install">Install</a>
     <a href="#quickstart">Quickstart</a>
-    <a href="#sample-run">Sample run</a>
     <a href="#capabilities">Capabilities</a>
-    <a href="#position">Positioning</a>
+    <a href="#integrations">Integrations</a>
 
     <span class="nav-label">Background</span>
-    <a href="#integrations">Integrations</a>
-    <a href="#notes">Notes</a>
     <a href="#concepts">Concepts</a>
     <a href="#studies">Studies</a>
 
@@ -154,6 +154,179 @@ JSONL on disk.
     <span class="desc">predictive transfer, projection, rule matching, descriptive statistics</span>
   </li>
 </ol>
+
+<h2 id="sample-run">Sample runs and results</h2>
+
+<p>
+Two kinds of evidence: the bundled synthetic corpus reproduces in
+seconds on any machine, and the paper's nine-agent corpus shows
+what procgrep produces at scale.
+</p>
+
+<h3 id="sample-synthetic">On the bundled synthetic corpus</h3>
+
+<p>
+Running the quickstart example against
+<code>examples/synthetic_traces.jsonl</code> (six trajectories, two
+agents, two groups):
+</p>
+
+<pre><code>$ python examples/python/01_quickstart.py
+
+loaded 6 raw records from synthetic_traces.jsonl
+canonicalized into 6 traces
+  syn-001    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'submit'</span>]
+  syn-002    agent=editor     atoms=[<span class="code-string">'open'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'submit'</span>]
+  syn-003    agent=searcher   atoms=[<span class="code-string">'search_repo'</span>, <span class="code-string">'read_file'</span>, <span class="code-string">'search_repo'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'submit'</span>]
+  syn-004    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'submit'</span>]
+  syn-005    agent=searcher   atoms=[<span class="code-string">'search_repo'</span>, <span class="code-string">'search_repo'</span>, <span class="code-string">'read_file'</span>, <span class="code-string">'submit'</span>]
+  syn-006    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'submit'</span>]
+
+learned vocabulary: 5 atoms + 6 merges = 11 tokens
+encoded 6 fingerprints; each of dimension 11
+
+pairwise JSD by agent (upper triangle only):
+  editor     vs searcher    JSD = <mark>0.7415</mark>
+</code></pre>
+
+<p>
+Two agents with disjoint procedural styles; JSD lands near the
+maximum (1.0 is the ceiling under log base 2). That is the metric
+behaving as expected.
+</p>
+
+<h3 id="sample-paper">On the paper's nine-agent corpus</h3>
+
+<p>
+Three figures from the analysis pipeline procgrep was extracted from.
+Same code path, ~2,639 trajectories instead of six.
+</p>
+
+<figure>
+  <img src="assets/img/jsd_matrix_9agents.png" alt="Pairwise JSD matrix across nine agents on SWE-bench Verified; visible block structure separates the SWE-agent base cell from extended-thinking from the three cross-scaffold cells.">
+  <figcaption>
+    Pairwise JSD across the nine agents. Within the SWE-agent base
+    cell (Claude-3, Claude-3.5, GPT-4, GPT-4o), pairwise JSD is
+    <mark>0.10 to 0.19</mark>. Across scaffolds, JSD reaches
+    <mark>0.62 to 1.00</mark>. The dense top row (Agentless+Claude-3.5)
+    is at the ceiling against every other agent, indicating a
+    procedurally disjoint motif vocabulary.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="assets/img/procedural_space_umap.png" alt="UMAP projection of all 2,639 per-trajectory fingerprints, colored by paradigm-by-scaffold cell.">
+  <figcaption>
+    Per-trajectory UMAP over the full corpus, colored by cell. Five
+    cells emerge as separated clusters; the SWE-agent base and
+    extended-thinking cells sit adjacent but visibly distinct in
+    the central region. Hyperparameters: n_neighbors=15, min_dist=0.25,
+    metric=cosine, seed=0.
+  </figcaption>
+</figure>
+
+<figure>
+  <img src="assets/img/pattern_matcher_passrates.png" alt="Heatmap of pattern-matcher pass rates: five rules on the y-axis, five paradigm-by-scaffold cells on the x-axis, color and inline percentage encoding each rule's pass rate per cell.">
+  <figcaption>
+    All thirty (rule × cell) pass rates at a glance. Each row is a
+    rule; each column is one of the five paradigm-by-scaffold cells.
+    Two findings jump out: <mark>tests_run_at_least_once at 0% in
+    Moatless</mark> (which surfaced a canonicalization-layer gap, not
+    a behavioral one) and <mark>stuck_shell_cd_loop at 59% in
+    extended-thinking</mark> (a model-class signature for Claude-4 in
+    that cell). Both invisible to outcome-only evaluation.
+  </figcaption>
+</figure>
+
+<div class="note">
+<h3>The canonicalization-layer caveat</h3>
+<p>
+The procedural fingerprint reflects what the canonicalizer captures,
+not the agent's full behavior. A direct audit of one Moatless trace
+found 71 internal <code>RunTests</code> references inside the trace
+content, zero of which surfaced as canonical atoms because the
+Moatless adapter walks <code>action_steps</code> indexed by
+<code>action_args_class</code>, and test executions live in a
+different part of the planner tree.<span class="sidenote">This is the worked example from the paper's §Threats. The corpus-level finding "Moatless has no test atoms" is therefore a canonicalization artifact, not a behavioral claim about Moatless.</span> Read "tests run zero times in the trace" as a property of the
+captured atom stream, not as a behavioral claim about what the agent
+did outside that stream.
+</p>
+</div>
+
+<figure>
+  <img src="assets/img/history_flow_django_16041.png" alt="Per-step file-touch pattern across all nine agents on one Django benchmark instance, colored to show when each agent had the gold patch file open.">
+  <figcaption>
+    What "structurally different procedures" looks like at instance
+    level. Each row is one of the nine agents working on the same
+    Django benchmark instance; each cell is one step. Pink cells
+    mean the agent has the gold patch file open at that step; grey
+    cells mean another file. Some agents open the gold file in the
+    first few steps and stay there; some never open it; some
+    oscillate. <mark>Same task, same gold patch, nine distinct procedural
+    shapes</mark> — the kind of distinction outcome metrics cannot see.
+  </figcaption>
+</figure>
+
+<h2 id="position">Where procgrep fits</h2>
+
+<p>
+<a href="https://github.com/stanfordnlp/dspy">DSPy</a> is not the
+same kind of thing as procgrep, but the composition of the two
+enables a real workflow: optimize an agent's prompts with DSPy,
+audit whether the optimization changed the procedure with procgrep.
+The same logic extends to the outcome layer (<a href="https://www.swebench.com/">SWE-bench</a>,
+AgentBench): outcome metrics tell you what an agent achieved;
+procgrep tells you how.
+</p>
+
+<p>The three layers:</p>
+
+<table>
+<thead><tr><th>Layer</th><th>Instrument</th><th>What it controls or measures</th></tr></thead>
+<tbody>
+<tr><td>Prompt / NL</td><td>DSPy</td><td>Compiles and optimizes the prompts an agent receives.</td></tr>
+<tr><td>Procedural / tool-call</td><td><strong>procgrep</strong></td><td>Characterizes the tool-call trajectory the agent produces.</td></tr>
+<tr><td>Outcome</td><td>SWE-bench, AgentBench</td><td>Scores pass/fail on benchmark tasks.</td></tr>
+</tbody>
+</table>
+
+<p>
+The library does not depend on DSPy. What the composition unlocks,
+concretely:
+</p>
+
+<ul>
+  <li>
+    <strong>Audit a DSPy compile.</strong> Capture traces before and
+    after a DSPy compile run. Compute JSD between the two arms.
+    Either the prompt-layer optimization produced a measurable
+    procedural-layer shift, or it did not — and procgrep gives you
+    the number. The latter is itself a finding: procedure is
+    determined more by scaffold and base model than by prompt.
+  </li>
+  <li>
+    <strong>Use procgrep as a DSPy compile metric.</strong> If your
+    goal is not just "pass more tests" but "pass more tests with a
+    specific procedural shape" (more localizing, fewer edit loops,
+    bounded shell-cd usage), procgrep can score each candidate
+    program by procedural distance from a target. DSPy's compiler
+    optimizes against that score.
+  </li>
+  <li>
+    <strong>Compare agents that DSPy cannot distinguish.</strong>
+    Two prompt programs that DSPy considers equivalent (same
+    outcome metric value) may produce structurally different
+    procedures. procgrep makes that difference visible and
+    quantifiable.
+  </li>
+</ul>
+
+<p>
+The natural-language layer and the procedural layer are coupled
+but not the same. Working on one without instrumenting the other
+means flying blind on half the system. procgrep instruments the
+half that previously had no library.
+</p>
 
 <h2 id="modes">Three modes of use</h2>
 
@@ -382,6 +555,18 @@ logic invariants ("eventually X follows every Y"); that is the future
 procedural-DSPy DSL.
 </p>
 
+<h2 id="install">Install</h2>
+
+<pre><code>git clone https://github.com/hamidahoderinwale/procgrep.git
+cd procgrep
+pip install -e ".[dev]"
+pre-commit install
+</code></pre>
+
+<p class="faint">
+Python 3.10 or newer. No LLM SDKs; the library is post-hoc analysis only.
+</p>
+
 <h2 id="quickstart">Quickstart</h2>
 
 <p>
@@ -418,18 +603,6 @@ procgrep jsd          --input fp.jsonl         --group-by agent      --output js
 procgrep probe        --input fp.jsonl         --label-field group   --output probe.json
 </code></pre>
 
-<h2 id="install">Install</h2>
-
-<pre><code>git clone https://github.com/hamidahoderinwale/procgrep.git
-cd procgrep
-pip install -e ".[dev]"
-pre-commit install
-</code></pre>
-
-<p class="faint">
-Python 3.10 or newer. No LLM SDKs; the library is post-hoc analysis only.
-</p>
-
 <h2 id="capabilities">Capabilities</h2>
 
 <p>Eight first-class operations. All deterministic, all reproducible without loading a language model.</p>
@@ -447,67 +620,6 @@ Python 3.10 or newer. No LLM SDKs; the library is post-hoc analysis only.
 <tr><td>stats helpers</td><td>Atom frequencies per group, effective vocabulary size, per-trajectory entropy, discriminative motifs.</td></tr>
 </tbody>
 </table>
-
-<h2 id="position">Where procgrep fits</h2>
-
-<p>
-<a href="https://github.com/stanfordnlp/dspy">DSPy</a> is not the
-same kind of thing as procgrep, but the composition of the two
-enables a real workflow: optimize an agent's prompts with DSPy,
-audit whether the optimization changed the procedure with procgrep.
-The same logic extends to the outcome layer (<a href="https://www.swebench.com/">SWE-bench</a>,
-AgentBench): outcome metrics tell you what an agent achieved;
-procgrep tells you how.
-</p>
-
-<p>The three layers:</p>
-
-<table>
-<thead><tr><th>Layer</th><th>Instrument</th><th>What it controls or measures</th></tr></thead>
-<tbody>
-<tr><td>Prompt / NL</td><td>DSPy</td><td>Compiles and optimizes the prompts an agent receives.</td></tr>
-<tr><td>Procedural / tool-call</td><td><strong>procgrep</strong></td><td>Characterizes the tool-call trajectory the agent produces.</td></tr>
-<tr><td>Outcome</td><td>SWE-bench, AgentBench</td><td>Scores pass/fail on benchmark tasks.</td></tr>
-</tbody>
-</table>
-
-<p>
-The library does not depend on DSPy. What the composition unlocks,
-concretely:
-</p>
-
-<ul>
-  <li>
-    <strong>Audit a DSPy compile.</strong> Capture traces before and
-    after a DSPy compile run. Compute JSD between the two arms.
-    Either the prompt-layer optimization produced a measurable
-    procedural-layer shift, or it did not — and procgrep gives you
-    the number. The latter is itself a finding: procedure is
-    determined more by scaffold and base model than by prompt.
-  </li>
-  <li>
-    <strong>Use procgrep as a DSPy compile metric.</strong> If your
-    goal is not just "pass more tests" but "pass more tests with a
-    specific procedural shape" (more localizing, fewer edit loops,
-    bounded shell-cd usage), procgrep can score each candidate
-    program by procedural distance from a target. DSPy's compiler
-    optimizes against that score.
-  </li>
-  <li>
-    <strong>Compare agents that DSPy cannot distinguish.</strong>
-    Two prompt programs that DSPy considers equivalent (same
-    outcome metric value) may produce structurally different
-    procedures. procgrep makes that difference visible and
-    quantifiable.
-  </li>
-</ul>
-
-<p>
-The natural-language layer and the procedural layer are coupled
-but not the same. Working on one without instrumenting the other
-means flying blind on half the system. procgrep instruments the
-half that previously had no library.
-</p>
 
 <h2 id="integrations">Integrations and case studies</h2>
 
@@ -724,141 +836,6 @@ infrastructure to start being useful: pointing it at a directory
 of captured JSONL is enough.
 </p>
 
-<h2 id="notes">Notes</h2>
-
-<p>
-Two design questions that come up often enough to address inline.
-The fuller treatment is in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/FAQ.md">FAQ.md</a>.
-</p>
-
-<div class="note">
-<h3>Why count-based fingerprints, not embeddings</h3>
-<p>
-Three reasons. <em>Interpretability:</em> each fingerprint dimension
-is a named motif, so JSD differences attribute to specific motifs
-that a reader can name and inspect. <em>No model dependency:</em>
-the fingerprint is deterministic and reproducible without loading a
-language model. <em>Fidelity to the paper's framing:</em> the paper
-argues procedure has discrete structure, and embedding atoms with a
-continuous language model would smear that structure into a
-similarity space. Embedding-based comparison is a legitimate
-alternative methodology and a candidate v0.2 capability, but it is
-not the choice the paper commits to.
-</p>
-</div>
-
-<div class="note">
-<h3>The canonicalization-layer caveat</h3>
-<p>
-The procedural fingerprint reflects what the canonicalizer captures,
-not the agent's full behavior. A direct audit of one Moatless trace
-found 71 internal <code>RunTests</code> references inside the trace
-content, zero of which surfaced as canonical atoms because the
-Moatless adapter walks <code>action_steps</code> indexed by
-<code>action_args_class</code>, and test executions live in a
-different part of the planner tree.<span class="sidenote">This is the worked example from the paper's §Threats. The corpus-level finding "Moatless has no test atoms" is therefore a canonicalization artifact, not a behavioral claim about Moatless.</span> Read "tests run zero times in the trace" as a property of the
-captured atom stream, not as a behavioral claim about what the agent
-did outside that stream.
-</p>
-</div>
-
-<h2 id="sample-run">Sample runs and results</h2>
-
-<p>
-Two kinds of evidence: the bundled synthetic corpus reproduces in
-seconds on any machine, and the paper's nine-agent corpus shows
-what procgrep produces at scale.
-</p>
-
-<h3 id="sample-synthetic">On the bundled synthetic corpus</h3>
-
-<p>
-Running the quickstart example against
-<code>examples/synthetic_traces.jsonl</code> (six trajectories, two
-agents, two groups):
-</p>
-
-<pre><code>$ python examples/python/01_quickstart.py
-
-loaded 6 raw records from synthetic_traces.jsonl
-canonicalized into 6 traces
-  syn-001    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'submit'</span>]
-  syn-002    agent=editor     atoms=[<span class="code-string">'open'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'pytest'</span>, <span class="code-string">'submit'</span>]
-  syn-003    agent=searcher   atoms=[<span class="code-string">'search_repo'</span>, <span class="code-string">'read_file'</span>, <span class="code-string">'search_repo'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'submit'</span>]
-  syn-004    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'submit'</span>]
-  syn-005    agent=searcher   atoms=[<span class="code-string">'search_repo'</span>, <span class="code-string">'search_repo'</span>, <span class="code-string">'read_file'</span>, <span class="code-string">'submit'</span>]
-  syn-006    agent=editor     atoms=[<span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'edit'</span>, <span class="code-string">'run_test'</span>, <span class="code-string">'submit'</span>]
-
-learned vocabulary: 5 atoms + 6 merges = 11 tokens
-encoded 6 fingerprints; each of dimension 11
-
-pairwise JSD by agent (upper triangle only):
-  editor     vs searcher    JSD = <mark>0.7415</mark>
-</code></pre>
-
-<p>
-Two agents with disjoint procedural styles; JSD lands near the
-maximum (1.0 is the ceiling under log base 2). That is the metric
-behaving as expected.
-</p>
-
-<h3 id="sample-paper">On the paper's nine-agent corpus</h3>
-
-<p>
-Three figures from the analysis pipeline procgrep was extracted from.
-Same code path, ~2,639 trajectories instead of six.
-</p>
-
-<figure>
-  <img src="assets/img/jsd_matrix_9agents.png" alt="Pairwise JSD matrix across nine agents on SWE-bench Verified; visible block structure separates the SWE-agent base cell from extended-thinking from the three cross-scaffold cells.">
-  <figcaption>
-    Pairwise JSD across the nine agents. Within the SWE-agent base
-    cell (Claude-3, Claude-3.5, GPT-4, GPT-4o), pairwise JSD is
-    <mark>0.10 to 0.19</mark>. Across scaffolds, JSD reaches
-    <mark>0.62 to 1.00</mark>. The dense top row (Agentless+Claude-3.5)
-    is at the ceiling against every other agent, indicating a
-    procedurally disjoint motif vocabulary.
-  </figcaption>
-</figure>
-
-<figure>
-  <img src="assets/img/procedural_space_umap.png" alt="UMAP projection of all 2,639 per-trajectory fingerprints, colored by paradigm-by-scaffold cell.">
-  <figcaption>
-    Per-trajectory UMAP over the full corpus, colored by cell. Five
-    cells emerge as separated clusters; the SWE-agent base and
-    extended-thinking cells sit adjacent but visibly distinct in
-    the central region. Hyperparameters: n_neighbors=15, min_dist=0.25,
-    metric=cosine, seed=0.
-  </figcaption>
-</figure>
-
-<figure>
-  <img src="assets/img/pattern_matcher_passrates.png" alt="Heatmap of pattern-matcher pass rates: five rules on the y-axis, five paradigm-by-scaffold cells on the x-axis, color and inline percentage encoding each rule's pass rate per cell.">
-  <figcaption>
-    All thirty (rule × cell) pass rates at a glance. Each row is a
-    rule; each column is one of the five paradigm-by-scaffold cells.
-    Two findings jump out: <mark>tests_run_at_least_once at 0% in
-    Moatless</mark> (which surfaced a canonicalization-layer gap, not
-    a behavioral one) and <mark>stuck_shell_cd_loop at 59% in
-    extended-thinking</mark> (a model-class signature for Claude-4 in
-    that cell). Both invisible to outcome-only evaluation.
-  </figcaption>
-</figure>
-
-<figure>
-  <img src="assets/img/history_flow_django_16041.png" alt="Per-step file-touch pattern across all nine agents on one Django benchmark instance, colored to show when each agent had the gold patch file open.">
-  <figcaption>
-    What "structurally different procedures" looks like at instance
-    level. Each row is one of the nine agents working on the same
-    Django benchmark instance; each cell is one step. Pink cells
-    mean the agent has the gold patch file open at that step; grey
-    cells mean another file. Some agents open the gold file in the
-    first few steps and stay there; some never open it; some
-    oscillate. <mark>Same task, same gold patch, nine distinct procedural
-    shapes</mark> — the kind of distinction outcome metrics cannot see.
-  </figcaption>
-</figure>
-
 <h2 id="concepts">Concepts in detail</h2>
 
 <p>
@@ -961,6 +938,23 @@ symmetric divergence for comparing two probability distributions.
 The procgrep paper uses log base 2 throughout so reported JSD values
 are directly comparable across corpora and across vocabulary sizes.
 </p>
+
+<div class="note">
+<h3>Why count-based fingerprints, not embeddings</h3>
+<p>
+Three reasons. <em>Interpretability:</em> each fingerprint dimension
+is a named motif, so JSD differences attribute to specific motifs
+that a reader can name and inspect. <em>No model dependency:</em>
+the fingerprint is deterministic and reproducible without loading a
+language model. <em>Fidelity to the paper's framing:</em> the paper
+argues procedure has discrete structure, and embedding atoms with a
+continuous language model would smear that structure into a
+similarity space. Embedding-based comparison is a legitimate
+alternative methodology and a candidate v0.2 capability, but it is
+not the choice the paper commits to.
+</p>
+</div>
+
 
 <h2 id="studies">Suggested studies</h2>
 
