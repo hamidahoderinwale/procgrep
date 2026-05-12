@@ -33,6 +33,7 @@
 
     <span class="nav-label">Background</span>
     <a href="#notes">Notes</a>
+    <a href="#concepts">Concepts</a>
     <a href="#studies">Studies</a>
     <a href="#glossary">Glossary</a>
 
@@ -430,6 +431,109 @@ captured atom stream, not as a behavioral claim about what the agent
 did outside that stream.
 </p>
 </div>
+
+<h2 id="concepts">Concepts in detail</h2>
+
+<p>
+Two methodological choices that load most of the work. Plain-language
+explanations, formulas, and runnable snippets for each.
+</p>
+
+<h3 id="concepts-bpe">BPE on atom sequences</h3>
+
+<p>
+Byte-pair encoding (BPE) was originally designed to break English
+text into subword pieces. The algorithm has nothing to do with text;
+it operates on any discrete sequence. procgrep applies it to
+sequences of action atoms instead. Each pass finds the most frequent
+adjacent pair, glues it into a single new token, and adds the merge
+to a learned vocabulary. The result is a compact alphabet that
+captures both single atoms and the most common multi-atom patterns
+in the corpus.
+</p>
+
+<p>What that looks like on one trajectory:</p>
+
+<pre><code><span class="code-comment"># Raw atom sequence from one trajectory:</span>
+[<span class="code-string">SEARCH</span>, <span class="code-string">EDIT_SRC_PY</span>, <span class="code-string">RUN_PYTHON_TEST_PY</span>, <span class="code-string">EDIT_SRC_PY</span>, <span class="code-string">RUN_PYTHON_TEST_PY</span>, <span class="code-string">EDIT_SRC_PY</span>, <span class="code-string">SUBMIT</span>]
+
+<span class="code-comment"># Pass 1: the most frequent adjacent pair across the corpus is</span>
+<span class="code-comment">#         (EDIT_SRC_PY, RUN_PYTHON_TEST_PY). Glue it.</span>
+[<span class="code-string">SEARCH</span>, <span class="code-string">EDIT_SRC_PY+RUN_PYTHON_TEST_PY</span>, <span class="code-string">EDIT_SRC_PY+RUN_PYTHON_TEST_PY</span>, <span class="code-string">EDIT_SRC_PY</span>, <span class="code-string">SUBMIT</span>]
+
+<span class="code-comment"># Pass 2: the most frequent adjacent pair is now</span>
+<span class="code-comment">#         (EDIT_SRC_PY+RUN_PYTHON_TEST_PY, EDIT_SRC_PY+RUN_PYTHON_TEST_PY). Glue it.</span>
+[<span class="code-string">SEARCH</span>, <span class="code-string">edit_test_loop</span>, <span class="code-string">EDIT_SRC_PY</span>, <span class="code-string">SUBMIT</span>]
+
+<span class="code-comment"># After K passes, the vocabulary contains all base atoms plus</span>
+<span class="code-comment"># K named multi-atom motifs. Each trajectory now has a much</span>
+<span class="code-comment"># shorter, more structurally informative encoding.</span>
+</code></pre>
+
+<p>In code:</p>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> fit_bpe, apply_vocab
+
+atoms = [
+    [<span class="code-string">"SEARCH"</span>, <span class="code-string">"EDIT_SRC_PY"</span>, <span class="code-string">"RUN_PYTHON_TEST_PY"</span>, <span class="code-string">"EDIT_SRC_PY"</span>,
+     <span class="code-string">"RUN_PYTHON_TEST_PY"</span>, <span class="code-string">"EDIT_SRC_PY"</span>, <span class="code-string">"SUBMIT"</span>],
+    <span class="code-comment"># ... many more trajectories ...</span>
+]
+vocab = <span class="code-fn">fit_bpe</span>(atoms, vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)
+tokens = <span class="code-fn">apply_vocab</span>(atoms[<span class="code-num">0</span>], vocab)
+<span class="code-fn">print</span>(<span class="code-fn">len</span>(tokens), tokens)
+</code></pre>
+
+<p>
+The headline trade-off: a larger vocabulary captures more nuanced
+patterns but with diminishing returns. The paper sweeps
+<code>vocab_size</code> and finds the JSD matrix stabilizes well
+before V=200; the default in procgrep reflects that empirical knee.
+</p>
+
+<h3 id="concepts-jsd">Jensen-Shannon divergence</h3>
+
+<p>
+JSD measures how different two probability distributions are. The
+idea, in plain language: take the average of the two distributions,
+then measure how far each one is from the average; combine. The
+quantity is symmetric (the order of inputs does not matter) and
+bounded (with log base 2, JSD lies in <code>[0, 1]</code>), which
+makes it well-behaved as a comparison metric.
+</p>
+
+<p>The definition:</p>
+
+<pre><code>JSD(P, Q) = ½ · KL(P ‖ M) + ½ · KL(Q ‖ M),     where M = (P + Q) / 2
+</code></pre>
+
+<p>Three reference points for intuition:</p>
+
+<ul>
+  <li><strong>JSD = 0</strong> when P and Q are identical. The fingerprint of an agent compared to itself.</li>
+  <li><strong>JSD ≈ 0.15</strong> in the paper's data: two agents in the same paradigm-by-scaffold cell (Claude-3 vs Claude-3.5 under SWE-agent).</li>
+  <li><strong>JSD ≈ 1.0</strong> when P and Q put their mass on disjoint motifs. The paper's Agentless vs SWE-agent comparison reaches this ceiling.</li>
+</ul>
+
+<p>In code:</p>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> jsd
+
+<span class="code-comment"># Two fingerprints, three-motif vocabulary:</span>
+p = [<span class="code-num">0.5</span>, <span class="code-num">0.3</span>, <span class="code-num">0.2</span>]   <span class="code-comment"># editor: heavy on edit, run_test, submit</span>
+q = [<span class="code-num">0.1</span>, <span class="code-num">0.2</span>, <span class="code-num">0.7</span>]   <span class="code-comment"># searcher: heavy on search and read</span>
+
+<span class="code-fn">print</span>(<span class="code-fn">jsd</span>(p, q))            <span class="code-comment"># ≈ 0.42 — substantial difference, not maximal</span>
+<span class="code-fn">print</span>(<span class="code-fn">jsd</span>(p, p))            <span class="code-comment"># 0.0 — identical</span>
+<span class="code-fn">print</span>(<span class="code-fn">jsd</span>([<span class="code-num">1</span>, <span class="code-num">0</span>], [<span class="code-num">0</span>, <span class="code-num">1</span>])) <span class="code-comment"># 1.0 — disjoint with log base 2</span>
+</code></pre>
+
+<p>
+Why JSD specifically: it is the standard interpretable, bounded,
+symmetric divergence for comparing two probability distributions.
+The procgrep paper uses log base 2 throughout so reported JSD values
+are directly comparable across corpora and across vocabulary sizes.
+</p>
 
 <h2 id="studies">Suggested studies</h2>
 
