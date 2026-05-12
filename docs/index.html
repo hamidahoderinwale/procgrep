@@ -13,15 +13,22 @@
 
 <style>
 :root {
-  --bg: #FAFAFA;
-  --bg-code: #F2F2F0;
-  --text: #1A1A1A;
-  --muted: #555;
-  --faint: #888;
-  --rule: #DDDDDD;
-  --link: #0050C2;
-  --link-hover: #003E96;
+  --bg: #F7F8FA;          /* cool off-white */
+  --bg-code: #EEF1F5;     /* cool grey-blue */
+  --text: #16181D;        /* slight blue cast on near-black */
+  --muted: #4A5468;       /* cool grey */
+  --faint: #7B8493;       /* cooler faint */
+  --rule: #D6DBE3;        /* cool grey */
+  --link: #1853C7;
+  --link-hover: #103E96;
   --maxw: 720px;
+
+  /* Syntax colors, calibrated for cool palette and WCAG AA contrast */
+  --code-comment: #7B8493;
+  --code-keyword: #8E2C73; /* muted aubergine */
+  --code-string:  #1F6B5A; /* deep teal */
+  --code-fn:      #1853C7; /* same as link */
+  --code-num:     #9C5018; /* warm anchor against cool palette */
 }
 
 * { box-sizing: border-box; }
@@ -118,33 +125,45 @@ header.intro .meta {
 header.intro .meta a { color: var(--muted); }
 header.intro .meta a:hover { color: var(--text); }
 
+/* Block code: distinct background, generous padding, optional language tag */
 pre {
   background: var(--bg-code);
-  border-radius: 4px;
-  padding: 14px 16px;
+  border-radius: 6px;
+  padding: 18px 22px;
   overflow-x: auto;
-  margin: 14px 0;
-  line-height: 1.55;
+  margin: 18px 0;
+  line-height: 1.6;
   border: 1px solid var(--rule);
+  tab-size: 4;
+  -moz-tab-size: 4;
+  -webkit-overflow-scrolling: touch;
+  font-feature-settings: "liga" 0;  /* disable monospace ligatures for code clarity */
 }
 pre code {
   background: none;
   padding: 0;
   font-size: 13.5px;
   white-space: pre;
-}
-p code, li code, td code, h3 code {
-  background: var(--bg-code);
-  padding: 1px 5px;
-  border-radius: 3px;
-  font-size: 0.9em;
+  color: var(--text);
+  display: block;
 }
 
-.code-comment { color: var(--faint); }
-.code-keyword { color: #A0185D; }
-.code-string  { color: #1F7A5C; }
-.code-fn      { color: #1F4FA3; }
-.code-num     { color: #B65A1A; }
+/* Inline code: more visually distinct from prose, less heavy than block */
+p code, li code, td code, h3 code {
+  background: var(--bg-code);
+  border: 1px solid var(--rule);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.88em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.code-comment { color: var(--code-comment); font-style: italic; }
+.code-keyword { color: var(--code-keyword); }
+.code-string  { color: var(--code-string); }
+.code-fn      { color: var(--code-fn); }
+.code-num     { color: var(--code-num); }
 
 table {
   width: 100%;
@@ -172,15 +191,16 @@ ascii {
   display: block;
   white-space: pre;
   font-family: 'JetBrains Mono', monospace;
-  font-size: 13px;
-  line-height: 1.4;
-  color: var(--text);
-  margin: 16px 0;
-  padding: 14px 16px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  margin: 18px 0;
+  padding: 18px 22px;
   background: var(--bg-code);
   border: 1px solid var(--rule);
-  border-radius: 4px;
+  border-radius: 6px;
   overflow-x: auto;
+  tab-size: 4;
 }
 
 .muted { color: var(--muted); }
