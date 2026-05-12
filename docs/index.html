@@ -1012,6 +1012,22 @@ write-ups in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ST
   rule via the pattern matcher. Two independent methods catching
   the same signature is the cross-method validation.
 </li>
+<li>
+  <strong>Does the agent do different things for different task types, and what do they cost?</strong>
+  In production, users send agents distinct task classes:
+  bug fixes, refactors, code explanations, test additions, dependency
+  bumps. Cluster the task prompts in semantic space (any sentence-
+  embedding model plus k-means), label each trajectory with its
+  cluster, then group fingerprints by cluster instead of by agent.
+  Two outputs: a per-cluster procedural fingerprint (does the
+  agent's procedure shift with task type?) and a per-cluster
+  resource estimate (mean tokens, mean step count, mean cost). Joined,
+  they tell you which task classes the agent handles efficiently
+  and which trigger expensive procedural detours. Procgrep handles
+  the grouping and per-cluster JSD natively; the prompt-clustering
+  step and the token-resource join sit just outside the current
+  library and land naturally in v0.2.
+</li>
 </ol>
 
 <h2 id="docs">Documentation</h2>
