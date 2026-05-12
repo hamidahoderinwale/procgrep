@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>procgrep — procedural fingerprinting of LLM coding-agent rollouts</title>
 <meta name="description" content="procgrep: a Python library that turns LLM agent trace logs into a structural fingerprint you can compare, audit, and pattern-match against. Canonical atoms, BPE motifs, Jensen-Shannon divergence.">
-<meta name="theme-color" content="#20A380">
+<meta name="theme-color" content="#FAFAFA">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -13,25 +13,22 @@
 
 <style>
 :root {
-  --bg: #FFFFFF;
-  --bg-soft: #F4F4F2;
-  --bg-code: #F8F8F6;
+  --bg: #FAFAFA;
+  --bg-code: #F2F2F0;
   --text: #1A1A1A;
-  --text-muted: #666666;
-  --text-faint: #999999;
-  --border: #E5E5E5;
-  --green: #20A380;
-  --blue: #5692E5;
-  --magenta: #B4184F;
-  --copper: #CB4D20;
-  --olive: #585E53;
-  --maxw: 780px;
-  --maxw-wide: 1080px;
+  --muted: #555;
+  --faint: #888;
+  --rule: #DDDDDD;
+  --link: #0050C2;
+  --link-hover: #003E96;
+  --maxw: 720px;
 }
 
 * { box-sizing: border-box; }
 
-html { scroll-behavior: smooth; }
+html {
+  scroll-behavior: smooth;
+}
 
 body {
   margin: 0;
@@ -39,342 +36,116 @@ body {
   color: var(--text);
   font-family: 'Arimo', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 16px;
-  line-height: 1.65;
+  line-height: 1.6;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 code, pre, kbd, samp {
-  font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace;
-  font-size: 14px;
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13.5px;
 }
 
 a {
-  color: var(--green);
+  color: var(--link);
   text-decoration: none;
-  border-bottom: 1px solid transparent;
-  transition: border-color 0.15s ease;
 }
-a:hover { border-bottom-color: var(--green); }
+a:hover { color: var(--link-hover); text-decoration: underline; }
 
-h1, h2, h3, h4 {
-  margin: 0 0 0.5em;
-  line-height: 1.25;
-  letter-spacing: -0.01em;
+h1, h2, h3 {
+  margin: 0 0 0.45em;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  font-weight: 700;
+}
+h1 { font-size: 1.75rem; margin-top: 0; }
+h2 {
+  font-size: 1.15rem;
+  margin-top: 2.4em;
+  font-weight: 700;
+}
+h3 {
+  font-size: 1rem;
+  margin-top: 1.6em;
   font-weight: 600;
 }
-h1 { font-size: 2.4rem; font-weight: 700; letter-spacing: -0.02em; }
-h2 { font-size: 1.5rem; margin-top: 2.5em; }
-h3 { font-size: 1.1rem; margin-top: 1.8em; color: var(--text); }
 
 p { margin: 0 0 1em; }
 
 ul, ol { padding-left: 1.4em; margin: 0 0 1em; }
-li { margin-bottom: 0.35em; }
+li { margin-bottom: 0.3em; }
 
 hr {
   border: none;
-  border-top: 1px solid var(--border);
-  margin: 3rem 0;
+  border-top: 1px solid var(--rule);
+  margin: 2.5rem 0;
 }
 
-/* Layout */
-.container {
+main {
   max-width: var(--maxw);
   margin: 0 auto;
-  padding: 0 24px;
-}
-.container-wide {
-  max-width: var(--maxw-wide);
-  margin: 0 auto;
-  padding: 0 24px;
+  padding: 60px 28px 80px;
 }
 
-/* Top nav */
-.nav {
-  position: sticky;
-  top: 0;
-  background: rgba(255, 255, 255, 0.92);
-  backdrop-filter: saturate(180%) blur(10px);
-  -webkit-backdrop-filter: saturate(180%) blur(10px);
-  border-bottom: 1px solid var(--border);
-  z-index: 10;
-}
-.nav-inner {
+nav.top {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 26px 28px 0;
   display: flex;
   justify-content: space-between;
-  align-items: center;
-  padding: 14px 24px;
-  max-width: var(--maxw-wide);
-  margin: 0 auto;
-}
-.nav-brand {
-  font-weight: 700;
-  font-size: 1.05rem;
-  color: var(--text);
-  border-bottom: none;
-  letter-spacing: -0.005em;
-}
-.nav-brand:hover { border-bottom: none; }
-.nav-version {
-  display: inline-block;
-  margin-left: 8px;
-  font-size: 11px;
-  padding: 1px 7px;
-  border-radius: 3px;
-  background: var(--bg-soft);
-  color: var(--text-muted);
-  font-weight: 500;
-  vertical-align: middle;
-}
-.nav-links {
-  display: flex;
-  gap: 22px;
+  align-items: baseline;
   font-size: 14px;
 }
-.nav-links a { color: var(--text-muted); }
-.nav-links a:hover { color: var(--text); }
-@media (max-width: 640px) {
-  .nav-links { display: none; }
-}
+nav.top a { color: var(--text); }
+nav.top a:hover { color: var(--link); text-decoration: none; }
+nav.top .brand { font-weight: 700; font-size: 15px; }
+nav.top .links a { margin-left: 18px; color: var(--muted); }
+nav.top .links a:hover { color: var(--text); text-decoration: none; }
 
-/* Hero */
-.hero {
-  padding: 90px 0 60px;
-  border-bottom: 1px solid var(--border);
+header.intro {
+  margin-bottom: 1.5em;
 }
-.hero-tag {
-  display: inline-block;
-  font-size: 12px;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--green);
-  font-weight: 600;
-  margin-bottom: 12px;
+header.intro .sub {
+  color: var(--muted);
+  margin-top: 0.4em;
+  font-size: 1.02rem;
 }
-.hero h1 {
-  font-size: 3rem;
-  font-weight: 700;
-  margin-bottom: 0.4em;
-  letter-spacing: -0.025em;
-}
-.hero-sub {
-  font-size: 1.2rem;
-  color: var(--text-muted);
-  max-width: 600px;
-  line-height: 1.55;
-  margin-bottom: 1.8em;
-}
-.hero-actions {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  align-items: center;
-}
-.btn {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 10px 18px;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 6px;
-  border: 1px solid transparent;
-  font-family: inherit;
-  cursor: pointer;
-  transition: transform 0.08s ease, background 0.15s ease, border-color 0.15s ease;
-}
-.btn:active { transform: translateY(1px); }
-.btn-primary {
-  background: var(--text);
-  color: white;
-  border-color: var(--text);
-}
-.btn-primary:hover {
-  background: var(--green);
-  border-color: var(--green);
-  border-bottom: 1px solid var(--green);
-}
-.btn-secondary {
-  background: transparent;
-  color: var(--text);
-  border: 1px solid var(--border);
-}
-.btn-secondary:hover {
-  border-color: var(--text);
-  border-bottom: 1px solid var(--text);
-}
-.hero-install {
-  margin-top: 24px;
-  display: inline-flex;
-  align-items: center;
-  background: var(--bg-soft);
-  border-radius: 6px;
-  padding: 8px 14px;
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 14px;
-}
-.hero-install::before {
-  content: "$";
-  color: var(--text-faint);
-  margin-right: 10px;
-}
-
-/* Section */
-.section { padding: 56px 0; border-bottom: 1px solid var(--border); }
-.section:last-of-type { border-bottom: none; }
-.eyebrow {
-  font-size: 11px;
-  letter-spacing: 0.12em;
-  text-transform: uppercase;
-  color: var(--text-faint);
-  font-weight: 600;
-  margin-bottom: 8px;
-}
-
-/* Pipeline diagram */
-.pipeline {
-  background: var(--bg-soft);
-  border-radius: 10px;
-  padding: 32px 24px;
-  margin: 24px 0;
-  overflow-x: auto;
-}
-.pipeline-row {
-  display: flex;
-  align-items: stretch;
-  justify-content: center;
-  gap: 0;
-  min-width: 700px;
-}
-.pipeline-step {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
+header.intro .meta {
+  margin-top: 1em;
   font-size: 13px;
-  text-align: center;
-  min-width: 130px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+  color: var(--faint);
 }
-.pipeline-step strong {
-  display: block;
-  font-size: 14px;
-  font-weight: 600;
-  margin-bottom: 3px;
-}
-.pipeline-step span {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 11px;
-  color: var(--text-muted);
-}
-.pipeline-arrow {
-  align-self: center;
-  color: var(--text-faint);
-  font-size: 16px;
-  padding: 0 6px;
-}
+header.intro .meta a { color: var(--muted); }
+header.intro .meta a:hover { color: var(--text); }
 
-/* Code blocks */
 pre {
   background: var(--bg-code);
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 18px 20px;
+  border-radius: 4px;
+  padding: 14px 16px;
   overflow-x: auto;
-  margin: 16px 0;
+  margin: 14px 0;
   line-height: 1.55;
+  border: 1px solid var(--rule);
 }
 pre code {
   background: none;
   padding: 0;
-  font-size: 13px;
+  font-size: 13.5px;
+  white-space: pre;
 }
-p code, li code, td code {
-  background: var(--bg-soft);
-  padding: 1px 6px;
+p code, li code, td code, h3 code {
+  background: var(--bg-code);
+  padding: 1px 5px;
   border-radius: 3px;
-  font-size: 0.88em;
+  font-size: 0.9em;
 }
 
-.code-comment { color: var(--text-faint); }
-.code-keyword { color: var(--magenta); font-weight: 500; }
-.code-string  { color: var(--green); }
-.code-fn      { color: var(--blue); }
-.code-num     { color: var(--copper); }
+.code-comment { color: var(--faint); }
+.code-keyword { color: #A0185D; }
+.code-string  { color: #1F7A5C; }
+.code-fn      { color: #1F4FA3; }
+.code-num     { color: #B65A1A; }
 
-/* Modes cards */
-.modes {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 14px;
-  margin-top: 22px;
-}
-@media (min-width: 720px) {
-  .modes { grid-template-columns: 1fr 1fr 1fr; }
-}
-.mode-card {
-  background: white;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 20px 22px;
-  display: flex;
-  flex-direction: column;
-}
-.mode-num {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px; height: 28px;
-  border-radius: 6px;
-  background: var(--text);
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-  margin-bottom: 14px;
-}
-.mode-card:nth-child(1) .mode-num { background: var(--blue); }
-.mode-card:nth-child(2) .mode-num { background: var(--green); }
-.mode-card:nth-child(3) .mode-num { background: var(--copper); }
-.mode-card h3 { margin: 0 0 6px; font-size: 1rem; }
-.mode-card p {
-  font-size: 14px;
-  color: var(--text-muted);
-  line-height: 1.55;
-  margin: 0;
-  flex: 1;
-}
-
-/* Capability grid */
-.caps {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 12px;
-  margin-top: 18px;
-}
-@media (min-width: 720px) {
-  .caps { grid-template-columns: 1fr 1fr; }
-}
-.cap {
-  border: 1px solid var(--border);
-  border-radius: 6px;
-  padding: 14px 16px;
-  font-size: 14px;
-}
-.cap-name {
-  font-family: 'JetBrains Mono', monospace;
-  font-size: 12px;
-  color: var(--magenta);
-  margin-bottom: 4px;
-}
-.cap-desc {
-  color: var(--text-muted);
-  line-height: 1.5;
-}
-
-/* Comparison */
 table {
   width: 100%;
   border-collapse: collapse;
@@ -383,205 +154,163 @@ table {
 }
 th, td {
   text-align: left;
-  padding: 10px 12px;
-  border-bottom: 1px solid var(--border);
+  padding: 9px 10px 9px 0;
   vertical-align: top;
+  border-bottom: 1px solid var(--rule);
 }
 th {
   font-weight: 600;
   color: var(--text);
-  background: var(--bg-soft);
+  border-bottom-width: 1.5px;
+  border-bottom-color: var(--text);
   font-size: 13px;
 }
-td { color: var(--text-muted); }
+td { color: var(--muted); }
 td strong { color: var(--text); font-weight: 600; }
 
-/* Footer */
-footer {
-  padding: 36px 0 56px;
-  border-top: 1px solid var(--border);
-  font-size: 13px;
-  color: var(--text-muted);
-}
-.footer-inner {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: space-between;
-  gap: 16px;
-}
-.footer-links a { color: var(--text-muted); margin-right: 18px; }
-.footer-links a:hover { color: var(--text); }
-
-/* Subtle in-text emphasis */
-.muted { color: var(--text-muted); }
-.tag-row { margin-top: 6px; }
-.tag {
-  display: inline-block;
-  font-size: 11px;
-  padding: 2px 8px;
-  border-radius: 3px;
-  background: var(--bg-soft);
-  color: var(--text-muted);
-  margin-right: 6px;
+ascii {
+  display: block;
+  white-space: pre;
   font-family: 'JetBrains Mono', monospace;
+  font-size: 13px;
+  line-height: 1.4;
+  color: var(--text);
+  margin: 16px 0;
+  padding: 14px 16px;
+  background: var(--bg-code);
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.muted { color: var(--muted); }
+.faint { color: var(--faint); font-size: 13px; }
+
+footer {
+  max-width: var(--maxw);
+  margin: 0 auto;
+  padding: 30px 28px 60px;
+  border-top: 1px solid var(--rule);
+  margin-top: 3rem;
+  font-size: 13px;
+  color: var(--faint);
+}
+footer a { color: var(--muted); }
+footer a:hover { color: var(--text); }
+
+/* Anchor heading hover affordance */
+h2[id]:hover::after, h3[id]:hover::after {
+  content: " #";
+  color: var(--faint);
+  font-weight: 400;
 }
 </style>
 </head>
 <body>
 
-<nav class="nav">
-  <div class="nav-inner">
-    <a class="nav-brand" href="#top">
-      procgrep
-      <span class="nav-version">v0.1.3</span>
-    </a>
-    <div class="nav-links">
-      <a href="#pipeline">Pipeline</a>
-      <a href="#modes">Modes</a>
-      <a href="#quickstart">Quickstart</a>
-      <a href="#studies">Studies</a>
-      <a href="https://github.com/hamidahoderinwale/procgrep">GitHub</a>
-    </div>
+<nav class="top">
+  <a href="#top" class="brand">procgrep</a>
+  <div class="links">
+    <a href="#what">What</a>
+    <a href="#pipeline">Pipeline</a>
+    <a href="#quickstart">Quickstart</a>
+    <a href="#studies">Studies</a>
+    <a href="https://github.com/hamidahoderinwale/procgrep">GitHub</a>
   </div>
 </nav>
 
-<header id="top" class="hero">
-  <div class="container">
-    <div class="hero-tag">Procedural fingerprinting · Python · MIT</div>
-    <h1>procgrep</h1>
-    <p class="hero-sub">
-      Turn LLM coding-agent trace logs into a structural fingerprint
-      you can compare, audit, and pattern-match against. Post-hoc
-      analysis, no model calls, deterministic, interpretable.
-    </p>
-    <div class="hero-actions">
-      <a class="btn btn-primary" href="https://github.com/hamidahoderinwale/procgrep">View on GitHub →</a>
-      <a class="btn btn-secondary" href="#quickstart">Quickstart</a>
-    </div>
-    <div class="hero-install">pip install -e ".[dev]"</div>
+<main id="top">
+
+<header class="intro">
+  <h1>procgrep</h1>
+  <div class="sub">
+    Procedural fingerprinting of LLM coding-agent rollouts. A small
+    Python library that turns trace logs into a structural fingerprint
+    you can compare, audit, and pattern-match against. Post-hoc, no
+    model calls, deterministic, interpretable.
+  </div>
+  <div class="meta">
+    v0.1.3 · MIT · <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>
   </div>
 </header>
 
-<section class="section">
-  <div class="container">
-    <div class="eyebrow">What it does</div>
-    <h2>One question, sharply answered</h2>
-    <p>
-      Do two agents, holding some factors fixed and varying others,
-      produce structurally distinct procedures? procgrep
-      canonicalizes traces into a shared atom alphabet, learns a BPE
-      motif vocabulary, encodes each trajectory as a motif-frequency
-      distribution, and supports cross-group comparison via
-      Jensen-Shannon divergence, leave-one-group-out probes, UMAP
-      projection, and pattern matching.
-    </p>
-    <p>
-      Extracted from the analysis pipeline used in
-      <em>Procedural Grep: Structural Variation for Agent Rollouts</em>,
-      where it characterized the procedural fingerprints of nine LLM
-      coding agents across five paradigm-by-scaffold cells on
-      SWE-bench Verified.
-    </p>
-  </div>
-</section>
+<hr>
 
-<section id="pipeline" class="section">
-  <div class="container-wide">
-    <div class="eyebrow">Pipeline</div>
-    <h2>Five operations, in order</h2>
-    <p class="muted" style="max-width: 760px;">
-      Each operation is a pure function of typed data. The CLI mirrors
-      the Python API; commands compose by reading and writing JSON
-      and JSONL on disk.
-    </p>
+<h2 id="what">What it does</h2>
 
-    <div class="pipeline">
-      <div class="pipeline-row">
-        <div class="pipeline-step">
-          <strong>Raw traces</strong>
-          <span>JSONL</span>
-        </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step">
-          <strong>Canonicalize</strong>
-          <span>atom sequence</span>
-        </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step">
-          <strong>Fit BPE</strong>
-          <span>motif vocab</span>
-        </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step">
-          <strong>Encode</strong>
-          <span>fingerprints</span>
-        </div>
-        <div class="pipeline-arrow">→</div>
-        <div class="pipeline-step">
-          <strong>Compare</strong>
-          <span>JSD · UMAP · probe</span>
-        </div>
-      </div>
-    </div>
-  </div>
-</section>
+<p>
+procgrep answers one question: <em>do two agents, holding some
+factors fixed and varying others, produce structurally distinct
+procedures?</em> It canonicalizes traces into a shared atom alphabet,
+learns a BPE motif vocabulary, encodes each trajectory as a motif-
+frequency distribution, and supports cross-group comparison via
+Jensen-Shannon divergence, leave-one-group-out probes, UMAP
+projection, and pattern matching.
+</p>
 
-<section id="modes" class="section">
-  <div class="container">
-    <div class="eyebrow">Modes of use</div>
-    <h2>Three ways procgrep is used today</h2>
-    <p class="muted">
-      Same library, three audiences. Each mode is documented with a
-      runnable example script under <code>examples/python/</code>.
-    </p>
+<p>
+The library was extracted from the analysis pipeline used in
+<em>Procedural Grep: Structural Variation for Agent Rollouts</em>,
+where it characterized the procedural fingerprints of nine LLM
+coding agents across five paradigm-by-scaffold cells on SWE-bench
+Verified.
+</p>
 
-    <div class="modes">
-      <div class="mode-card">
-        <div class="mode-num">1</div>
-        <h3>Research instrument</h3>
-        <p>
-          Characterize where procedural structure lives across a
-          corpus of agents. Build the JSD matrix; run the
-          leave-one-group-out probe; surface the block structure.
-        </p>
-      </div>
-      <div class="mode-card">
-        <div class="mode-num">2</div>
-        <h3>Controlled-eval harness</h3>
-        <p>
-          Hold base model, scaffold, benchmark fixed; vary one
-          factor; measure within-arm consistency and across-arm
-          sensitivity. The signal-to-noise floor for a procedural-aware
-          experiment.
-        </p>
-      </div>
-      <div class="mode-card">
-        <div class="mode-num">3</div>
-        <h3>Deployment signal</h3>
-        <p>
-          Run the Level 1 pattern matcher on procedural prefixes of
-          live trajectories. Flag runs heading toward known failure
-          shapes; interrupt before budget burns.
-        </p>
-      </div>
-    </div>
-  </div>
-</section>
+<h2 id="pipeline">The pipeline</h2>
 
-<section id="quickstart" class="section">
-  <div class="container">
-    <div class="eyebrow">Quickstart</div>
-    <h2>End-to-end in seven calls</h2>
-    <p class="muted">
-      The Python API. Same shape as the bundled
-      <code>examples/python/01_quickstart.py</code>; runs in seconds
-      on the synthetic corpus.
-    </p>
+<p>
+Five operations, in order. Each is a pure function of typed data.
+The CLI mirrors the Python API; commands compose by reading and
+writing JSON or JSONL on disk.
+</p>
+
+<ascii>raw traces  →  canonicalize  →  fit BPE  →  encode  →  compare
+   JSONL           atoms          vocab       fingerprints     JSD · UMAP · probe · patterns</ascii>
+
+<h2 id="modes">Three modes of use</h2>
+
+<p>
+Same library, three audiences. Each mode is documented with a runnable
+example script under <code>examples/python/</code> in the repository.
+</p>
+
+<h3>1. Research instrument</h3>
+<p>
+Characterize where procedural structure lives across a corpus of
+agents. Build the JSD matrix; run the leave-one-group-out probe;
+surface the block structure. This is the paper's primary mode and the
+one the bundled <code>01_quickstart.py</code> demonstrates end-to-end.
+</p>
+
+<h3>2. Controlled-eval harness</h3>
+<p>
+Hold base model, scaffold, benchmark fixed; vary one factor;
+measure within-arm consistency and across-arm sensitivity. The
+within-arm Jensen-Shannon divergence is the noise floor against
+which across-arm divergence becomes the signal. See
+<code>examples/python/02_controlled_eval.py</code>.
+</p>
+
+<h3>3. Deployment signal</h3>
+<p>
+Run the Level 1 pattern matcher on the procedural prefix of a
+running trajectory. Flag runs heading toward known failure shapes
+(stuck edit loops, missing localize-before-edit, missing tests-
+before-submit) and interrupt before the budget burns. See
+<code>examples/python/04_deployment_signal.py</code>.
+</p>
+
+<h2 id="quickstart">Quickstart</h2>
+
+<p>
+The Python API. Same shape as the bundled quickstart example; runs
+on the synthetic corpus in a few seconds.
+</p>
 
 <pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> canonicalize, encode, fit_bpe, jsd_matrix, leave_one_group_out
 <span class="code-keyword">from</span> procgrep.io <span class="code-keyword">import</span> read_jsonl
 
-<span class="code-comment"># 1. Read raw traces from JSONL (any scaffold's format).</span>
+<span class="code-comment"># 1. Read raw traces.</span>
 raw = <span class="code-fn">list</span>(<span class="code-fn">read_jsonl</span>(<span class="code-string">"traces/raw.jsonl"</span>))
 
 <span class="code-comment"># 2. Canonicalize: scaffold-specific actions to shared atom alphabet.</span>
@@ -590,212 +319,121 @@ traces = <span class="code-fn">canonicalize</span>(raw, adapter=<span class="cod
 <span class="code-comment"># 3. Fit BPE: learn motif vocabulary across the corpus.</span>
 vocab = <span class="code-fn">fit_bpe</span>((t.atoms <span class="code-keyword">for</span> t <span class="code-keyword">in</span> traces), vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)
 
-<span class="code-comment"># 4. Encode: each trace becomes a count vector over vocab tokens.</span>
+<span class="code-comment"># 4. Encode trajectories as motif-frequency fingerprints.</span>
 fingerprints = <span class="code-fn">encode</span>(traces, vocab=vocab)
 
-<span class="code-comment"># 5. Pairwise Jensen-Shannon divergence grouped by agent.</span>
+<span class="code-comment"># 5. Compare.</span>
 matrix = <span class="code-fn">jsd_matrix</span>(fingerprints, group_by=<span class="code-string">"agent"</span>)
-
-<span class="code-comment"># 6. Leave-one-group-out predictive-transfer probe.</span>
-probe = <span class="code-fn">leave_one_group_out</span>(fingerprints, label_field=<span class="code-string">"group"</span>, seed=<span class="code-num">0</span>)
-
-<span class="code-comment"># 7. Inspect results.</span>
-<span class="code-fn">print</span>(matrix.<span class="code-fn">to_array</span>())
-<span class="code-fn">print</span>(probe.overall_accuracy)
+probe  = <span class="code-fn">leave_one_group_out</span>(fingerprints, label_field=<span class="code-string">"group"</span>, seed=<span class="code-num">0</span>)
 </code></pre>
 
-    <h3 style="margin-top: 2em;">Or via the CLI</h3>
+<p>Or the equivalent CLI chain:</p>
+
 <pre><code>procgrep canonicalize --input traces/raw.jsonl --adapter swe-agent --output canonical.jsonl
 procgrep fit-bpe      --input canonical.jsonl  --vocab-size 200      --output vocab.json
 procgrep encode       --input canonical.jsonl  --vocab vocab.json    --output fp.jsonl
 procgrep jsd          --input fp.jsonl         --group-by agent      --output jsd.json
 procgrep probe        --input fp.jsonl         --label-field group   --output probe.json
 </code></pre>
-  </div>
-</section>
 
-<section class="section">
-  <div class="container">
-    <div class="eyebrow">Capabilities</div>
-    <h2>Eight first-class operations</h2>
-    <p class="muted">
-      All deterministic, all interpretable, all reproducible without
-      loading a language model.
-    </p>
+<h2 id="install">Install</h2>
 
-    <div class="caps">
-      <div class="cap">
-        <div class="cap-name">canonicalize</div>
-        <div class="cap-desc">Built-in adapters for SWE-agent, Agentless, DARS, Moatless; custom adapters via the <code>TraceAdapter</code> protocol.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">fit_bpe</div>
-        <div class="cap-desc">Greedy BPE merge over atom sequences; deterministic tie-breaking; persisted vocabulary.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">encode</div>
-        <div class="cap-desc">Motif-frequency distributions under a fixed vocabulary; L1-normalized on demand.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">jsd / jsd_matrix</div>
-        <div class="cap-desc">Jensen-Shannon divergence (log base 2; values in <code>[0, 1]</code>) at any group granularity.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">umap_project</div>
-        <div class="cap-desc">UMAP at trace or group granularity, seeds pinned for reproducibility.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">leave_one_group_out</div>
-        <div class="cap-desc">Predictive-transfer probe; sklearn <code>LeaveOneGroupOut</code> with multinomial logistic regression.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">match_patterns</div>
-        <div class="cap-desc">Level 1 YAML rule format; regex over canonical atoms with <code>must_hold</code> semantics.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name">stats helpers</div>
-        <div class="cap-desc">Atom frequencies per group, effective vocabulary size, per-trajectory entropy, discriminative motifs.</div>
-      </div>
-    </div>
-  </div>
-</section>
+<pre><code>git clone https://github.com/hamidahoderinwale/procgrep.git
+cd procgrep
+pip install -e ".[dev]"
+pre-commit install
+</code></pre>
 
-<section class="section">
-  <div class="container">
-    <div class="eyebrow">Positioning</div>
-    <h2>Where procgrep fits</h2>
-    <p>
-      procgrep and DSPy sit on opposite sides of the language/action
-      boundary, and are designed to compose. The two-layer view:
-    </p>
+<p class="faint">
+Python 3.10 or newer. No LLM SDKs; the library is post-hoc analysis only.
+</p>
 
-    <table>
-      <thead>
-        <tr><th>Layer</th><th>Instrument</th><th>What it controls or measures</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td><strong>Prompt / NL layer</strong></td>
-          <td><a href="https://github.com/stanfordnlp/dspy">DSPy</a></td>
-          <td>Compiles and optimizes the prompts an agent receives.</td>
-        </tr>
-        <tr>
-          <td><strong>Procedural / tool-call layer</strong></td>
-          <td><strong>procgrep</strong></td>
-          <td>Characterizes the tool-call trajectory the agent produces.</td>
-        </tr>
-        <tr>
-          <td><strong>Outcome layer</strong></td>
-          <td><a href="https://www.swebench.com/">SWE-bench</a> / AgentBench / etc.</td>
-          <td>Scores pass/fail on benchmark tasks.</td>
-        </tr>
-      </tbody>
-    </table>
+<h2 id="capabilities">Capabilities</h2>
 
-    <p>
-      procgrep does not depend on DSPy. The two are useful together:
-      a researcher can optimize an agent with DSPy and use procgrep
-      to measure whether the prompt-layer optimization produced a
-      procedural-layer shift, or whether procedure is mostly determined
-      by scaffold and base model rather than prompt.
-    </p>
-  </div>
-</section>
+<p>Eight first-class operations. All deterministic, all reproducible without loading a language model.</p>
 
-<section id="studies" class="section">
-  <div class="container">
-    <div class="eyebrow">Suggested studies</div>
-    <h2>Five concrete studies, ranked</h2>
-    <p class="muted">
-      Each study uses the existing public API; no new code required.
-      Full descriptions in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a>.
-    </p>
+<table>
+<thead><tr><th>Function</th><th>What it does</th></tr></thead>
+<tbody>
+<tr><td><code>canonicalize</code></td><td>Built-in adapters for SWE-agent, Agentless, DARS, Moatless; custom adapters via the <code>TraceAdapter</code> protocol.</td></tr>
+<tr><td><code>fit_bpe</code></td><td>Greedy BPE merge over atom sequences; deterministic tie-breaking; persisted vocabulary.</td></tr>
+<tr><td><code>encode</code></td><td>Motif-frequency distributions under a fixed vocabulary; L1-normalized on demand.</td></tr>
+<tr><td><code>jsd</code> · <code>jsd_matrix</code></td><td>Jensen-Shannon divergence (log base 2; values in [0, 1]) at any group granularity.</td></tr>
+<tr><td><code>umap_project</code></td><td>UMAP at trace or group granularity, seeded for reproducibility.</td></tr>
+<tr><td><code>leave_one_group_out</code></td><td>Predictive-transfer probe with sklearn <code>LeaveOneGroupOut</code> and multinomial logistic regression.</td></tr>
+<tr><td><code>match_patterns</code></td><td>Level 1 YAML rule format; regex over canonical atoms with <code>must_hold</code> semantics.</td></tr>
+<tr><td>stats helpers</td><td>Atom frequencies per group, effective vocabulary size, per-trajectory entropy, discriminative motifs.</td></tr>
+</tbody>
+</table>
 
-    <ol>
-      <li>
-        <strong>Temperature-sweep procedural phase transition.</strong>
-        Sweep T in <code>{0, 0.2, 0.4, 0.6, 0.8, 1.0}</code>; identify the
-        knee where across-arm JSD spikes.
-      </li>
-      <li>
-        <strong>Success-vs-failure procedural prefix signature.</strong>
-        Train a classifier on the first K atoms of each trajectory;
-        report accuracy vs K for outcome prediction.
-      </li>
-      <li>
-        <strong>DSPy compile-time procedural audit.</strong>
-        Capture traces before and after a DSPy compile; measure whether
-        the NL-layer optimization shifted the procedural fingerprint.
-      </li>
-      <li>
-        <strong>Reasoning-budget sweep.</strong>
-        Vary max-thinking-tokens in <code>{0, 2k, 8k, 32k}</code>; map the
-        procedural-shape response.
-      </li>
-      <li>
-        <strong>Pattern-matcher cross-validation.</strong>
-        Run rule-based pattern matching against an existing BPE-derived
-        analysis; compare second-method results.
-      </li>
-    </ol>
-  </div>
-</section>
+<h2 id="position">Where procgrep fits</h2>
 
-<section class="section">
-  <div class="container">
-    <div class="eyebrow">Documentation</div>
-    <h2>Where to go from here</h2>
-    <div class="caps" style="margin-top: 18px;">
-      <div class="cap">
-        <div class="cap-name"><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/README.md">README.md</a></div>
-        <div class="cap-desc">Capabilities, modes of use, full examples.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name"><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a></div>
-        <div class="cap-desc">Ranked case studies the library enables.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name"><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/FAQ.md">FAQ.md</a></div>
-        <div class="cap-desc">DSPy positioning; count-vs-embedding rationale; canonicalization-layer caveat.</div>
-      </div>
-      <div class="cap">
-        <div class="cap-name"><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ROADMAP.md">ROADMAP.md</a></div>
-        <div class="cap-desc">What is and is not on the path.</div>
-      </div>
-    </div>
-  </div>
-</section>
+<p>
+procgrep operates on the procedural layer (tool-call sequences),
+not the natural-language layer (prompts). It is complementary to
+<a href="https://github.com/stanfordnlp/dspy">DSPy</a>, which operates
+on prompts, and to <a href="https://www.swebench.com/">SWE-bench</a>,
+which operates on outcomes.
+</p>
 
-<section class="section">
-  <div class="container">
-    <div class="eyebrow">Citation</div>
-    <h2>Citing procgrep</h2>
-    <p>
-      The repository ships <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CITATION.cff"><code>CITATION.cff</code></a>;
-      GitHub renders a "Cite this repository" button from it. The paper
-      this library was extracted from is the primary citation target;
-      both citations should appear on first release.
-    </p>
-  </div>
-</section>
+<table>
+<thead><tr><th>Layer</th><th>Instrument</th><th>What it controls or measures</th></tr></thead>
+<tbody>
+<tr><td>Prompt / NL</td><td>DSPy</td><td>Compiles and optimizes the prompts an agent receives.</td></tr>
+<tr><td>Procedural / tool-call</td><td><strong>procgrep</strong></td><td>Characterizes the tool-call trajectory the agent produces.</td></tr>
+<tr><td>Outcome</td><td>SWE-bench, AgentBench</td><td>Scores pass/fail on benchmark tasks.</td></tr>
+</tbody>
+</table>
+
+<p>
+The library does not depend on DSPy. The two are useful together: a
+researcher can optimize an agent with DSPy and use procgrep to
+measure whether the prompt-layer optimization produced a procedural-
+layer shift, or whether procedure is mostly determined by scaffold
+and base model rather than prompt.
+</p>
+
+<h2 id="studies">Suggested studies</h2>
+
+<p>
+Five studies the library is well-suited to. Each uses the existing
+public API; no new code required. Descriptions in
+<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a>.
+</p>
+
+<ol>
+<li><strong>Temperature-sweep procedural phase transition.</strong> Sweep T in {0, 0.2, 0.4, 0.6, 0.8, 1.0}; identify the knee where across-arm JSD spikes.</li>
+<li><strong>Success-vs-failure procedural prefix signature.</strong> Train a classifier on the first K atoms of each trajectory; report accuracy vs K for outcome prediction.</li>
+<li><strong>DSPy compile-time procedural audit.</strong> Capture traces before and after a DSPy compile; measure whether the NL-layer optimization shifted the procedural fingerprint.</li>
+<li><strong>Reasoning-budget sweep.</strong> Vary max-thinking-tokens; map the procedural-shape response.</li>
+<li><strong>Pattern-matcher cross-validation.</strong> Run rule-based pattern matching against an existing BPE-derived analysis; compare second-method results.</li>
+</ol>
+
+<h2 id="docs">Documentation</h2>
+
+<table>
+<tbody>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/README.md">README.md</a></td><td>Capabilities, modes of use, examples per mode.</td></tr>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a></td><td>Ranked case studies the library enables.</td></tr>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/FAQ.md">FAQ.md</a></td><td>DSPy positioning, count-vs-embedding rationale, canonicalization-layer caveat.</td></tr>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ROADMAP.md">ROADMAP.md</a></td><td>What is and is not on the path.</td></tr>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a></td><td>Dev environment, code style, PR conventions.</td></tr>
+</tbody>
+</table>
+
+<h2 id="cite">Citing</h2>
+
+<p>
+The repository ships <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CITATION.cff"><code>CITATION.cff</code></a>;
+GitHub renders a "Cite this repository" button from it. The paper
+this library was extracted from is the primary citation target;
+both citations should appear on the first paper release.
+</p>
+
+</main>
 
 <footer>
-  <div class="container">
-    <div class="footer-inner">
-      <div>
-        <strong>procgrep</strong> · v0.1.3 · MIT License
-        <div class="muted" style="margin-top: 6px;">
-          Procedural fingerprinting of LLM coding-agent rollouts.
-        </div>
-      </div>
-      <div class="footer-links">
-        <a href="https://github.com/hamidahoderinwale/procgrep">GitHub</a>
-        <a href="https://github.com/hamidahoderinwale/procgrep/issues">Issues</a>
-        <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CONTRIBUTING.md">Contributing</a>
-        <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/SECURITY.md">Security</a>
-      </div>
-    </div>
-  </div>
+  <strong>procgrep</strong> · v0.1.3 · MIT · <a href="https://github.com/hamidahoderinwale/procgrep">repository</a> · <a href="https://github.com/hamidahoderinwale/procgrep/issues">issues</a> · <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CONTRIBUTING.md">contributing</a>
 </footer>
 
 </body>
