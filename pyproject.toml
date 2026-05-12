@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "procgrep"
-version = "0.1.0"
+version = "0.1.3"
 description = "Procedural fingerprinting of LLM coding-agent rollouts: canonical atoms, BPE motifs, Jensen-Shannon divergence."
 readme = "README.md"
 license = { file = "LICENSE" }

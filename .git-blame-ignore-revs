@@ -1,0 +1,8 @@
+# Revisions intentionally ignored by `git blame`. Add commits here
+# that performed mass-format or mass-rename operations so that
+# `git blame` skips them and surfaces the true author of each line.
+#
+# Use with:
+#   git blame --ignore-revs-file .git-blame-ignore-revs <file>
+# or configure once:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs

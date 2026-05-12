@@ -33,7 +33,7 @@ from procgrep.stats import (
 from procgrep.types import Atom, AtomSequence, Trace, TraceAdapter
 from procgrep.umap_project import UmapResult, umap_project
 
-__version__ = "0.1.1"
+__version__ = "0.1.3"
 
 __all__ = [
     "Atom",
