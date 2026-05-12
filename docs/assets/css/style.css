@@ -456,6 +456,7 @@ h2#quickstart::before  { background: #1853C7; }
 h2#sample-run::before  { background: #9C5018; }
 h2#capabilities::before{ background: #1F6B5A; }
 h2#position::before    { background: #9C5018; }
+h2#integrations::before{ background: #1853C7; }
 h2#notes::before       { background: #8E2C73; }
 h2#concepts::before    { background: #1F6B5A; }
 h2#studies::before     { background: #1853C7; }

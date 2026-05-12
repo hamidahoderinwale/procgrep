@@ -33,6 +33,7 @@
     <a href="#position">Positioning</a>
 
     <span class="nav-label">Background</span>
+    <a href="#integrations">Integrations</a>
     <a href="#notes">Notes</a>
     <a href="#concepts">Concepts</a>
     <a href="#studies">Studies</a>
@@ -495,6 +496,84 @@ The natural-language layer and the procedural layer are coupled
 but not the same. Working on one without instrumenting the other
 means flying blind on half the system. procgrep instruments the
 half that previously had no library.
+</p>
+
+<h2 id="integrations">Integrations and case studies</h2>
+
+<p>
+procgrep is not a standalone product; it enhances existing agent
+infrastructure that already produces traces. Five concrete plug
+points and the case studies that exercise each.
+</p>
+
+<h3>Where it plugs in</h3>
+
+<table>
+<thead>
+<tr><th>Existing system</th><th>What procgrep adds</th></tr>
+</thead>
+<tbody>
+<tr>
+  <td><strong>Agent CI / regression testing</strong><br>(e.g., custom test suite, GitHub Actions running an agent on a fixed task set)</td>
+  <td>Procedural-drift detection between releases. Captures the agent's fingerprint on each CI run; alerts when the fingerprint diverges from the baseline beyond the within-run noise floor. Catches scaffold or model regressions that outcome scores miss.</td>
+</tr>
+<tr>
+  <td><strong>Prompt-optimization frameworks</strong><br>(<a href="https://github.com/stanfordnlp/dspy">DSPy</a>, custom MIPRO / COPRO loops)</td>
+  <td>A procgrep-derived metric scores each candidate program by procedural distance from a target shape. The compile loop optimizes for "pass more tests <em>with a specific procedure</em>," not just "pass more tests."</td>
+</tr>
+<tr>
+  <td><strong>Agent observability platforms</strong><br>(LangSmith, Phoenix, Helicone, Weights &amp; Biases)</td>
+  <td>Procedural-fingerprint dashboards on top of LLM-call traces. Pattern-matcher rules surface "stuck edit loop," "missing localize," "shell-cd storm" as per-run flags. Complements outcome and cost dashboards.</td>
+</tr>
+<tr>
+  <td><strong>Benchmark leaderboards</strong><br>(<a href="https://www.swebench.com/">SWE-bench</a>, AgentBench, ToolBench)</td>
+  <td>A procedural-aware column on the leaderboard: not just "score 0.42" but "score 0.42 via what procedural shape." Disambiguates submissions that look identical by outcome but solve tasks structurally differently.</td>
+</tr>
+<tr>
+  <td><strong>Search subagents and tool wrappers</strong><br>(<a href="https://docs.morphllm.com/sdk/components/warp-grep">WarpGrep</a>, retrieval plugins, MCP servers)</td>
+  <td>Quantifies the procedural effect of adding a subagent or wrapper. The controlled-eval question "did this tool change the agent's procedure beyond its outcome score?" is exactly procgrep's primitive.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Case studies the library has already produced</h3>
+
+<p>
+Three concrete findings from the originating paper, each grounded
+in real corpus data. The pattern generalizes; the same primitives
+apply to any agent trace.
+</p>
+
+<table>
+<thead><tr><th>Case study</th><th>Finding</th><th>How it was produced</th></tr></thead>
+<tbody>
+<tr>
+  <td><strong>Stuck-edit-loop signature</strong></td>
+  <td>Long Type B failure trajectories show EDIT_SRC_PY token proportion rising from <mark>23% to 35%</mark> and SUBMIT proportion falling from 9% to 2%. The signature is detectable from the post-localization prefix alone.</td>
+  <td>Per-cohort token-proportion analysis using <code>encode</code> + a small ad-hoc grouping. The current procgrep stats helpers (<code>discriminative_motifs</code>) reproduce this without bespoke code.</td>
+</tr>
+<tr>
+  <td><strong>Claude-4 SHELL_CD storm</strong></td>
+  <td>Within the SWE-agent extended-thinking cell, Claude-4 emits <mark>33 SHELL_CD atoms per trajectory on average</mark> (Claude-3.7-thinking: 6.7). 100% of Claude-4 trajectories use the atom; 65% contain a run of five or more. A model-class signature inside an otherwise paradigm-level cell.</td>
+  <td>Pattern matcher (<code>match_patterns</code>) with one rule, plus per-agent atom-frequency stratification.</td>
+</tr>
+<tr>
+  <td><strong>Canonicalization-layer Moatless audit</strong></td>
+  <td>Procgrep reported 99.7% of Moatless trajectories never run a test atom. Raw-trace audit found <mark>71 internal <code>RunTests</code> references in one trace's content</mark>, none surfaced by the adapter. The finding is a canonicalization-layer artifact, not a behavioral claim — exactly the kind of bug procgrep is designed to surface.</td>
+  <td>Pattern matcher with a tests-must-fire rule, followed by adapter audit when the cell-level pass rate looked implausibly low.</td>
+</tr>
+</tbody>
+</table>
+
+<h3>Where the integrations sit in the lifecycle</h3>
+
+<p>
+procgrep is post-hoc by design: it reads trace files and emits
+structural artifacts. Each integration point above is a different
+place in the agent lifecycle to <em>consume</em> those artifacts.
+The library does not run agents, does not call models, and does
+not require streaming infrastructure to start being useful — pointing
+it at a directory of captured JSONL traces is enough.
 </p>
 
 <h2 id="notes">Notes</h2>
