@@ -128,43 +128,90 @@ hr {
 }
 
 aside.sidebar {
-  padding: 60px 0 0;
+  padding: 60px 0 32px;
   position: sticky;
   top: 0;
   align-self: start;
   max-height: 100vh;
   overflow-y: auto;
-  font-size: 14px;
+  font-size: 13.5px;
+  font-family: 'Palatino', 'Palatino Linotype', Georgia, serif;
 }
+
+/* Brand block at top of sidebar */
 aside.sidebar .brand {
   display: block;
   font-weight: 700;
-  font-size: 15px;
+  font-size: 17px;
   color: var(--text);
-  margin-bottom: 22px;
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
 }
 aside.sidebar .brand:hover { color: var(--link); text-decoration: none; }
-aside.sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+aside.sidebar .brand-meta {
+  display: block;
+  font-size: 11.5px;
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Section labels */
+aside.sidebar .nav-label {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 18px 0 8px;
+}
+aside.sidebar .nav-label:first-of-type { margin-top: 0; }
+
+/* Nav links: column stack with subtle left rule on hover and active */
+aside.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
 aside.sidebar nav a {
   color: var(--muted);
-  padding: 3px 0;
+  padding: 3px 0 3px 10px;
   line-height: 1.5;
+  border-left: 2px solid transparent;
+  margin-left: -10px;
+  transition: color 0.12s, border-color 0.12s;
 }
-aside.sidebar nav a:hover { color: var(--text); text-decoration: none; }
+aside.sidebar nav a:hover {
+  color: var(--text);
+  text-decoration: none;
+  border-left-color: var(--rule);
+}
+
+/* Meta link block at the bottom of the sidebar */
 aside.sidebar .meta-link {
-  margin-top: 18px;
-  font-size: 13px;
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-size: 12.5px;
   color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
 }
-aside.sidebar .meta-link a { color: var(--faint); }
-aside.sidebar .meta-link a:hover { color: var(--text); }
+aside.sidebar .meta-link a { color: var(--faint); display: block; padding: 2px 0; }
+aside.sidebar .meta-link a:hover { color: var(--text); text-decoration: none; }
 
 main {
   padding: 60px 0 80px;
   min-width: 0;  /* prevent grid item from forcing overflow */
 }
 
-/* Collapse to single column on narrow viewports */
+/* Collapse to single column on narrow viewports.
+   The 11-item nav becomes too dense to wrap horizontally; instead
+   it collapses to a clean two-row header: brand on top, links
+   below as a single comma-flow wrap with bullet separators. */
 @media (max-width: 880px) {
   .layout {
     grid-template-columns: 1fr;
@@ -175,21 +222,39 @@ main {
     position: static;
     max-height: none;
     overflow: visible;
-    padding: 26px 0 12px;
+    padding: 28px 0 14px;
     border-bottom: 1px solid var(--rule);
-    margin-bottom: 8px;
+    margin-bottom: 0;
   }
-  aside.sidebar .brand { display: inline-block; margin-bottom: 0; }
+  aside.sidebar .brand { font-size: 16px; margin-bottom: 2px; }
+  aside.sidebar .brand-meta {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  aside.sidebar .nav-label { display: none; }
   aside.sidebar nav {
-    display: inline-flex;
+    display: flex;
     flex-direction: row;
     flex-wrap: wrap;
-    gap: 0 18px;
-    margin-left: 18px;
-    vertical-align: baseline;
+    gap: 2px 0;
+    font-size: 13px;
   }
+  aside.sidebar nav a {
+    padding: 3px 0;
+    margin: 0;
+    border-left: none;
+  }
+  aside.sidebar nav a:not(:last-child)::after {
+    content: " ·";
+    color: var(--faint);
+    margin: 0 8px 0 8px;
+    pointer-events: none;
+  }
+  aside.sidebar nav a:hover { border-left: none; }
   aside.sidebar .meta-link { display: none; }
-  main { padding: 26px 0 60px; }
+  main { padding: 24px 0 60px; }
 }
 
 header.intro { margin-bottom: 1.5em; }
