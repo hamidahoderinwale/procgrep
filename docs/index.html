@@ -98,10 +98,11 @@ information, and outcome scores cannot see it.
 <strong>What procgrep does.</strong> It takes the trace log of an
 LLM coding agent and produces a structural
 <dfn class="def" tabindex="0" data-def="Fingerprint: one trajectory expressed as a count vector over a learned vocabulary of action patterns. Normalized so it can be compared as a probability distribution against other fingerprints.">fingerprint</dfn> of <em>how</em>
-the agent worked, not just whether it succeeded. Given fingerprints
-from many agents, you can answer one question with quantitative
-precision: do two agents, holding some factors fixed and varying
-others, work in structurally distinct ways?
+the agent worked, not just whether it succeeded. Two readings of
+the same library: <strong>compare</strong> agents to see whether
+they work in structurally distinct ways, or <strong>search</strong>
+a corpus of trajectories for the ones that match a specification.
+The grep name reads both ways on purpose.
 </p>
 
 <p>
@@ -310,14 +311,29 @@ do not. Two ways to read the same comparison, both with intuitive
 thresholds.
 </p>
 
-<h3 id="mode-deployment">3. Deployment signal</h3>
+<h3 id="mode-deployment">3. Procedural search and live monitoring</h3>
 
 <p>
-Run the Level 1 pattern matcher on the procedural prefix of a running
-trajectory to flag runs heading toward known failure shapes (stuck
-edit loops, missing localize-before-edit, missing tests-before-submit)
-and interrupt before the budget burns.
+The library's name is literal: <em>grep</em> for procedures. Define a
+specification (a regex over canonical atoms or a YAML rule) and find
+every trajectory in a corpus that matches. The same primitive does
+double duty for live monitoring: run the matcher on the procedural
+prefix of a running trajectory, flag runs heading toward known
+failure shapes, interrupt before the budget burns.
 </p>
+
+<p>
+<strong>Example queries this mode answers.</strong>
+</p>
+
+<ul>
+  <li>"Find every trajectory with five or more consecutive edits": <code>(edit ){5,}</code></li>
+  <li>"Find trajectories that never opened the gold patch file": absence of a per-file open atom</li>
+  <li>"Find trajectories where edits happened before any localize": missing-localize rule</li>
+  <li>"Find trajectories that did not run a test before submitting": missing-test rule</li>
+  <li>"Find trajectories matching a stuck-shell-cd-loop signature": <code>(SHELL_CD ){5,}</code></li>
+  <li>"Find trajectories that closely match this reference one": fingerprint nearest-neighbor (composed from <code>encode</code> + <code>jsd</code>)</li>
+</ul>
 
 <p>The setup:</p>
 
@@ -511,9 +527,11 @@ integration actually looks like in code.
 <p>
 A team running their agent on a fixed task set inside CI wants to
 catch the case where a scaffold change or vendor model update
-silently shifts behavior. procgrep computes the JSD between the
-current build's fingerprint and a stored baseline; alerts when the
-divergence exceeds the within-run noise floor.
+silently shifts behavior. Two complementary checks: <strong>compare</strong>
+(JSD between the current build's fingerprint and a stored baseline,
+alert when the divergence exceeds the within-run noise floor) and
+<strong>search</strong> (run regression rules — known-bad patterns
+that should never appear — and fail the build if any match).
 </p>
 
 <pre><code><span class="code-comment"># .github/workflows/agent-ci.yml</span>
@@ -553,17 +571,19 @@ procedure</em>" instead of just "pass more tests."
 compiled = dspy.<span class="code-fn">MIPRO</span>(metric=procedural_distance_metric).<span class="code-fn">compile</span>(program, trainset)
 </code></pre>
 
-<h3>3. Agent observability platforms</h3>
+<h3>3. Production observability and procedural search</h3>
 
 <p>
 Tools like <a href="https://docs.smith.langchain.com/">LangSmith</a>,
 <a href="https://phoenix.arize.com/">Phoenix</a>,
 <a href="https://www.helicone.ai/">Helicone</a>, and
 <a href="https://wandb.ai/">Weights &amp; Biases</a> already capture
-LLM-call traces in production. procgrep adds a procedural-fingerprint
-layer on top: dashboards see "stuck edit loop fired," "missing
-localize," "shell-cd storm" as per-run flags. Implementation: nightly
-batch over the previous day's traces.
+LLM-call traces in production. procgrep adds two things on top: a
+procedural-fingerprint layer for dashboards ("stuck edit loop fired,"
+"missing localize," "shell-cd storm" as per-run flags), and a search
+interface for forensics ("show me every trajectory from last week
+that matches this signature"). Nightly batch + on-demand query;
+both run off the same canonicalized trace store.
 </p>
 
 <pre><code>$ procgrep match-patterns \
