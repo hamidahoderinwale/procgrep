@@ -439,12 +439,16 @@ Python 3.10 or newer. No LLM SDKs; the library is post-hoc analysis only.
 <h2 id="position">Where procgrep fits</h2>
 
 <p>
-procgrep operates on the procedural layer (tool-call sequences),
-not the natural-language layer (prompts). It is complementary to
-<a href="https://github.com/stanfordnlp/dspy">DSPy</a>, which operates
-on prompts, and to <a href="https://www.swebench.com/">SWE-bench</a>,
-which operates on outcomes.
+<a href="https://github.com/stanfordnlp/dspy">DSPy</a> is not the
+same kind of thing as procgrep, but the composition of the two
+enables a real workflow: optimize an agent's prompts with DSPy,
+audit whether the optimization changed the procedure with procgrep.
+The same logic extends to the outcome layer (<a href="https://www.swebench.com/">SWE-bench</a>,
+AgentBench): outcome metrics tell you what an agent achieved;
+procgrep tells you how.
 </p>
+
+<p>The three layers:</p>
 
 <table>
 <thead><tr><th>Layer</th><th>Instrument</th><th>What it controls or measures</th></tr></thead>
@@ -456,11 +460,41 @@ which operates on outcomes.
 </table>
 
 <p>
-The library does not depend on DSPy. The two are useful together: a
-researcher can optimize an agent with DSPy and use procgrep to
-measure whether the prompt-layer optimization produced a procedural-
-layer shift, or whether procedure is mostly determined by scaffold
-and base model rather than prompt.
+The library does not depend on DSPy. What the composition unlocks,
+concretely:
+</p>
+
+<ul>
+  <li>
+    <strong>Audit a DSPy compile.</strong> Capture traces before and
+    after a DSPy compile run. Compute JSD between the two arms.
+    Either the prompt-layer optimization produced a measurable
+    procedural-layer shift, or it did not — and procgrep gives you
+    the number. The latter is itself a finding: procedure is
+    determined more by scaffold and base model than by prompt.
+  </li>
+  <li>
+    <strong>Use procgrep as a DSPy compile metric.</strong> If your
+    goal is not just "pass more tests" but "pass more tests with a
+    specific procedural shape" (more localizing, fewer edit loops,
+    bounded shell-cd usage), procgrep can score each candidate
+    program by procedural distance from a target. DSPy's compiler
+    optimizes against that score.
+  </li>
+  <li>
+    <strong>Compare agents that DSPy cannot distinguish.</strong>
+    Two prompt programs that DSPy considers equivalent (same
+    outcome metric value) may produce structurally different
+    procedures. procgrep makes that difference visible and
+    quantifiable.
+  </li>
+</ul>
+
+<p>
+The natural-language layer and the procedural layer are coupled
+but not the same. Working on one without instrumenting the other
+means flying blind on half the system. procgrep instruments the
+half that previously had no library.
 </p>
 
 <h2 id="notes">Notes</h2>
