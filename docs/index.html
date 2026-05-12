@@ -37,7 +37,6 @@
     <a href="#notes">Notes</a>
     <a href="#concepts">Concepts</a>
     <a href="#studies">Studies</a>
-    <a href="#glossary">Glossary</a>
 
     <span class="nav-label">Project</span>
     <a href="#docs">Documentation</a>
@@ -139,11 +138,11 @@ JSONL on disk.
 <ol class="pipeline">
   <li>
     <span class="name">canonicalize</span>
-    <span class="desc">raw scaffold traces become a canonical <dfn class="def" tabindex="0" data-def="Atom sequence: an ordered list of canonical action labels (SEARCH, EDIT_SRC_PY, RUN_PYTHON_REPRO_PY, etc.). The shared alphabet across scaffolds.">atom sequence</dfn></span>
+    <span class="desc"><dfn class="def" tabindex="0" data-def="Canonical: a unique standard form obtained by normalizing away surface variation. Different scaffolds emit different action names; the canonicalize step maps them all to the same atom alphabet.">canonical</dfn> <dfn class="def" tabindex="0" data-def="Atom sequence: an ordered list of canonical action labels (SEARCH, EDIT_SRC_PY, RUN_PYTHON_REPRO_PY, etc.). The shared alphabet across scaffolds.">atom sequence</dfn> from raw scaffold traces</span>
   </li>
   <li>
     <span class="name">fit_bpe</span>
-    <span class="desc">the atom corpus yields a BPE motif vocabulary</span>
+    <span class="desc">the atom corpus yields a BPE motif <dfn class="def" tabindex="0" data-def="Vocabulary: the full set of motif tokens learned by BPE over the corpus. Fit once on the combined corpus, then shared across all fingerprints downstream. Refitting per arm in a controlled eval breaks the comparison.">vocabulary</dfn></span>
   </li>
   <li>
     <span class="name">encode</span>
@@ -818,13 +817,15 @@ Same code path, ~2,639 trajectories instead of six.
 </figure>
 
 <figure>
-  <img src="assets/img/pattern_matcher_passrates.png" alt="Per-cell pass rates for five Level 1 pattern matcher rules.">
+  <img src="assets/img/pattern_matcher_passrates.png" alt="Heatmap of pattern-matcher pass rates: five rules on the y-axis, five paradigm-by-scaffold cells on the x-axis, color and inline percentage encoding each rule's pass rate per cell.">
   <figcaption>
-    Level 1 pattern matcher rule pass rates, per cell. Five rules:
-    submit-terminated, localize-before-first-edit, no-long-edit-loops,
-    no-long-shell-cd-loops, tests-run-at-least-once. The shell-cd-loop
-    finding (extended-thinking 59% pass) is a model-class signature
-    invisible to outcome-only evaluation.
+    All thirty (rule × cell) pass rates at a glance. Each row is a
+    rule; each column is one of the five paradigm-by-scaffold cells.
+    Two findings jump out: <mark>tests_run_at_least_once at 0% in
+    Moatless</mark> (which surfaced a canonicalization-layer gap, not
+    a behavioral one) and <mark>stuck_shell_cd_loop at 59% in
+    extended-thinking</mark> (a model-class signature for Claude-4 in
+    that cell). Both invisible to outcome-only evaluation.
   </figcaption>
 </figure>
 
@@ -948,130 +949,50 @@ are directly comparable across corpora and across vocabulary sizes.
 <h2 id="studies">Suggested studies</h2>
 
 <p>
-Five studies the library is well-suited to. Each uses the existing
-public API; no new code required. Descriptions in
-<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a>.
+Five things you can answer with the library as it stands today.
+Each uses the existing public API; no new code required. Longer
+write-ups in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a>.
 </p>
 
 <ol>
-<li><strong>Temperature-sweep procedural phase transition.</strong> Sweep T in {0, 0.2, 0.4, 0.6, 0.8, 1.0}; identify the knee where across-arm JSD spikes.</li>
-<li><strong>Success-vs-failure procedural prefix signature.</strong> Train a classifier on the first K atoms of each trajectory; report accuracy vs K for outcome prediction.</li>
-<li><strong>DSPy compile-time procedural audit.</strong> Capture traces before and after a DSPy compile; measure whether the <dfn class="def" tabindex="0" data-def="NL-layer optimization: prompt-and-demonstration tuning performed at the natural-language interface, typically by DSPy. Distinct from any change to the agent's tool-call vocabulary, which would be a procedural-layer optimization.">NL-layer optimization</dfn><span class="sidenote">Prompt-and-demonstration tuning at the natural-language interface, typically by DSPy. Distinct from any change to the agent's tool-call vocabulary; that would be a procedural-layer optimization.</span> shifted the procedural fingerprint.</li>
-<li><strong>Reasoning-budget sweep.</strong> Vary max-thinking-tokens; map the procedural-shape response.</li>
-<li><strong>Pattern-matcher cross-validation.</strong> Run rule-based pattern matching against an existing BPE-derived analysis; compare second-method results.</li>
+<li>
+  <strong>Does temperature change how the agent works?</strong>
+  Run the same agent at temperatures 0, 0.2, 0.4, 0.6, 0.8, 1.0
+  with 30 traces per setting. Plot how across-arm JSD scales with
+  temperature. If there is a sharp knee in the curve, that is the
+  production-temperature ceiling beyond which procedure starts
+  fanning out.
+</li>
+<li>
+  <strong>Can you predict failure from the first few steps?</strong>
+  Train a classifier on the first K atoms of each trajectory and
+  ask if it predicts the eventual outcome (resolved vs failed).
+  If accuracy rises sharply with K, you can interrupt failing runs
+  before they finish — the deployment-signal use case made
+  quantitative.
+</li>
+<li>
+  <strong>Did a DSPy compile actually change procedure, or just outcomes?</strong>
+  Capture traces before and after a DSPy compile run. Compute JSD
+  between the two arms. Either the <dfn class="def" tabindex="0" data-def="NL-layer optimization: prompt-and-demonstration tuning performed at the natural-language interface, typically by DSPy. Distinct from any change to the agent's tool-call vocabulary, which would be a procedural-layer optimization.">NL-layer optimization</dfn> produced a measurable procedural shift, or it did not.
+  Either answer is a finding.
+</li>
+<li>
+  <strong>How does extra reasoning time change the agent's procedure?</strong>
+  Take one extended-thinking model. Vary the maximum thinking
+  tokens it can spend. Capture 30 traces per setting. Watch how
+  the procedural shape responds. Identifies the budget level
+  where extra reasoning starts producing structurally different
+  trajectories.
+</li>
+<li>
+  <strong>Do rule-based and motif-based methods agree on the same finding?</strong>
+  Take a finding from an existing BPE-motif analysis on your corpus.
+  Write a regex rule that should catch the same signature. Run the
+  rule via the pattern matcher. Two independent methods catching
+  the same signature is the cross-method validation.
+</li>
 </ol>
-
-<h2 id="glossary">Glossary</h2>
-
-<p>
-Terms used throughout this page and in the paper, with hyperlinks
-to upstream references for the methodological concepts.
-</p>
-
-<dl class="glossary">
-
-  <dt>Adapter</dt>
-  <dd>A callable that converts one scaffold's raw trace record into a
-    canonical atom sequence. See <code>procgrep.canonicalize</code> for
-    built-ins (SWE-agent, Agentless, DARS, Moatless) and
-    <code>examples/python/05_custom_adapter.py</code> for a worked example.</dd>
-
-  <dt>Atom</dt>
-  <dd>A canonical action label: the shared alphabet across scaffolds.
-    Examples: <code>SEARCH</code>, <code>EDIT_SRC_PY</code>,
-    <code>RUN_PYTHON_REPRO_PY</code>, <code>SUBMIT</code>.</dd>
-
-  <dt>BPE motif</dt>
-  <dd>A token in the learned vocabulary. May be a single atom or a
-    glued multi-atom sequence (e.g., <code>edit_run_test</code>). Algorithm:
-    <a href="https://arxiv.org/abs/1508.07909">Sennrich, Haddow, Birch (ACL 2016)</a>,
-    applied here at the atom layer rather than the subword layer.</dd>
-
-  <dt>Canonical</dt>
-  <dd>Used in the
-    <a href="https://en.wikipedia.org/wiki/Canonical_form">programming-language-theory sense</a>
-    of canonical form: a unique standard representation obtained by
-    normalizing away surface variation. Different scaffolds emit
-    different action names; all map to the same canonical atom.</dd>
-
-  <dt>Cell</dt>
-  <dd>A paradigm × scaffold combination used as the comparison unit.
-    Examples: <em>SWE-agent base</em>, <em>SWE-agent extended-thinking</em>,
-    <em>Agentless</em>, <em>DARS</em>, <em>Moatless</em>.</dd>
-
-  <dt>Controlled eval</dt>
-  <dd>Hold base model, scaffold, and benchmark fixed; vary one factor;
-    capture N traces per arm. Within-arm JSD is the noise floor;
-    across-arm JSD is the signal. See
-    <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/README.md#5-controlled-evaluations">README §5</a>.</dd>
-
-  <dt>DSPy</dt>
-  <dd>A
-    <a href="https://github.com/stanfordnlp/dspy">framework for programming foundation models</a>
-    (Khattab et al., ICLR 2024). Operates on the natural-language layer;
-    procgrep operates on the procedural layer. Complementary, not
-    competing.</dd>
-
-  <dt>Fingerprint</dt>
-  <dd>One trajectory expressed as a count vector over BPE motif tokens,
-    normalized to a probability distribution. The unit of comparison.</dd>
-
-  <dt>Jensen-Shannon divergence</dt>
-  <dd><a href="https://en.wikipedia.org/wiki/Jensen%E2%80%93Shannon_divergence">JSD</a>
-    is a symmetric, bounded relative of KL divergence. Values in
-    <code>[0, 1]</code> with log base 2. Computed pairwise between
-    fingerprints. Lin (IEEE TIT 1991) is the original reference.</dd>
-
-  <dt>Leave-one-group-out probe</dt>
-  <dd>A classifier trained on K-1 groups and tested on the held-out
-    group, via scikit-learn's
-    <a href="https://scikit-learn.org/stable/modules/generated/sklearn.model_selection.LeaveOneGroupOut.html">LeaveOneGroupOut</a>.
-    Tests predictive transfer. The paper's headline cross-scaffold
-    result is <mark>0 of 300 correct</mark>.</dd>
-
-  <dt>Pattern matcher (Level 1)</dt>
-  <dd>Regex over the space-joined atom sequence with a <code>must_hold</code>
-    flag. procgrep ships this; the Level 2 compositional invariant DSL
-    with temporal operators (procedural-DSPy) is named in
-    <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ROADMAP.md">ROADMAP.md</a>
-    as future work.</dd>
-
-  <dt>Scaffold</dt>
-  <dd>The software harness around the LLM that mediates tool use. The
-    paper covers four:
-    <a href="https://swe-agent.com/">SWE-agent</a>,
-    <a href="https://github.com/OpenAutoCoder/Agentless">Agentless</a>,
-    DARS,
-    <a href="https://github.com/aorwall/moatless-tools">Moatless</a>.</dd>
-
-  <dt>SWE-bench</dt>
-  <dd>The <a href="https://www.swebench.com/">benchmark</a> the
-    paper's corpus is built on (Jimenez et al., ICLR 2024). 300 instances
-    on the Verified split.</dd>
-
-  <dt>Trace · trajectory</dt>
-  <dd>An agent's recorded sequence of tool calls on one task. The raw
-    input to procgrep.</dd>
-
-  <dt>UMAP</dt>
-  <dd><a href="https://arxiv.org/abs/1802.03426">Uniform Manifold Approximation and Projection</a>
-    (McInnes, Healy, Melville, 2018). Used here to project fingerprints
-    into 2D for visual inspection.</dd>
-
-  <dt>Vocabulary</dt>
-  <dd>The full set of motif tokens learned by BPE over the corpus.
-    Fixed once and shared across all fingerprints. The "shared vocabulary
-    discipline" in controlled evals refers to fitting one vocab across
-    all arms rather than per-arm.</dd>
-
-  <dt>Within-arm vs across-arm JSD</dt>
-  <dd>Two quantities reported together in a controlled eval. Within-arm
-    is the pairwise JSD between fingerprints of the same arm (noise
-    floor). Across-arm is the JSD between arm-mean fingerprints (signal).
-    Rule of thumb: signal substantially exceeding the floor (about 2x)
-    means the factor moved procedure.</dd>
-
-</dl>
 
 <h2 id="docs">Documentation</h2>
 
