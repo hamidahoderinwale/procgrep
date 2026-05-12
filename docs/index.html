@@ -109,30 +109,157 @@ Same library, three audiences. Each mode is documented with a runnable
 example script under <code>examples/python/</code> in the repository.
 </p>
 
-<h3>1. Research instrument</h3>
+<h3 id="mode-research">1. Research instrument</h3>
+
 <p>
 Characterize where procedural structure lives across a corpus of
 agents. Build the JSD matrix; run the leave-one-group-out probe;
-surface the block structure. This is the paper's primary mode and the
-one the bundled <code>01_quickstart.py</code> demonstrates end-to-end.
+surface the block structure. This is the paper's primary mode.
 </p>
 
-<h3>2. Controlled-eval harness</h3>
+<p>The procedure:</p>
+
+<ol>
+  <li>Collect traces from every agent. One JSONL per agent or one combined file.</li>
+  <li>Canonicalize each agent's traces using the appropriate adapter (built-in or custom).</li>
+  <li>Fit <em>one</em> shared BPE vocabulary across the whole corpus, so the vocabulary itself is not a confound between agents.</li>
+  <li>Encode every trajectory as a fingerprint under the shared vocabulary.</li>
+  <li>Build the pairwise JSD matrix grouped by cell, agent, or any label of interest.</li>
+  <li>Run the leave-one-group-out probe to test cross-group predictive transfer.</li>
+  <li>Optionally project the fingerprint space with UMAP for a visual companion.</li>
+</ol>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> canonicalize, encode, fit_bpe, jsd_matrix, leave_one_group_out, umap_project
+<span class="code-keyword">from</span> procgrep.io <span class="code-keyword">import</span> read_jsonl
+
+raw = <span class="code-fn">list</span>(<span class="code-fn">read_jsonl</span>(<span class="code-string">"corpus.jsonl"</span>))                  <span class="code-comment"># traces from all agents</span>
+traces = <span class="code-fn">canonicalize</span>(raw, adapter=<span class="code-string">"swe-agent"</span>)
+
+vocab = <span class="code-fn">fit_bpe</span>((t.atoms <span class="code-keyword">for</span> t <span class="code-keyword">in</span> traces),
+                vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)             <span class="code-comment"># shared across all agents</span>
+fps = <span class="code-fn">encode</span>(traces, vocab=vocab)
+
+matrix = <span class="code-fn">jsd_matrix</span>(fps, group_by=<span class="code-string">"group"</span>)              <span class="code-comment"># block structure visible</span>
+probe  = <span class="code-fn">leave_one_group_out</span>(fps, label_field=<span class="code-string">"group"</span>)   <span class="code-comment"># predictive transfer</span>
+umap   = <span class="code-fn">umap_project</span>(fps, granularity=<span class="code-string">"trace"</span>, seed=<span class="code-num">0</span>) <span class="code-comment"># visual companion</span>
+</code></pre>
+
 <p>
-Hold base model, scaffold, benchmark fixed; vary one factor;
-measure within-arm consistency and across-arm sensitivity. The
-within-arm Jensen-Shannon divergence is the noise floor against
-which across-arm divergence becomes the signal. See
-<code>examples/python/02_controlled_eval.py</code>.
+<strong>What you get.</strong> A JSD matrix that shows tight within-cell
+divergence vs large cross-scaffold divergence; a probe result that
+quantifies "the held-out group is structurally novel; the classifier
+cannot predict it." On the paper's nine-agent corpus, within-cell
+JSD lands at 0.10 to 0.19 and cross-scaffold JSD at 0.62 to 1.00.
 </p>
 
-<h3>3. Deployment signal</h3>
+<h3 id="mode-controlled">2. Controlled-eval harness</h3>
+
 <p>
-Run the Level 1 pattern matcher on the procedural prefix of a
-running trajectory. Flag runs heading toward known failure shapes
-(stuck edit loops, missing localize-before-edit, missing tests-
-before-submit) and interrupt before the budget burns. See
-<code>examples/python/04_deployment_signal.py</code>.
+Hold base model, scaffold, and benchmark fixed. Vary one factor
+(temperature, seed, RLHF variant, scaffold flag). Measure within-arm
+procedural consistency and across-arm sensitivity. The within-arm
+JSD is the noise floor; the across-arm JSD is the signal.
+</p>
+
+<p>The recipe:</p>
+
+<ol>
+  <li>Capture N traces per arm. N &ge; 30 is a safe default; the seed-sensitivity study in STUDIES.md establishes the principled floor.</li>
+  <li>Label each trace with its arm via the <code>group</code> field on the input record.</li>
+  <li>Fit a single shared BPE vocabulary across all arms; refitting per arm makes vocabulary an arm-specific confound and breaks the comparison.</li>
+  <li>Encode all trajectories under that vocabulary.</li>
+  <li>Compute pairwise JSD within each arm (the noise floor).</li>
+  <li>Compute JSD between arm-mean fingerprints (the signal).</li>
+  <li>Run leave-one-arm-out predictive transfer to test whether arms are structurally distinct.</li>
+</ol>
+
+<pre><code><span class="code-keyword">from</span> itertools <span class="code-keyword">import</span> combinations
+<span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> canonicalize, encode, fit_bpe, jsd, jsd_matrix, leave_one_group_out
+<span class="code-keyword">from</span> procgrep.io <span class="code-keyword">import</span> read_jsonl
+
+traces = <span class="code-fn">canonicalize</span>(<span class="code-fn">list</span>(<span class="code-fn">read_jsonl</span>(<span class="code-string">"temp_sweep.jsonl"</span>)), adapter=<span class="code-string">"swe-agent"</span>)
+vocab  = <span class="code-fn">fit_bpe</span>((t.atoms <span class="code-keyword">for</span> t <span class="code-keyword">in</span> traces), vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)
+fps    = <span class="code-fn">encode</span>(traces, vocab=vocab)
+
+<span class="code-comment"># Across-arm JSD: the signal of interest.</span>
+across = <span class="code-fn">jsd_matrix</span>(fps, group_by=<span class="code-string">"group"</span>).<span class="code-fn">to_array</span>()
+
+<span class="code-comment"># Within-arm JSD: the noise floor against which `across` is interpreted.</span>
+arms = <span class="code-fn">sorted</span>({fp.group <span class="code-keyword">for</span> fp <span class="code-keyword">in</span> fps})
+within = {arm: <span class="code-fn">sum</span>(<span class="code-fn">jsd</span>(a.<span class="code-fn">distribution</span>(), b.<span class="code-fn">distribution</span>())
+                <span class="code-keyword">for</span> a, b <span class="code-keyword">in</span> <span class="code-fn">combinations</span>([fp <span class="code-keyword">for</span> fp <span class="code-keyword">in</span> fps <span class="code-keyword">if</span> fp.group == arm], <span class="code-num">2</span>))
+          <span class="code-keyword">for</span> arm <span class="code-keyword">in</span> arms}
+
+probe = <span class="code-fn">leave_one_group_out</span>(fps, label_field=<span class="code-string">"group"</span>, seed=<span class="code-num">0</span>)
+</code></pre>
+
+<p>
+<strong>What you get.</strong> A calibrated signal-to-noise ratio. If
+across-arm JSD substantially exceeds within-arm JSD (rough rule of
+thumb: signal greater than twice the floor), the factor moved
+procedure. If the two are comparable, the factor sampled noise around
+the same procedural shape. The probe accuracy gives the predictive-
+transfer version of the same claim.
+</p>
+
+<h3 id="mode-deployment">3. Deployment signal</h3>
+
+<p>
+Run the Level 1 pattern matcher on the procedural prefix of a running
+trajectory to flag runs heading toward known failure shapes (stuck
+edit loops, missing localize-before-edit, missing tests-before-submit)
+and interrupt before the budget burns.
+</p>
+
+<p>The setup:</p>
+
+<ol>
+  <li>Author a YAML rule file with the invariants that should hold mid-trajectory. Some rules are eagerly checkable on partial prefixes (no-long-edit-loops); others (ends-in-submit) only make sense at completion.</li>
+  <li>Load the rule set once at process start.</li>
+  <li>Inside the agent loop, at each new atom, build a prefix <code>Trace</code> and call <code>match_patterns</code> on the single-trace list.</li>
+  <li>Inspect the returned violations; act on the eager ones; let the completion-only ones inform a final report.</li>
+</ol>
+
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> Trace, load_patterns, match_patterns
+
+patterns = <span class="code-fn">load_patterns</span>(<span class="code-string">"rules/deployment.yaml"</span>)
+EAGER = {<span class="code-string">"no_long_edit_loops"</span>, <span class="code-string">"missing_localize"</span>}
+
+<span class="code-keyword">def</span> <span class="code-fn">check_prefix</span>(trace_id, agent, group, atoms_so_far):
+    prefix = <span class="code-fn">Trace</span>(trace_id=trace_id, agent=agent, group=group, atoms=atoms_so_far)
+    report = <span class="code-fn">match_patterns</span>([prefix], patterns)
+    <span class="code-keyword">return</span> [v <span class="code-keyword">for</span> v <span class="code-keyword">in</span> report.violations.<span class="code-fn">get</span>(trace_id, []) <span class="code-keyword">if</span> v <span class="code-keyword">in</span> EAGER]
+
+<span class="code-comment"># In the agent loop:</span>
+<span class="code-keyword">for</span> step <span class="code-keyword">in</span> agent.<span class="code-fn">run</span>():
+    current_atoms.<span class="code-fn">append</span>(step.atom)
+    violations = <span class="code-fn">check_prefix</span>(run.id, run.agent, run.group, current_atoms)
+    <span class="code-keyword">if</span> violations:
+        log.<span class="code-fn">warning</span>(<span class="code-string">"procgrep flagged %s at step %d"</span>, violations, step.idx)
+        agent.<span class="code-fn">interrupt</span>()
+        <span class="code-keyword">break</span>
+</code></pre>
+
+<p>Example rule file:</p>
+
+<pre><code>rules:
+  - name: no_long_edit_loops
+    description: No run of 5+ consecutive edits without an intervening test.
+    pattern: <span class="code-string">"(edit ){5,}"</span>
+    must_hold: false
+
+  - name: missing_localize
+    description: A localize atom must precede the first edit.
+    pattern: <span class="code-string">"(search_repo|find_file|open|nav) .*edit"</span>
+    must_hold: true
+</code></pre>
+
+<p>
+<strong>What you get.</strong> A regex-on-canonical-atoms matcher that
+runs in milliseconds. Cheap enough to invoke on every step of a live
+agent. Limitation: regex over atom sequences cannot express temporal-
+logic invariants ("eventually X follows every Y"); that is the future
+procedural-DSPy DSL.
 </p>
 
 <h2 id="quickstart">Quickstart</h2>
