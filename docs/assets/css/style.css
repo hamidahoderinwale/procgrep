@@ -8,6 +8,9 @@
   --link: #1853C7;
   --link-hover: #103E96;
   --maxw: 720px;
+  --sidebar-w: 200px;
+  --gutter: 48px;
+  --page-w: calc(var(--sidebar-w) + var(--gutter) + var(--maxw));
 
   /* Syntax colors, calibrated for cool palette and WCAG AA contrast */
   --code-comment: #7B8493;
@@ -77,26 +80,79 @@ hr {
 
 /* -- Layout ------------------------------------------------------ */
 
-main {
-  max-width: var(--maxw);
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, var(--maxw));
+  gap: var(--gutter);
+  max-width: var(--page-w);
   margin: 0 auto;
-  padding: 60px 28px 80px;
+  padding: 0 28px;
 }
 
-nav.top {
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 26px 28px 0;
-  display: flex;
-  justify-content: space-between;
-  align-items: baseline;
+aside.sidebar {
+  padding: 60px 0 0;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
   font-size: 14px;
 }
-nav.top a { color: var(--text); }
-nav.top a:hover { color: var(--link); text-decoration: none; }
-nav.top .brand { font-weight: 700; font-size: 15px; }
-nav.top .links a { margin-left: 18px; color: var(--muted); }
-nav.top .links a:hover { color: var(--text); text-decoration: none; }
+aside.sidebar .brand {
+  display: block;
+  font-weight: 700;
+  font-size: 15px;
+  color: var(--text);
+  margin-bottom: 22px;
+}
+aside.sidebar .brand:hover { color: var(--link); text-decoration: none; }
+aside.sidebar nav { display: flex; flex-direction: column; gap: 6px; }
+aside.sidebar nav a {
+  color: var(--muted);
+  padding: 3px 0;
+  line-height: 1.5;
+}
+aside.sidebar nav a:hover { color: var(--text); text-decoration: none; }
+aside.sidebar .meta-link {
+  margin-top: 18px;
+  font-size: 13px;
+  color: var(--faint);
+}
+aside.sidebar .meta-link a { color: var(--faint); }
+aside.sidebar .meta-link a:hover { color: var(--text); }
+
+main {
+  padding: 60px 0 80px;
+  min-width: 0;  /* prevent grid item from forcing overflow */
+}
+
+/* Collapse to single column on narrow viewports */
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: var(--maxw);
+  }
+  aside.sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 26px 0 12px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 8px;
+  }
+  aside.sidebar .brand { display: inline-block; margin-bottom: 0; }
+  aside.sidebar nav {
+    display: inline-flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0 18px;
+    margin-left: 18px;
+    vertical-align: baseline;
+  }
+  aside.sidebar .meta-link { display: none; }
+  main { padding: 26px 0 60px; }
+}
 
 header.intro { margin-bottom: 1.5em; }
 header.intro .sub {
@@ -198,9 +254,7 @@ td strong { color: var(--text); font-weight: 600; }
 .faint { color: var(--faint); font-size: 13px; }
 
 footer {
-  max-width: var(--maxw);
-  margin: 0 auto;
-  padding: 30px 28px 60px;
+  padding: 30px 0 60px;
   border-top: 1px solid var(--rule);
   margin-top: 3rem;
   font-size: 13px;
