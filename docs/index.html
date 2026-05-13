@@ -271,7 +271,8 @@ did outside that stream.
     <strong>Nine agents, same task, nine different journeys.</strong>
     Each row is one agent on one Django benchmark instance; each cell
     is one step. Pink cells mark steps where the agent had the
-    correct file open; grey cells mark steps on a different file.
+    <dfn class="def" tabindex="0" data-def="Gold file (or gold patch file): the source file modified by the human-authored ground-truth patch that the benchmark task expects to be changed. From 'gold standard.' An agent that never opens the gold file cannot have fixed the task.">gold patch file</dfn>
+    open; grey cells mark steps on a different file.
     Some agents find the right file in the first few steps and stay
     focused there. Some never find it. Some oscillate (find it, leave,
     find it again). Outcome-only metrics collapse all of these into
