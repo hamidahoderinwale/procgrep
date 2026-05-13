@@ -660,6 +660,34 @@ that should never appear — and fail the build if any match).
     python check_drift.py drift.json --baseline 0.12 --tolerance 0.05  <span class="code-comment"># exits 1 if exceeded</span>
 </code></pre>
 
+<p><strong>What the CI sees.</strong> <code>drift.json</code> after the JSD step:</p>
+
+<pre><code>{
+  <span class="code-string">"baseline_build"</span>: <span class="code-string">"v1.4.2"</span>,
+  <span class="code-string">"current_build"</span>: <span class="code-string">"v1.4.3"</span>,
+  <span class="code-string">"across_build_jsd"</span>: <span class="code-num">0.142</span>,
+  <span class="code-string">"within_build_noise"</span>: <span class="code-num">0.044</span>,
+  <span class="code-string">"snr"</span>: <span class="code-num">3.23</span>,
+  <span class="code-string">"verdict"</span>: <span class="code-string">"drift_exceeds_tolerance"</span>
+}
+</code></pre>
+
+<pre><code>$ python check_drift.py drift.json --baseline 0.12 --tolerance 0.05
+DRIFT EXCEEDED: across-build JSD 0.142 &gt; baseline 0.12 + tolerance 0.05
+SNR 3.23x; the build's procedural fingerprint shifted by more than sampling noise.
+Build failed.
+$ echo $?
+1
+</code></pre>
+
+<p>
+The 3.23× SNR is the same kind of number the controlled-eval recipe
+emits. Above 2× it's a real procedural shift, not sampling; the CI
+fails. Empirical reference: on two real model upgrades inside SWE-agent
+(Claude-3 → Claude-3.5, GPT-4 → GPT-4o), procgrep recovered SNRs of
+3.72× and 2.55× respectively, both above the threshold.
+</p>
+
 <h3>2. Prompt-optimization frameworks</h3>
 
 <p>
@@ -684,6 +712,27 @@ procedure</em>" instead of just "pass more tests."
 
 compiled = dspy.<span class="code-fn">MIPRO</span>(metric=procedural_distance_metric).<span class="code-fn">compile</span>(program, trainset)
 </code></pre>
+
+<p><strong>What the compiler sees per example.</strong> The metric returns a single
+scalar in [0, 1] that DSPy maximizes:</p>
+
+<pre><code><span class="code-comment"># Per-example metric output during a MIPRO run (illustrative):</span>
+example_42  resolves=<span class="code-keyword">True</span>   procedural_distance=<span class="code-num">0.31</span>   metric=<span class="code-num">0.690</span>
+example_43  resolves=<span class="code-keyword">True</span>   procedural_distance=<span class="code-num">0.08</span>   metric=<span class="code-num">0.917</span>   <span class="code-comment"># closer to target shape → higher reward</span>
+example_44  resolves=<span class="code-keyword">False</span>  procedural_distance=  n/a    metric=<span class="code-num">0.000</span>   <span class="code-comment"># outcome gate fails first</span>
+
+<span class="code-comment"># MIPRO compile result after N rounds:</span>
+program_v0  mean_metric=<span class="code-num">0.612</span>   mean_resolve%=<span class="code-num">68.0</span>%
+program_v3  mean_metric=<span class="code-num">0.781</span>   mean_resolve%=<span class="code-num">69.5</span>%   <span class="code-comment"># resolve% roughly flat, procedure pulled toward target</span>
+</code></pre>
+
+<p>
+The compiler doesn't see "JSD" or "fingerprint" directly; it sees a
+single scalar to maximize. The procedural shaping shows up as the
+program drifts toward higher metric values without resolve% moving
+much. This is the signal the existing outcome-only DSPy compiler
+can't generate.
+</p>
 
 <h3>3. Production observability and procedural search</h3>
 
@@ -752,10 +801,31 @@ fps    = <span class="code-fn">encode</span>(traces, vocab=vocab)
 <span class="code-comment"># `group` is "warp_off" or "warp_on" on each input record.</span>
 matrix = <span class="code-fn">jsd_matrix</span>(fps, group_by=<span class="code-string">"group"</span>)
 probe  = <span class="code-fn">leave_one_group_out</span>(fps, label_field=<span class="code-string">"group"</span>, seed=<span class="code-num">0</span>)
-
-<span class="code-comment"># If JSD > 2x within-arm noise and probe accuracy > chance,</span>
-<span class="code-comment"># WarpGrep changed the agent's procedure beyond changing its outcome.</span>
 </code></pre>
+
+<p><strong>What the A/B prints</strong> (illustrative shape; the numeric
+values would come from your own ablation):</p>
+
+<pre><code><span class="code-comment"># matrix.summary()</span>
+across_arm_jsd:           <span class="code-num">0.187</span>
+within_arm_jsd_median:    <span class="code-num">0.052</span>
+snr:                      <span class="code-num">3.6</span>x        <span class="code-comment"># &gt; 2x → moved procedure</span>
+
+<span class="code-comment"># probe.summary()</span>
+arm_probe_accuracy:       <span class="code-num">0.864</span> ± <span class="code-num">0.031</span>   <span class="code-comment"># &gt; 0.55 → arms distinguishable above chance</span>
+
+<span class="code-comment"># Optional second probe: does fingerprint predict success?</span>
+success_probe_accuracy:   <span class="code-num">0.71</span>  (majority baseline <span class="code-num">0.62</span>, lift +<span class="code-num">0.24</span>)
+verdict:                  fingerprint predicts success above majority baseline
+</code></pre>
+
+<p>
+Two independent verdicts. <strong>SNR + arm probe</strong> answer "did WarpGrep
+change the procedure?"; the optional <strong>success probe</strong> answers "does
+the shifted procedural shape correlate with pass/fail?". A wrapper
+that moves procedure without lifting resolve% (SNR up, success probe
+flat) is doing something without doing the right thing.
+</p>
 
 <h3 id="recipes">Recipes (case studies the library has already produced)</h3>
 
