@@ -882,6 +882,37 @@ $ jq '.pass_rate_per_rule.no_long_shell_cd_loop' report.json
 0.591   <span class="code-comment"># 41% of Claude-4 trajectories fail this rule</span>
 </code></pre>
 
+<p>
+<strong>The broader lesson: don't hardcode the atom.</strong> The
+original paper found <em>stuck-edit-loops</em> (long
+<code>EDIT_SRC_PY</code> runs) as the dominant failure signature in
+its 3-agent corpus. Extending the same analysis to 9 agents flipped
+the picture: Claude-4 flails by stringing <code>SHELL_CD</code>
+atoms instead, and the post-localization motif distribution shows
+<code>EDIT_SRC_PY</code> proportion <em>decreasing</em> with
+trajectory length while <code>SHELL_CD</code> rises from near-zero
+to ~21%. Different agents over-emit different atoms when stuck.
+A scaffold-agnostic stopping rule is the safer default:
+</p>
+
+<pre><code><span class="code-comment"># rules/generic_stuck_loop.yaml</span>
+rules:
+  - name: no_single_atom_dominates_window
+    description: <span class="code-string">"No canonical atom should repeat 8+ times in any window."</span>
+    pattern: <span class="code-string">"(\\b\\w+\\b ){0,12}(\\b\\w+\\b )\\2{7,}"</span>
+    must_hold: false
+</code></pre>
+
+<p>
+The rule catches any single canonical atom repeated eight or more
+times in a row anywhere in the trajectory. It fires on both the
+older <code>EDIT_SRC_PY</code>-storm pattern and the newer
+Claude-4 <code>SHELL_CD</code>-storm pattern, plus any future
+flailing mode that hasn't been seen yet. Use atom-specific rules
+when you know the signature for a particular agent class; use the
+generic rule when you don't.
+</p>
+
 <h4>Recipe: audit a canonicalization-layer gap</h4>
 
 <p>
