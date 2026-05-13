@@ -76,8 +76,7 @@ the right place to land it (in-tree built-in vs out-of-tree plugin).
 - Title: imperative ("Add ...", "Fix ..."), under 70 characters.
 - Body: what changed, why, validation steps, any reversibility notes.
 - One logical change per PR. Split refactors from features.
-- Update the README, FAQ, or ROADMAP if the change affects the
-  public surface or the project direction.
+- Update the README or FAQ if the change affects the public surface.
 
 ## Reporting issues
 
