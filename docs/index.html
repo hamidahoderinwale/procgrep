@@ -190,9 +190,12 @@ pairwise JSD by agent (upper triangle only):
 </code></pre>
 
 <p>
-Two agents with disjoint procedural styles; JSD lands near the
-maximum (1.0 is the ceiling under log base 2). That is the metric
-behaving as expected.
+The two agents in this corpus do different things: one mostly edits
+and tests, the other mostly searches and reads. Their tool-use
+patterns barely overlap, and JSD reflects that — <mark>0.74</mark>
+sits close to the 1.0 ceiling where two agents would share no
+patterns at all. The metric behaves as expected on a corpus
+designed to make it work.
 </p>
 
 <h3 id="sample-paper">On the paper's nine-agent corpus</h3>
@@ -205,39 +208,45 @@ Same code path, ~2,639 trajectories instead of six.
 <figure>
   <img src="assets/img/jsd_matrix_9agents.png" alt="Pairwise JSD matrix across nine agents on SWE-bench Verified; visible block structure separates the SWE-agent base cell from extended-thinking from the three cross-scaffold cells.">
   <figcaption>
-    Pairwise JSD across the nine agents. Within the SWE-agent base
-    cell (Claude-3, Claude-3.5, GPT-4, GPT-4o), pairwise JSD is
-    <mark>0.10 to 0.19</mark>. Across scaffolds, JSD reaches
-    <mark>0.62 to 1.00</mark>. The dense top row (Agentless+Claude-3.5)
-    is at the ceiling against every other agent, indicating a
-    procedurally disjoint motif vocabulary.
+    <strong>Scaffold matters more than model.</strong> Four agents that
+    all use SWE-agent (Claude-3, Claude-3.5, GPT-4, GPT-4o) share most
+    of their procedural patterns despite spanning two vendors and four
+    model versions — pairwise JSD <mark>0.10 to 0.19</mark>. Agents
+    using different scaffolds sit at <mark>0.62 to 1.00</mark> against
+    everything else, basically procedurally disjoint. Same model under
+    different scaffolds looks more different than different models
+    under the same scaffold.
   </figcaption>
 </figure>
 
 <figure>
   <img src="assets/img/procedural_space_umap.png" alt="UMAP projection of all 2,639 per-trajectory fingerprints, colored by paradigm-by-scaffold cell, with 90% density contours per cell.">
   <figcaption>
-    Per-trajectory UMAP over the full corpus, colored by cell, with
-    each cell's 90% density contour overlaid. Agentless, DARS, and
-    SWE-agent extended-thinking form clearly disjoint clusters at this
-    level. SWE-agent base and Moatless overlap at the top of the
-    projection: a 2D-projection adjacency that the dots-only view
-    would have hidden, even though the two cells are JSD-distinct
-    in the original 199-dim motif space. Hyperparameters:
-    n_neighbors=15, min_dist=0.25, metric=cosine, seed=0.
+    Each dot is one trajectory; closer dots mean more similar
+    procedures. The 90% density contour shows where each cell's mass
+    lives. Agentless, DARS, and SWE-agent extended-thinking form
+    clearly disjoint clusters. SWE-agent base and Moatless overlap
+    at the top, but they're not actually that similar — the 2D
+    squashing loses information; in the full feature space they sit
+    well apart. The 2D view is a useful summary, not the only
+    evidence to trust. Hyperparameters: n_neighbors=15, min_dist=0.25,
+    metric=cosine, seed=0.
   </figcaption>
 </figure>
 
 <figure>
   <img src="assets/img/pattern_matcher_passrates.png" alt="Heatmap of pattern-matcher pass rates: five rules on the y-axis, five paradigm-by-scaffold cells on the x-axis, color and inline percentage encoding each rule's pass rate per cell.">
   <figcaption>
-    All thirty (rule × cell) pass rates at a glance. Each row is a
-    rule; each column is one of the five paradigm-by-scaffold cells.
-    Two findings jump out: <mark>tests_run_at_least_once at 0% in
-    Moatless</mark> (which surfaced a canonicalization-layer gap, not
-    a behavioral one) and <mark>stuck_shell_cd_loop at 59% in
-    extended-thinking</mark> (a model-class signature for Claude-4 in
-    that cell). Both invisible to outcome-only evaluation.
+    Each row is a procedural rule; each column is one of the five
+    paradigm-by-scaffold cells. Color shows how often agents in that
+    cell pass the rule. Two findings worth naming: (1) <mark>Moatless
+    "never runs tests" at 0%</mark> is a measurement bug, not a
+    behavior — a hand audit of one trace found 71 internal test calls
+    the canonicalizer didn't see, so procgrep caught its own
+    parsing gap; (2) <mark>Claude-4 fails the "no stuck shell-cd loop"
+    rule 41% of the time</mark> — a characteristic flailing pattern
+    no other agent shows. Both findings are invisible to outcome-only
+    evaluation (pass/fail counts can't tell you why).
   </figcaption>
 </figure>
 
@@ -259,14 +268,16 @@ did outside that stream.
 <figure>
   <img src="assets/img/history_flow_django_16041.png" alt="Per-step file-touch pattern across all nine agents on one Django benchmark instance, colored to show when each agent had the gold patch file open.">
   <figcaption>
-    What "structurally different procedures" looks like at instance
-    level. Each row is one of the nine agents working on the same
-    Django benchmark instance; each cell is one step. Pink cells
-    mean the agent has the gold patch file open at that step; grey
-    cells mean another file. Some agents open the gold file in the
-    first few steps and stay there; some never open it; some
-    oscillate. <mark>Same task, same gold patch, nine distinct procedural
-    shapes</mark> — the kind of distinction outcome metrics cannot see.
+    <strong>Nine agents, same task, nine different journeys.</strong>
+    Each row is one agent on one Django benchmark instance; each cell
+    is one step. Pink cells mark steps where the agent had the
+    correct file open; grey cells mark steps on a different file.
+    Some agents find the right file in the first few steps and stay
+    focused there. Some never find it. Some oscillate (find it, leave,
+    find it again). Outcome-only metrics collapse all of these into
+    "fixed it" or "didn't"; procgrep surfaces <em>how</em> the agent
+    worked — which matters when the same outcome can mask wildly
+    different behaviors.
   </figcaption>
 </figure>
 
