@@ -10,6 +10,7 @@ repository root after `pip install -e ".[dev]"`.
 examples/
 ├── README.md                       (this file)
 ├── synthetic_traces.jsonl          (6 trajectories, 2 agents, 2 groups)
+├── synthetic_task_traces.jsonl     (12 trajectories, 3 instances x 2 agents x 2 outcomes)
 ├── rules/
 │   └── stuck_edit_loop.yaml        (4 pattern-matcher rules)
 └── python/
@@ -17,7 +18,8 @@ examples/
     ├── 02_controlled_eval.py       (within/across-arm JSD + probe)
     ├── 03_discriminative_motifs.py (v0.1.1 stats helpers)
     ├── 04_deployment_signal.py     (prefix-by-prefix pattern matching)
-    └── 05_custom_adapter.py        (register a TraceAdapter for a new scaffold)
+    ├── 05_custom_adapter.py        (register a TraceAdapter for a new scaffold)
+    └── 06_task_controlled.py       (same-task cross-agent and success-vs-failure JSD)
 ```
 
 The synthetic corpus has two agents (`editor`, `searcher`) across two
@@ -35,6 +37,7 @@ python examples/python/02_controlled_eval.py
 python examples/python/03_discriminative_motifs.py
 python examples/python/04_deployment_signal.py
 python examples/python/05_custom_adapter.py
+python examples/python/06_task_controlled.py
 ```
 
 What each script demonstrates:
@@ -46,6 +49,7 @@ What each script demonstrates:
 | `03_discriminative_motifs.py` | The v0.1.1 stats helpers: per-group atom frequencies, effective vocabulary size, per-trajectory entropy summary, top discriminative motifs between two groups. |
 | `04_deployment_signal.py` | Prefix-by-prefix pattern matching to flag a trajectory mid-stream. Simulates the runtime use of the Level 1 matcher. |
 | `05_custom_adapter.py` | Registering a `TraceAdapter` for a non-built-in scaffold and running the rest of the pipeline against its output. |
+| `06_task_controlled.py` | Task-controlled comparison (STUDIES.md study #3): same-task cross-agent JSD and same-task success-vs-failure JSD, both via a load-time preprocessor that composes `group` from `instance_id` and `outcome`. |
 
 ## CLI quick run
 
