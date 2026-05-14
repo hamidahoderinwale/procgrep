@@ -17,7 +17,8 @@ examples/
     ├── 02_controlled_eval.py       (within/across-arm JSD + probe)
     ├── 03_discriminative_motifs.py (v0.1.1 stats helpers)
     ├── 04_deployment_signal.py     (prefix-by-prefix pattern matching)
-    └── 05_custom_adapter.py        (register a TraceAdapter for a new scaffold)
+    ├── 05_custom_adapter.py        (register a TraceAdapter for a new scaffold)
+    └── 07_live_monitor.py          (production-loop pattern matcher with interrupt + budget-saved)
 ```
 
 The synthetic corpus has two agents (`editor`, `searcher`) across two
@@ -35,6 +36,7 @@ python examples/python/02_controlled_eval.py
 python examples/python/03_discriminative_motifs.py
 python examples/python/04_deployment_signal.py
 python examples/python/05_custom_adapter.py
+python examples/python/07_live_monitor.py
 ```
 
 What each script demonstrates:
@@ -46,6 +48,7 @@ What each script demonstrates:
 | `03_discriminative_motifs.py` | The v0.1.1 stats helpers: per-group atom frequencies, effective vocabulary size, per-trajectory entropy summary, top discriminative motifs between two groups. |
 | `04_deployment_signal.py` | Prefix-by-prefix pattern matching to flag a trajectory mid-stream. Simulates the runtime use of the Level 1 matcher. |
 | `05_custom_adapter.py` | Registering a `TraceAdapter` for a non-built-in scaffold and running the rest of the pipeline against its output. |
+| `07_live_monitor.py` | Production-shaped live-monitoring loop: auto-selects eager (must-hold-false) rules, iterates the corpus, interrupts on first violation, reports budget-saved per interrupt. `--realtime` paces output for terminal recordings; `--no-interrupt` keeps replaying for ablation. |
 
 ## CLI quick run
 
