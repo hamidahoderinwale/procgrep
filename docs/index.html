@@ -31,6 +31,7 @@
     <a href="#install">Install</a>
     <a href="#quickstart">Quickstart</a>
     <a href="#capabilities">Capabilities</a>
+    <a href="#metrics">Metrics</a>
     <a href="#integrations">Integrations</a>
 
     <span class="nav-label">Background</span>
@@ -639,6 +640,53 @@ procgrep probe        --input fp.jsonl         --label-field group   --output pr
 </tbody>
 </table>
 
+<h2 id="metrics">Metrics: named dimensions you can compute on your corpus</h2>
+
+<p>
+The capabilities above are functions. The <strong>metrics</strong> are
+the named, group-level quantities you compose from those functions to
+characterize a corpus. The reference is
+<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/METRICS.md">METRICS.md</a>
+— each metric has a formal definition, units, range, and the
+<code>procgrep</code> call that computes it. Six dimensions are
+computable from the library alone; two more require the AST-patch
+machinery in the
+<a href="https://github.com/hamidahoderinwale/bidirect-align-dev-traces">companion
+repository</a>.
+</p>
+
+<p><strong>The six procgrep-side dimensions.</strong></p>
+
+<ol>
+  <li><code>mean_traj_length</code> &mdash; mean atoms per trajectory per group; coarse proxy for verbosity.</li>
+  <li><code>effective_vocab</code> &mdash; <code>exp(H(group-mean motif distribution))</code>; equivalent count of equally-used motifs.</li>
+  <li><code>mean_entropy</code> &mdash; median per-trajectory motif entropy across the group.</li>
+  <li><code>within_group_jsd</code> &mdash; mean pairwise JSD inside the group; <em>the noise floor</em> for any across-group claim.</li>
+  <li><code>motif_concentration</code> &mdash; Herfindahl-Hirschman index on the group-mean motif distribution.</li>
+  <li><code>atom_gini</code> &mdash; Gini coefficient on the group's raw atom-frequency vector (vocabulary-independent).</li>
+</ol>
+
+<p>
+<strong>Run orthogonality on your corpus.</strong> Several of these
+dimensions correlate on real corpora. The bundled
+<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/examples/python/08_metric_orthogonality.py"><code>examples/python/08_metric_orthogonality.py</code></a>
+computes all six, produces a pairwise correlation matrix, and
+suggests an independent subset at a configurable threshold. On the
+bundled 2-group synthetic corpus the result is degenerate (any pair
+of two points is perfectly collinear); meaningful output needs
+<em>at least</em> ~10 groups.
+</p>
+
+<p>
+<strong>Why "dimensions" is the right word.</strong> Papers that
+propose K dimensions and then publish a correlation matrix become
+the reference others cite. Papers that publish K findings backed by
+unnamed metrics get cited as background. The metrics page exists so
+that the next reader can lift a dimension out and apply it to their
+own corpus on Monday morning, instead of having to reverse-engineer
+the analysis from the findings section.
+</p>
+
 <h2 id="integrations">Integrations and case studies</h2>
 
 <p>
@@ -1145,6 +1193,7 @@ write-ups in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ST
 <tbody>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/README.md">README.md</a></td><td>Capabilities, modes of use, examples per mode.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a></td><td>Ranked case studies the library enables.</td></tr>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/METRICS.md">METRICS.md</a></td><td>Named procedural dimensions: definitions, units, ranges, computing function.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/FAQ.md">FAQ.md</a></td><td>DSPy positioning, count-vs-embedding rationale, canonicalization-layer caveat.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ROADMAP.md">ROADMAP.md</a></td><td>What is and is not on the path.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a></td><td>Dev environment, code style, PR conventions.</td></tr>
