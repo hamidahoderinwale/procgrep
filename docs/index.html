@@ -31,6 +31,7 @@
     <a href="#install">Install</a>
     <a href="#quickstart">Quickstart</a>
     <a href="#capabilities">Capabilities</a>
+    <a href="#metrics">Metrics</a>
     <a href="#integrations">Integrations</a>
 
     <span class="nav-label">Background</span>
@@ -99,20 +100,6 @@ the same library: <strong>compare</strong> agents to see whether
 they work in structurally distinct ways, or <strong>search</strong>
 a corpus of trajectories for the ones that match a specification.
 The grep name reads both ways on purpose.
-</p>
-
-<p>
-<strong>How.</strong> Three steps, plain language. First, translate
-each scaffold's tool-call vocabulary into a shared one, so different
-agents can be compared at all. Second, learn a compact representation
-of the recurring patterns in those sequences. Third, compare any two
-groups of agents by how those patterns distribute. The technical
-primitives behind each step —
-<dfn class="def" tabindex="0" data-def="Byte-pair encoding (BPE): an algorithm that finds the most frequent adjacent pair in a corpus of sequences, glues it into a new token, and repeats. Procgrep applies it to atoms, learning a compressed motif vocabulary.">byte-pair encoding</dfn>,
-<dfn class="def" tabindex="0" data-def="Jensen-Shannon divergence (JSD): a symmetric, bounded distance between two probability distributions. Values lie in [0, 1] with log base 2. Used here to compare fingerprints.">Jensen-Shannon divergence</dfn>,
-<dfn class="def" tabindex="0" data-def="Leave-one-group-out probe: train a classifier on K-1 groups and test on the held-out group. Measures predictive transfer. The paper's headline cross-scaffold result is 0 of 300 correct.">leave-one-group-out probes</dfn>,
-<dfn class="def" tabindex="0" data-def="UMAP (Uniform Manifold Approximation and Projection): a dimensionality-reduction method that projects high-dimensional vectors into 2D for visual inspection while preserving local neighborhood structure.">UMAP</dfn> projection, and regex-based pattern matching — are linked in
-the <a href="#glossary">glossary</a> below.
 </p>
 
 <p>
@@ -639,6 +626,53 @@ procgrep probe        --input fp.jsonl         --label-field group   --output pr
 </tbody>
 </table>
 
+<h2 id="metrics">Metrics: named dimensions you can compute on your corpus</h2>
+
+<p>
+The capabilities above are functions. The <strong>metrics</strong> are
+the named, group-level quantities you compose from those functions to
+characterize a corpus. The reference is
+<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/METRICS.md">METRICS.md</a>
+— each metric has a formal definition, units, range, and the
+<code>procgrep</code> call that computes it. Six dimensions are
+computable from the library alone; two more require the AST-patch
+machinery in the
+<a href="https://github.com/hamidahoderinwale/bidirect-align-dev-traces">companion
+repository</a>.
+</p>
+
+<p><strong>The six procgrep-side dimensions.</strong></p>
+
+<ol>
+  <li><code>mean_traj_length</code> &mdash; mean atoms per trajectory per group; coarse proxy for verbosity.</li>
+  <li><code>effective_vocab</code> &mdash; <code>exp(H(group-mean motif distribution))</code>; equivalent count of equally-used motifs.</li>
+  <li><code>mean_entropy</code> &mdash; median per-trajectory motif entropy across the group.</li>
+  <li><code>within_group_jsd</code> &mdash; mean pairwise JSD inside the group; <em>the noise floor</em> for any across-group claim.</li>
+  <li><code>motif_concentration</code> &mdash; Herfindahl-Hirschman index on the group-mean motif distribution.</li>
+  <li><code>atom_gini</code> &mdash; Gini coefficient on the group's raw atom-frequency vector (vocabulary-independent).</li>
+</ol>
+
+<p>
+<strong>Run orthogonality on your corpus.</strong> Several of these
+dimensions correlate on real corpora. The bundled
+<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/examples/python/08_metric_orthogonality.py"><code>examples/python/08_metric_orthogonality.py</code></a>
+computes all six, produces a pairwise correlation matrix, and
+suggests an independent subset at a configurable threshold. On the
+bundled 2-group synthetic corpus the result is degenerate (any pair
+of two points is perfectly collinear); meaningful output needs
+<em>at least</em> ~10 groups.
+</p>
+
+<p>
+<strong>Why "dimensions" is the right word.</strong> Papers that
+propose K dimensions and then publish a correlation matrix become
+the reference others cite. Papers that publish K findings backed by
+unnamed metrics get cited as background. The metrics page exists so
+that the next reader can lift a dimension out and apply it to their
+own corpus on Monday morning, instead of having to reverse-engineer
+the analysis from the findings section.
+</p>
+
 <h2 id="integrations">Integrations and case studies</h2>
 
 <p>
@@ -1145,6 +1179,7 @@ write-ups in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ST
 <tbody>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/README.md">README.md</a></td><td>Capabilities, modes of use, examples per mode.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/STUDIES.md">STUDIES.md</a></td><td>Ranked case studies the library enables.</td></tr>
+<tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/METRICS.md">METRICS.md</a></td><td>Named procedural dimensions: definitions, units, ranges, computing function.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/FAQ.md">FAQ.md</a></td><td>DSPy positioning, count-vs-embedding rationale, canonicalization-layer caveat.</td></tr>
 <tr><td><a href="https://github.com/hamidahoderinwale/procgrep/blob/main/CONTRIBUTING.md">CONTRIBUTING.md</a></td><td>Dev environment, code style, PR conventions.</td></tr>
 </tbody>
