@@ -130,7 +130,7 @@ not competing.
 `procgrep` does not depend on DSPy and does not call any LLM. The two
 are useful together in the controlled-eval setting: a researcher can
 optimize an agent with DSPy and use `procgrep` to measure whether the
-NL-layer optimization produced a procedural-layer shift, or whether
+natural-language-layer optimization produced a procedural-layer shift, or whether
 procedure is mostly determined by scaffold and model rather than
 prompt. The case study sketched as "DSPy compile-time procedural
 audit" in [STUDIES.md](STUDIES.md) walks through this.
