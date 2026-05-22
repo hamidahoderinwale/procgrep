@@ -53,8 +53,7 @@ is in the current MVP.
    group is structurally distinct.
 7. **Match procedural patterns** against trace sequences via a YAML
    rule format. Each rule is a regex over the atom sequence with a
-   `must_hold` flag. The compositional invariant DSL (procedural-DSPy)
-   is future work; this library ships the pattern matcher only.
+   `must_hold` flag.
 8. **Group-level descriptive and discriminative statistics**:
    top-K atom frequencies per group, effective vocabulary size
    (perplexity) per group, per-trajectory entropy summarized by
