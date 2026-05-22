@@ -19,6 +19,6 @@ Adapters registered here:
 
 from __future__ import annotations
 
-from procgrep.adapters import agentless, dars, gumtree, moatless, swe_agent
+from procgrep.adapters import agentless, dars, gumtree, mini_swe_agent, moatless, swe_agent
 
-__all__ = ["agentless", "dars", "gumtree", "moatless", "swe_agent"]
+__all__ = ["agentless", "dars", "gumtree", "mini_swe_agent", "moatless", "swe_agent"]
