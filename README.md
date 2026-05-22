@@ -188,7 +188,7 @@ The library ships a tiny synthetic corpus and rule file under
 [`examples/`](examples/) so the pipeline above can be run end-to-end
 without supplying your own traces.
 
-#### Python: fingerprint and compare two agents
+#### Fingerprint and compare two agents
 
 There are two equivalent entry points. The public API takes already-
 adapted `Trace` objects; the `procgrep.io` helpers handle JSONL
@@ -212,7 +212,7 @@ for record in matrix.to_records():
     print(record)
 ```
 
-#### Python: group-level descriptive stats
+#### Group-level descriptive stats
 
 ```python
 from procgrep import (
@@ -249,7 +249,7 @@ for m in top:
     print(m.motif, m.log_odds, m.p_a, m.p_b)
 ```
 
-#### Python: match a procedural pattern
+#### Match a procedural pattern
 
 ```python
 from procgrep import canonicalize, load_patterns, match_patterns
