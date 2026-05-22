@@ -107,6 +107,7 @@ module = [
     "altair.*",
     "sklearn.*",
     "scipy.*",
+    "datasets.*",
 ]
 ignore_missing_imports = true
 
