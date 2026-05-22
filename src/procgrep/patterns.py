@@ -23,6 +23,56 @@ Rule files are YAML, of the form:
         description: A localize must precede the first edit.
         pattern: "localize .* edit"
         must_hold: true
+
+Audit-to-monitor methodology
+============================
+
+The pattern matcher is both an *audit-time* and a *runtime* tool, and
+this section describes the discovery-then-deployment workflow that
+turns one into the other.
+
+A defensible rule file is grounded in empirical evidence: each rule
+should correspond to a procedural pattern that has been *demonstrated*
+to correlate with a target behavior (failure, hacking, low quality,
+etc.) on a labeled corpus. The workflow:
+
+1. **Label a corpus.** Collect trajectories with known labels for the
+   target behavior (e.g., resolved vs. unresolved, cheating vs. clean,
+   high-quality vs. bloated patch). Manual annotation, held-out test
+   gap (SpecBench's Δ approach), or LLM-judge labelling all suffice.
+
+2. **Discover candidate patterns.** Apply
+   :func:`procgrep.stats.discriminative_motifs` to the labeled corpus.
+   It surfaces BPE-derived motifs whose frequency distinguishes the
+   two groups most strongly (by log-odds or JSD contribution). Each
+   surfaced motif is a *candidate* rule.
+
+3. **Validate.** For each candidate motif, hold out a portion of the
+   corpus and measure precision/recall on the labels. Convert motifs
+   that survive cross-validation into pattern rules; document the
+   discovery corpus and validation numbers per rule.
+
+4. **Deploy.** Load the resulting YAML file via :func:`load_patterns`
+   and feed live trajectory prefixes to :func:`match_patterns` as a
+   deployment-time sensor. Violations become triggers for whatever
+   downstream system consumes them (alerting, snapshot/revert,
+   trajectory replay, human review).
+
+This is the *audit → monitor* pipeline: research findings turn into
+production sensors via a configuration change, not a rewrite. The
+contribution is methodological as much as it is mechanical.
+
+Important caveat: do NOT publish a rule file that claims to detect
+behavior X without going through the above validation. For example,
+rules listed as "reward-hacking signatures" without an empirical
+discovery experiment behind them would be unsupported conjecture --
+the failure-correlated patterns most easily expressible at the
+atom level are well-documented (see
+``examples/rules/known_failure_patterns.yaml`` for source-cited
+patterns from Beyond Resolution Rates, Code Agent Behaviour, and
+HAI-Code), but failure-correlated is not the same as
+hacking-correlated. Discovery from labeled data is the path that
+licenses the stronger claim.
 """
 
 from __future__ import annotations
