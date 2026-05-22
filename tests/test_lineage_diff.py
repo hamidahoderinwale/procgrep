@@ -312,3 +312,164 @@ def test_lineage_diff_is_frozen_dataclass() -> None:
     diff = lineage_diff(parent, child)
     with pytest.raises(dataclasses.FrozenInstanceError):
         diff.parent_label = "other"  # type: ignore[misc]
+
+
+# Multi-resolution alphabets (Option C) -------------------------------------
+
+
+def test_default_alphabet_is_canonical() -> None:
+    """Each axis defaults to alphabet='canonical' for backward compat."""
+    parent = [_trace("p", [ATOM_EDIT])]
+    child = [_trace("c", [ATOM_EDIT])]
+    diff = lineage_diff(parent, child)
+    for axis in diff.axes:
+        assert axis.alphabet == "canonical"
+
+
+def test_single_alphabet_string_tags_axes() -> None:
+    """A single alphabet string tags every axis with that label."""
+    parent = [_trace("p", [ATOM_EDIT])]
+    child = [_trace("c", [ATOM_EDIT])]
+    diff = lineage_diff(parent, child, alphabet="native")
+    for axis in diff.axes:
+        assert axis.alphabet == "native"
+
+
+def test_multi_alphabet_runs_each_axis_per_alphabet() -> None:
+    """A sequence of alphabets produces axes-x-alphabet results."""
+    parent = [_trace("p", [ATOM_EDIT])]
+    child = [_trace("c", [ATOM_EDIT])]
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["vocabulary", "entropy"],
+        alphabet=["canonical", "native"],
+    )
+    # 2 axes x 2 alphabets = 4 AxisResults
+    assert len(diff.axes) == 4
+    # Order: canonical/vocab, canonical/entropy, native/vocab, native/entropy
+    assert diff.axes[0].alphabet == "canonical"
+    assert diff.axes[0].axis == "vocabulary"
+    assert diff.axes[1].alphabet == "canonical"
+    assert diff.axes[1].axis == "entropy"
+    assert diff.axes[2].alphabet == "native"
+    assert diff.axes[2].axis == "vocabulary"
+    assert diff.axes[3].alphabet == "native"
+    assert diff.axes[3].axis == "entropy"
+
+
+def test_canonical_projection_applied_under_canonical_alphabet() -> None:
+    """canonical_projection alters atoms only when alphabet='canonical'."""
+    # Parent and child emit different native atoms that project to the
+    # same canonical atom. Under canonical-with-projection, the
+    # vocabulary axis should report Jaccard 1.0 (both collapse to one
+    # canonical atom). Under native, vocabularies differ.
+    parent = [_trace("p", ["str_replace"])]
+    child = [_trace("c", ["str_replace_editor"])]
+
+    def to_canonical(atom: str) -> str:
+        if atom in {"str_replace", "str_replace_editor"}:
+            return ATOM_EDIT
+        return atom
+
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["vocabulary"],
+        alphabet=["canonical", "native"],
+        canonical_projection=to_canonical,
+    )
+    canonical_voc = next(a for a in diff.axes if a.alphabet == "canonical")
+    native_voc = next(a for a in diff.axes if a.alphabet == "native")
+    assert canonical_voc.summary_value == pytest.approx(1.0)
+    assert native_voc.summary_value == pytest.approx(0.0)
+
+
+def test_canonical_projection_does_not_affect_native_alphabet() -> None:
+    """canonical_projection is a no-op when alphabet='native' even if provided."""
+    parent = [_trace("p", ["str_replace"])]
+    child = [_trace("c", ["str_replace_editor"])]
+
+    def collapse_all_to_edit(_atom: str) -> str:
+        return ATOM_EDIT
+
+    # Run native only with a projection that would collapse everything;
+    # native results must reflect the original atoms, not the projection.
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["vocabulary"],
+        alphabet="native",
+        canonical_projection=collapse_all_to_edit,
+    )
+    axis = diff.axes[0]
+    assert axis.alphabet == "native"
+    # Different native atoms => Jaccard 0
+    assert axis.summary_value == pytest.approx(0.0)
+
+
+def test_canonical_alphabet_without_projection_is_no_op() -> None:
+    """alphabet='canonical' with projection=None passes atoms through unchanged."""
+    parent = [_trace("p", [ATOM_EDIT, ATOM_RUN_TEST])]
+    child = [_trace("c", [ATOM_EDIT, ATOM_RUN_TEST])]
+    diff = lineage_diff(parent, child, alphabet="canonical")
+    for axis in diff.axes:
+        assert axis.alphabet == "canonical"
+    # Same atoms on both sides, perfect preservation
+    voc = next(a for a in diff.axes if a.axis == "vocabulary")
+    assert voc.summary_value == pytest.approx(1.0)
+
+
+def test_axis_result_alphabet_field_defaults_to_canonical() -> None:
+    """AxisResult.alphabet has a default so existing constructors don't break."""
+    axis = AxisResult(axis="vocabulary", summary_value=0.5, detail={})
+    assert axis.alphabet == "canonical"
+
+
+def test_axis_result_alphabet_is_settable() -> None:
+    """AxisResult.alphabet accepts arbitrary string labels."""
+    axis = AxisResult(
+        axis="vocabulary",
+        summary_value=0.5,
+        detail={},
+        alphabet="my-custom-vocab",
+    )
+    assert axis.alphabet == "my-custom-vocab"
+
+
+def test_to_records_includes_alphabet_field() -> None:
+    """LineageDiff.to_records preserves the alphabet on each axis."""
+    parent = [_trace("p", [ATOM_EDIT])]
+    child = [_trace("c", [ATOM_EDIT])]
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["vocabulary"],
+        alphabet=["canonical", "native"],
+    )
+    records = diff.to_records()
+    axes = records["axes"]
+    assert isinstance(axes, list)
+    assert axes[0]["alphabet"] == "canonical"
+    assert axes[1]["alphabet"] == "native"
+
+
+def test_outcome_quadrant_works_under_multiple_alphabets() -> None:
+    """The outcome_quadrant axis is also multi-alphabet-aware."""
+    parent = [
+        _trace("pp", [ATOM_EDIT, ATOM_RUN_TEST], resolved=True),
+        _trace("pf", [ATOM_EDIT], resolved=False),
+    ]
+    child = [
+        _trace("cp", [ATOM_EDIT, ATOM_RUN_TEST], resolved=True),
+        _trace("cf", [ATOM_EDIT], resolved=False),
+    ]
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["outcome_quadrant"],
+        alphabet=["canonical", "native"],
+        outcome_field="resolved",
+    )
+    assert len(diff.axes) == 2
+    assert {a.alphabet for a in diff.axes} == {"canonical", "native"}

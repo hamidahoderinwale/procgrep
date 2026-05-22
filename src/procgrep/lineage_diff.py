@@ -41,7 +41,7 @@ from __future__ import annotations
 import math
 from collections import Counter
 from collections.abc import Callable, Mapping, Sequence
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 
 from procgrep.types import Atom, Trace
 
@@ -63,11 +63,19 @@ class AxisResult:
         detail: Structured per-axis detail (sets of preserved /
             lost / gained items, mean and median statistics,
             interpretation notes). All values are JSON-serializable.
+        alphabet: Atom alphabet under which this axis was computed.
+            Defaults to ``"canonical"`` (the shared canonical alphabet
+            used by built-in adapters). Other common values include
+            ``"native"`` (the scaffold's own action vocabulary). Users
+            may pass any string; the field is informational, used by
+            readers of the diff to interpret results correctly when
+            multiple alphabets are reported in one LineageDiff.
     """
 
     axis: str
     summary_value: float
     detail: Mapping[str, object]
+    alphabet: str = "canonical"
 
 
 @dataclass(frozen=True)
@@ -145,6 +153,7 @@ class LineageDiff:
                     "axis": axis.axis,
                     "summary_value": axis.summary_value,
                     "detail": dict(axis.detail),
+                    "alphabet": axis.alphabet,
                 }
                 for axis in self.axes
             ],
@@ -159,12 +168,22 @@ def lineage_diff(
     child_label: str = "child",
     along: Sequence[str] = DEFAULT_AXES,
     outcome_field: str | None = None,
+    alphabet: str | Sequence[str] = "canonical",
+    canonical_projection: Callable[[Atom], Atom] | None = None,
 ) -> LineageDiff:
     """Compute a structured procedural-level diff.
 
     Composes `procgrep` primitives into a structured-diff object
     characterizing how the child's procedural distribution differs
     from the parent's along the requested axes.
+
+    Hierarchical multi-resolution: pass ``alphabet=["canonical",
+    "native"]`` to run each axis under both atom alphabets in a
+    single diff. The resulting LineageDiff carries one AxisResult
+    per (axis, alphabet) pair, each tagged with which alphabet it
+    came from. Useful when you want both cross-comparable canonical
+    results (for catalog aggregation) AND scaffold-native richness
+    (for within-scaffold depth) in a single audit.
 
     Args:
         parent: Parent-side canonical traces (e.g., from the base model
@@ -182,10 +201,26 @@ def lineage_diff(
             outcome label for each trace (e.g., ``"resolved"``).
             Required if ``"outcome_quadrant"`` is among the requested
             axes; ignored otherwise.
+        alphabet: Atom alphabet(s) to compute axes under. A single
+            string (default ``"canonical"``) runs each requested axis
+            once, tagged with that alphabet. A sequence of strings
+            (e.g., ``["canonical", "native"]``) runs each axis once
+            per alphabet; the resulting LineageDiff.axes contains all
+            results in nested order (alphabet outer, axis inner),
+            with each AxisResult.alphabet field recording the source.
+            Alphabet names are informational labels; the actual
+            projection (if any) is supplied via canonical_projection.
+        canonical_projection: Optional callable mapping each native
+            atom to its canonical equivalent. Applied to all traces
+            when computing axes under the ``"canonical"`` alphabet.
+            Leave as ``None`` if your traces already emit canonical
+            atoms (which is the default for the built-in adapters).
+            When projection is None, the ``"canonical"`` mode is a
+            no-op pass-through.
 
     Returns:
         A :class:`LineageDiff` with one :class:`AxisResult` per
-        requested axis, in input order.
+        requested (axis, alphabet) pair.
 
     Raises:
         ValueError: If a requested axis name is not recognized, or if
@@ -195,32 +230,81 @@ def lineage_diff(
     parent_list = list(parent)
     child_list = list(child)
 
-    axes: list[AxisResult] = []
-    for axis_name in along:
-        if axis_name == "vocabulary":
-            axes.append(_diff_vocabulary(parent_list, child_list))
-        elif axis_name == "entropy":
-            axes.append(_diff_entropy(parent_list, child_list))
-        elif axis_name == "outcome_quadrant":
-            if outcome_field is None:
-                raise ValueError(
-                    "axis 'outcome_quadrant' requires outcome_field= "
-                    "(name of the metadata field carrying the binary outcome label)"
-                )
-            axes.append(_diff_outcome_quadrant(parent_list, child_list, outcome_field))
+    alphabets: list[str] = [alphabet] if isinstance(alphabet, str) else list(alphabet)
+
+    all_axes: list[AxisResult] = []
+    for alpha in alphabets:
+        # Apply the canonical projection only when computing under
+        # the "canonical" alphabet. Other named alphabets are
+        # treated as the trace's native form and run on as-emitted
+        # atoms. Without a projection, "canonical" is a no-op label.
+        if alpha == "canonical" and canonical_projection is not None:
+            p_traces = _project_traces(parent_list, canonical_projection)
+            c_traces = _project_traces(child_list, canonical_projection)
         else:
-            raise ValueError(
-                f"unknown axis: {axis_name!r}; available: "
-                "'vocabulary', 'entropy', 'outcome_quadrant'"
-            )
+            p_traces, c_traces = parent_list, child_list
+
+        for axis_name in along:
+            result = _compute_axis(axis_name, p_traces, c_traces, outcome_field)
+            all_axes.append(replace(result, alphabet=alpha))
 
     return LineageDiff(
         parent_label=parent_label,
         child_label=child_label,
         n_parent=len(parent_list),
         n_child=len(child_list),
-        axes=tuple(axes),
+        axes=tuple(all_axes),
     )
+
+
+def _compute_axis(
+    axis_name: str,
+    parent: list[Trace],
+    child: list[Trace],
+    outcome_field: str | None,
+) -> AxisResult:
+    """Dispatch a single axis computation by name.
+
+    Each axis is a separate function with the same signature shape;
+    the dispatch is centralized here so the alphabet-loop in
+    :func:`lineage_diff` stays compact.
+    """
+    if axis_name == "vocabulary":
+        return _diff_vocabulary(parent, child)
+    if axis_name == "entropy":
+        return _diff_entropy(parent, child)
+    if axis_name == "outcome_quadrant":
+        if outcome_field is None:
+            raise ValueError(
+                "axis 'outcome_quadrant' requires outcome_field= "
+                "(name of the metadata field carrying the binary outcome label)"
+            )
+        return _diff_outcome_quadrant(parent, child, outcome_field)
+    raise ValueError(
+        f"unknown axis: {axis_name!r}; available: " "'vocabulary', 'entropy', 'outcome_quadrant'"
+    )
+
+
+def _project_traces(
+    traces: list[Trace],
+    projection: Callable[[Atom], Atom],
+) -> list[Trace]:
+    """Return new Trace objects with atoms projected through ``projection``.
+
+    Other fields (trace_id, agent, group, metadata) are preserved.
+    Used by :func:`lineage_diff` to apply a canonical_projection when
+    requested without mutating the caller's input.
+    """
+    return [
+        Trace(
+            trace_id=t.trace_id,
+            agent=t.agent,
+            atoms=[projection(a) for a in t.atoms],
+            group=t.group,
+            metadata=t.metadata,
+        )
+        for t in traces
+    ]
 
 
 def _diff_vocabulary(parent: list[Trace], child: list[Trace]) -> AxisResult:
