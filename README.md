@@ -55,11 +55,10 @@ is in the current MVP.
    rule format. Each rule is a regex over the atom sequence with a
    `must_hold` flag.
 8. **Group-level descriptive and discriminative statistics**:
-   top-K atom frequencies per group, effective vocabulary size
-   (perplexity) per group, per-trajectory entropy summarized by
-   group, and top-K motifs ranked by log-odds or by JSD
-   contribution between any two groups. Suitable for controlled-eval
-   summaries and per-group descriptive tables.
+   - top-K atom frequencies per group
+   - effective vocabulary size (perplexity) per group
+   - per-trajectory entropy summarized by group
+   - top-K motifs ranked by log-odds or by JSD contribution between any two groups
 
 ### Use-cases
 
@@ -107,12 +106,11 @@ leave-one-arm-out predictive probe.
    {0, 0.2, 0.4, 0.6, 0.8, 1.0}). Capture N traces per arm. N >= 30
    is a safe default; the seed-sensitivity study in
    [STUDIES.md](STUDIES.md) establishes a principled floor.
-3. **Encode and compare.** Assign each trace a `group` label equal to
-   its arm. Fit one shared BPE vocabulary across all arms (so the
-   vocabulary itself is not an arm-specific confound). Compute the
-   JSD matrix over arm-mean fingerprints, then run
-   `leave_one_group_out` with `label_field="group"` to test whether
-   each arm is structurally novel.
+3. **Encode and compare.**
+   - Assign each trace a `group` label equal to its arm.
+   - Fit one shared BPE vocabulary across all arms (so the vocabulary itself is not an arm-specific confound).
+   - Compute the JSD matrix over arm-mean fingerprints.
+   - Run `leave_one_group_out` with `label_field="group"` to test whether each arm is structurally novel.
 
 
 ### How does this relate to DSPy?
