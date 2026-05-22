@@ -15,7 +15,8 @@ patterns, stats).
 
 from __future__ import annotations
 
-from procgrep.adapters_gumtree import (
+from procgrep import adapters as adapters
+from procgrep.adapters.gumtree import (
     gumtree_adapter,
     gumtree_atom,
     parse_gumtree_jsondiff,
