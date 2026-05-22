@@ -8,19 +8,12 @@ Procedural fingerprinting of LLM coding-agent rollouts.
 some factors fixed and varying others, produce structurally distinct
 procedures?* Given trace logs from agents attempting coding tasks, it
 canonicalizes those traces into a shared atom alphabet, learns a BPE
-motif vocabulary over the canonical sequences, encodes each trajectory
-as a motif-frequency distribution, and supports cross-group comparison
-via Jensen-Shannon divergence, leave-one-group-out predictive probes,
-UMAP projection, and pattern matching.
+motif vocabulary over the canonical sequences, and encodes each trajectory
+as a motif-frequency distribution for cross-group comparison.
 
 It is post-hoc analysis. `procgrep` does not run agents, call models,
 or require an LLM SDK. It reads trace files and emits structural
 artifacts.
-
-The library was extracted from the analysis pipeline used in *Procedural
-Grep: Structural Variation for Agent Rollouts*, where it characterized
-the procedural fingerprints of nine LLM coding agents across five
-paradigm-by-scaffold configurations.
 
 ### Modes of use
 
