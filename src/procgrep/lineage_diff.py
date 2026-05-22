@@ -15,7 +15,7 @@ are data points, and a collection of diffs across many lineage steps
 becomes a reference catalog of "what training procedures do
 procedurally".
 
-The MVP ships three axes:
+The MVP ships four axes:
 
 * ``"vocabulary"`` — Jaccard similarity of the *set* of canonical
   atoms produced. Surfaces vocabulary collapse (procedures lost in
@@ -29,20 +29,29 @@ The MVP ships three axes:
   pass / fail strata and reports per-stratum vocabulary preservation.
   Lets a reader separate "the child preserved successful procedures"
   from "the child preserved failure modes".
+* ``"conditional"`` — Markov-conditional Jensen-Shannon divergence
+  between parent and child distributions over next-atom choices,
+  given a prefix of the previous ``conditional_context_k`` atoms.
+  Catches sequence-structure drift that marginal vocabulary and
+  entropy miss: a child that always picks test after edit where the
+  parent picked another edit shows high conditional JSD on prefix
+  ``("edit",)`` even though both sides have identical marginal
+  counts.
 
-Additional axes (``"conditional"``, ``"recovery"``, ``"failures"``,
-``"ood"``, ``"phase"``) are designed but not implemented in the MVP;
-they will be added as concrete audits demand them. Each new axis is a
-separate function with the same :class:`AxisResult` return type.
+Additional axes (``"recovery"``, ``"failures"``, ``"ood"``, ``"phase"``)
+are designed but not implemented; they will be added as concrete audits
+demand them. Each new axis is a separate function with the same
+:class:`AxisResult` return type.
 """
 
 from __future__ import annotations
 
 import math
-from collections import Counter
+from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
 
+from procgrep.jsd import jsd as _jsd
 from procgrep.types import Atom, Trace
 
 DEFAULT_AXES: tuple[str, ...] = ("vocabulary", "entropy")
@@ -170,6 +179,7 @@ def lineage_diff(
     outcome_field: str | None = None,
     alphabet: str | Sequence[str] = "canonical",
     canonical_projection: Callable[[Atom], Atom] | None = None,
+    conditional_context_k: int = 1,
 ) -> LineageDiff:
     """Compute a structured procedural-level diff.
 
@@ -217,6 +227,12 @@ def lineage_diff(
             atoms (which is the default for the built-in adapters).
             When projection is None, the ``"canonical"`` mode is a
             no-op pass-through.
+        conditional_context_k: Prefix length (in atoms) used by the
+            ``"conditional"`` axis. Default 1 (Markov-1: condition
+            only on the immediately-preceding atom). Larger k yields
+            sparser conditional distributions but captures longer-
+            range structure. Ignored if ``"conditional"`` is not in
+            ``along``.
 
     Returns:
         A :class:`LineageDiff` with one :class:`AxisResult` per
@@ -245,7 +261,13 @@ def lineage_diff(
             p_traces, c_traces = parent_list, child_list
 
         for axis_name in along:
-            result = _compute_axis(axis_name, p_traces, c_traces, outcome_field)
+            result = _compute_axis(
+                axis_name,
+                p_traces,
+                c_traces,
+                outcome_field,
+                conditional_context_k=conditional_context_k,
+            )
             all_axes.append(replace(result, alphabet=alpha))
 
     return LineageDiff(
@@ -262,6 +284,8 @@ def _compute_axis(
     parent: list[Trace],
     child: list[Trace],
     outcome_field: str | None,
+    *,
+    conditional_context_k: int = 1,
 ) -> AxisResult:
     """Dispatch a single axis computation by name.
 
@@ -280,8 +304,11 @@ def _compute_axis(
                 "(name of the metadata field carrying the binary outcome label)"
             )
         return _diff_outcome_quadrant(parent, child, outcome_field)
+    if axis_name == "conditional":
+        return _diff_conditional(parent, child, context_k=conditional_context_k)
     raise ValueError(
-        f"unknown axis: {axis_name!r}; available: " "'vocabulary', 'entropy', 'outcome_quadrant'"
+        f"unknown axis: {axis_name!r}; available: "
+        "'vocabulary', 'entropy', 'outcome_quadrant', 'conditional'"
     )
 
 
@@ -360,6 +387,123 @@ def _diff_entropy(parent: list[Trace], child: list[Trace]) -> AxisResult:
             ),
         },
     )
+
+
+def _diff_conditional(
+    parent: list[Trace],
+    child: list[Trace],
+    *,
+    context_k: int = 1,
+) -> AxisResult:
+    """Markov-conditional divergence between parent and child distributions.
+
+    For each prefix of length ``context_k`` that appears in both
+    corpora, computes the empirical distribution over next-atom
+    choices and the Jensen-Shannon divergence between parent's and
+    child's choice distributions. The headline summary is the
+    parent-frequency-weighted mean across shared prefixes; weighting
+    keeps frequently-occurring contexts dominant and avoids letting
+    a single rare prefix swing the score.
+
+    What this catches that marginal axes miss: even when both sides
+    emit the same atoms at the same overall rates, the *sequence* of
+    decisions can differ. A child that always picks ``run_test`` after
+    ``edit`` where the parent picked another ``edit`` shows high
+    conditional JSD on prefix ``("edit",)`` despite both sides having
+    identical marginal counts of ``edit`` and ``run_test``.
+
+    What this misses: very-low-frequency prefixes get small weight; a
+    diff that affects only such tails will be invisible at the
+    weighted mean. Inspect the per-prefix detail in the result for
+    finer-grained patterns.
+    """
+    if context_k < 1:
+        raise ValueError(f"context_k must be >= 1, got {context_k}")
+    parent_cond = _collect_conditionals(parent, context_k)
+    child_cond = _collect_conditionals(child, context_k)
+    shared = set(parent_cond) & set(child_cond)
+    parent_only = set(parent_cond) - set(child_cond)
+    child_only = set(child_cond) - set(parent_cond)
+
+    if not shared:
+        return AxisResult(
+            axis="conditional",
+            summary_value=0.0,
+            detail={
+                "context_k": context_k,
+                "shared_prefixes": 0,
+                "parent_only_prefixes": len(parent_only),
+                "child_only_prefixes": len(child_only),
+                "interpretation": (
+                    "no prefixes shared between parent and child at context_k; "
+                    "weighted-mean JSD is undefined (returned as 0.0). "
+                    "Inspect parent_only / child_only counts."
+                ),
+            },
+        )
+
+    parent_total = sum(sum(c.values()) for c in parent_cond.values())
+    per_prefix: list[tuple[tuple[Atom, ...], float, int]] = []
+    weighted_sum = 0.0
+    total_weight = 0.0
+    for prefix in shared:
+        p_counts = parent_cond[prefix]
+        c_counts = child_cond[prefix]
+        keys = sorted(set(p_counts) | set(c_counts))
+        p_vec = [p_counts[k] for k in keys]
+        c_vec = [c_counts[k] for k in keys]
+        prefix_jsd = _jsd(p_vec, c_vec)
+        prefix_freq = sum(p_counts.values())
+        weight = prefix_freq / parent_total if parent_total > 0 else 0.0
+        per_prefix.append((prefix, prefix_jsd, prefix_freq))
+        weighted_sum += prefix_jsd * weight
+        total_weight += weight
+
+    mean_jsd = weighted_sum / total_weight if total_weight > 0 else 0.0
+    top_divergent = sorted(per_prefix, key=lambda t: -t[1])[:10]
+
+    return AxisResult(
+        axis="conditional",
+        summary_value=mean_jsd,
+        detail={
+            "context_k": context_k,
+            "shared_prefixes": len(shared),
+            "parent_only_prefixes": len(parent_only),
+            "child_only_prefixes": len(child_only),
+            "top_divergent_prefixes": [
+                {"prefix": list(prefix), "jsd": jsd_val, "parent_freq": freq}
+                for prefix, jsd_val, freq in top_divergent
+            ],
+            "interpretation": (
+                "Mean JSD between P(next | prefix) for parent and child on "
+                "shared prefixes, weighted by parent prefix frequency. "
+                "Higher = more conditional structure drift. 0 = identical "
+                "conditional distributions on every shared prefix."
+            ),
+        },
+    )
+
+
+def _collect_conditionals(
+    traces: list[Trace],
+    context_k: int,
+) -> dict[tuple[Atom, ...], Counter[Atom]]:
+    """Build a Markov-conditional table from a corpus.
+
+    Returns a mapping from prefix (``context_k`` previous atoms) to a
+    Counter over the atom that followed each occurrence of that prefix
+    across the corpus. Traces shorter than ``context_k + 1`` contribute
+    no entries.
+    """
+    conds: dict[tuple[Atom, ...], Counter[Atom]] = defaultdict(Counter)
+    for trace in traces:
+        atoms = trace.atoms
+        if len(atoms) <= context_k:
+            continue
+        for i in range(context_k, len(atoms)):
+            prefix = tuple(atoms[i - context_k : i])
+            conds[prefix][atoms[i]] += 1
+    return conds
 
 
 def _diff_outcome_quadrant(

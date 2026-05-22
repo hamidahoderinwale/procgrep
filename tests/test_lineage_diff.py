@@ -473,3 +473,114 @@ def test_outcome_quadrant_works_under_multiple_alphabets() -> None:
     )
     assert len(diff.axes) == 2
     assert {a.alphabet for a in diff.axes} == {"canonical", "native"}
+
+
+# Conditional axis ----------------------------------------------------------
+
+
+def test_conditional_identical_corpora_zero_divergence() -> None:
+    """Identical parent and child traces produce conditional JSD 0."""
+    atoms = [ATOM_READ_FILE, ATOM_EDIT, ATOM_RUN_TEST, ATOM_SUBMIT]
+    parent = [_trace(f"p{i}", atoms) for i in range(3)]
+    child = [_trace(f"c{i}", list(atoms)) for i in range(3)]
+    diff = lineage_diff(parent, child, along=["conditional"])
+    axis = diff.axes[0]
+    assert axis.axis == "conditional"
+    assert axis.summary_value == pytest.approx(0.0)
+    assert axis.detail["shared_prefixes"] >= 1
+
+
+def test_conditional_structural_drift_high_divergence() -> None:
+    """Parent always edit->run_test, child always edit->edit => high JSD on ("edit",)."""
+    parent = [
+        _trace(f"p{i}", [ATOM_READ_FILE, ATOM_EDIT, ATOM_RUN_TEST, ATOM_SUBMIT]) for i in range(5)
+    ]
+    child = [_trace(f"c{i}", [ATOM_READ_FILE, ATOM_EDIT, ATOM_EDIT, ATOM_SUBMIT]) for i in range(5)]
+    diff = lineage_diff(parent, child, along=["conditional"])
+    axis = diff.axes[0]
+    # Both ("read_file",) and ("edit",) are shared; ("edit",) diverges fully
+    # because parent always goes to RUN_TEST after edit while child always
+    # goes to EDIT. The other prefixes contribute 0 or low JSD.
+    assert axis.summary_value > 0.0
+    edit_prefix_entry = next(
+        e for e in axis.detail["top_divergent_prefixes"] if e["prefix"] == [ATOM_EDIT]
+    )
+    assert edit_prefix_entry["jsd"] == pytest.approx(1.0, abs=0.01)
+
+
+def test_conditional_no_shared_prefixes_returns_zero_with_diagnostic() -> None:
+    """Corpora with disjoint prefixes get summary 0 and explanatory detail."""
+    parent = [_trace("p", [ATOM_READ_FILE, ATOM_EDIT])]
+    child = [_trace("c", [ATOM_SEARCH_REPO, ATOM_RUN_TEST])]
+    diff = lineage_diff(parent, child, along=["conditional"])
+    axis = diff.axes[0]
+    assert axis.summary_value == pytest.approx(0.0)
+    assert axis.detail["shared_prefixes"] == 0
+    assert axis.detail["parent_only_prefixes"] == 1
+    assert axis.detail["child_only_prefixes"] == 1
+
+
+def test_conditional_handles_short_traces_gracefully() -> None:
+    """Traces shorter than context_k + 1 contribute no prefixes."""
+    parent = [_trace("p1", [ATOM_EDIT]), _trace("p2", [ATOM_EDIT, ATOM_RUN_TEST])]
+    child = [_trace("c1", [ATOM_EDIT]), _trace("c2", [ATOM_EDIT, ATOM_RUN_TEST])]
+    diff = lineage_diff(parent, child, along=["conditional"], conditional_context_k=1)
+    axis = diff.axes[0]
+    # Only p2 / c2 contribute, with prefix ("edit",) -> "run_test" (JSD 0).
+    assert axis.summary_value == pytest.approx(0.0)
+    assert axis.detail["shared_prefixes"] == 1
+
+
+def test_conditional_context_k_propagates() -> None:
+    """conditional_context_k changes the prefix length used in the dispatch."""
+    parent = [
+        _trace(
+            f"p{i}",
+            [ATOM_READ_FILE, ATOM_EDIT, ATOM_RUN_TEST, ATOM_SUBMIT],
+        )
+        for i in range(3)
+    ]
+    child = [
+        _trace(
+            f"c{i}",
+            [ATOM_READ_FILE, ATOM_EDIT, ATOM_RUN_TEST, ATOM_SUBMIT],
+        )
+        for i in range(3)
+    ]
+    diff_k1 = lineage_diff(parent, child, along=["conditional"], conditional_context_k=1)
+    diff_k2 = lineage_diff(parent, child, along=["conditional"], conditional_context_k=2)
+    assert diff_k1.axes[0].detail["context_k"] == 1
+    assert diff_k2.axes[0].detail["context_k"] == 2
+    # k=2 should generally have fewer shared prefixes than k=1 (sparser).
+    assert diff_k2.axes[0].detail["shared_prefixes"] <= diff_k1.axes[0].detail["shared_prefixes"]
+
+
+def test_conditional_invalid_context_k_raises() -> None:
+    """context_k < 1 is rejected."""
+    parent = [_trace("p", [ATOM_EDIT, ATOM_RUN_TEST])]
+    child = [_trace("c", [ATOM_EDIT, ATOM_RUN_TEST])]
+    with pytest.raises(ValueError, match="context_k must be >= 1"):
+        lineage_diff(parent, child, along=["conditional"], conditional_context_k=0)
+
+
+def test_conditional_works_under_multiple_alphabets() -> None:
+    """The conditional axis composes with multi-resolution alphabets."""
+    parent = [_trace(f"p{i}", [ATOM_EDIT, ATOM_RUN_TEST]) for i in range(3)]
+    child = [_trace(f"c{i}", [ATOM_EDIT, ATOM_RUN_TEST]) for i in range(3)]
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["conditional"],
+        alphabet=["canonical", "native"],
+    )
+    assert len(diff.axes) == 2
+    assert {a.alphabet for a in diff.axes} == {"canonical", "native"}
+    assert all(a.axis == "conditional" for a in diff.axes)
+
+
+def test_conditional_in_default_dispatch_error_message() -> None:
+    """The unknown-axis error message now lists 'conditional' as available."""
+    parent = [_trace("p", [ATOM_EDIT])]
+    child = [_trace("c", [ATOM_EDIT])]
+    with pytest.raises(ValueError, match="conditional"):
+        lineage_diff(parent, child, along=["definitely_not_a_real_axis"])
