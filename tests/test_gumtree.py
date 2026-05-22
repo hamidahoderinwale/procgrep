@@ -1,4 +1,4 @@
-"""Tests for `procgrep.adapters_gumtree`."""
+"""Tests for `procgrep.adapters.gumtree`."""
 
 from __future__ import annotations
 
@@ -7,7 +7,7 @@ from unittest import mock
 
 import pytest
 
-from procgrep.adapters_gumtree import (
+from procgrep.adapters.gumtree import (
     AST_DELETE,
     AST_INSERT,
     AST_MOVE,
@@ -215,7 +215,7 @@ def test_run_jsondiff_raises_when_binary_missing(tmp_path: Path) -> None:
     a.write_text("x = 1\n")
     b.write_text("x = 2\n")
     with (
-        mock.patch("procgrep.adapters_gumtree.shutil.which", return_value=None),
+        mock.patch("procgrep.adapters.gumtree.shutil.which", return_value=None),
         pytest.raises(FileNotFoundError, match="gumtree"),
     ):
         run_jsondiff(a, b)
@@ -232,9 +232,9 @@ def test_run_jsondiff_parses_subprocess_stdout(tmp_path: Path) -> None:
     fake_result.stdout = fake_stdout
 
     with (
-        mock.patch("procgrep.adapters_gumtree.shutil.which", return_value="/usr/bin/gumtree"),
+        mock.patch("procgrep.adapters.gumtree.shutil.which", return_value="/usr/bin/gumtree"),
         mock.patch(
-            "procgrep.adapters_gumtree.subprocess.run", return_value=fake_result
+            "procgrep.adapters.gumtree.subprocess.run", return_value=fake_result
         ) as run_mock,
     ):
         payload = run_jsondiff(a, b)
