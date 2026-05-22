@@ -115,15 +115,6 @@ leave-one-arm-out predictive probe.
    `leave_one_group_out` with `label_field="group"` to test whether
    each arm is structurally novel.
 
-### Non-goals (MVP)
-
-- No compositional invariant DSL with temporal operators. The pattern
-  matcher in `procgrep.patterns` ships regex over atom sequences only.
-  The full DSL (procedural-DSPy) is future work.
-- No probabilistic invariants over the procedural distribution.
-- No live agent execution or model calls. `procgrep` is a post-hoc
-  analysis library.
-- No web dashboard. Figures emit as static PNG or SVG.
 
 ### How does this relate to DSPy?
 
