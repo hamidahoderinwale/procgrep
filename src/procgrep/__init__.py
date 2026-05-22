@@ -26,6 +26,7 @@ from procgrep.bpe import MotifVocabulary, fit_bpe, load_vocab, save_vocab
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.encode import Fingerprint, encode
 from procgrep.jsd import JsdMatrix, jsd, jsd_matrix
+from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
 from procgrep.probe import ProbeResult, leave_one_group_out
 from procgrep.stats import (
@@ -45,11 +46,13 @@ __version__ = "0.1.3"
 __all__ = [
     "Atom",
     "AtomSequence",
+    "AxisResult",
     "DiscriminativeMotif",
     "Fingerprint",
     "GroupAtomFrequencies",
     "GroupEntropyStats",
     "JsdMatrix",
+    "LineageDiff",
     "MotifVocabulary",
     "PatternReport",
     "ProbeResult",
@@ -69,6 +72,7 @@ __all__ = [
     "jsd",
     "jsd_matrix",
     "leave_one_group_out",
+    "lineage_diff",
     "load_patterns",
     "load_vocab",
     "match_patterns",

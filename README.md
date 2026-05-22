@@ -281,6 +281,44 @@ rules:
     must_hold: true
 ```
 
+### Lineage diff (preview)
+
+Given a parent model and a child model produced by a documented training
+procedure (distillation, SFT, RLHF, instruction tuning, version step),
+characterize what the training procedure did at the procedural level.
+Useful for verifying whether a method paper's preservation claims actually
+hold up in trajectories.
+
+```python
+from procgrep import lineage_diff
+
+diff = lineage_diff(
+    parent=parent_trajectories,    # canonical traces from base model
+    child=child_trajectories,      # canonical traces from post-trained model
+    on_tasks=swe_bench_verified,   # shared task suite
+    along=[
+        "vocabulary",     # procedures preserved / lost
+        "entropy",        # mode-concentration shift
+        "conditional",    # P(next-procedure | prefix) divergence
+        "recovery",       # post-error procedural patterns
+        "failures",       # which tasks fail with which signatures
+        "ood",            # ID-vs-OOD decomposition (atom-cossim + text-embed)
+    ],
+)
+
+print(diff.summary())          # human-readable findings table
+diff.report.to_markdown()      # claim-by-claim audit output
+```
+
+The diff object composes the existing primitives (JSD matrix, leave-one-group-out
+probe, discriminative procedures, BPE vocabulary) into a structured
+characterization of the training-procedure delta. For finer-grained probing,
+the atom-level and procedure-level primitives remain available throughout
+(see `atom_frequencies_per_group`, `discriminative_motifs`, `entropies_per_group`).
+Data-driven phase detection is available via the optional
+`change_point_phases=True` flag — phase labels emerge from the trajectory
+distribution rather than being imposed.
+
 ### Suggested studies
 
 See [STUDIES.md](STUDIES.md) for a ranked list of case studies that
