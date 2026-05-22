@@ -319,6 +319,17 @@ Data-driven phase detection is available via the optional
 `change_point_phases=True` flag — phase labels emerge from the trajectory
 distribution rather than being imposed.
 
+**Hierarchical multi-resolution (optional).** Pass `alphabet=["canonical",
+"native"]` to compute each axis once per alphabet in one call. The
+canonical layer is cross-comparable across scaffolds (good for catalog
+aggregation); the native layer preserves scaffold-specific richness (good
+for within-scaffold depth). Each `AxisResult.alphabet` records which view
+it came from, so a single `LineageDiff` carries both layers without
+ambiguity. Pair with `canonical_projection: Callable[[Atom], Atom]` to
+translate native atoms to canonical at diff time. See
+[`examples/python/15_multi_resolution_diff.py`](examples/python/15_multi_resolution_diff.py)
+for a runnable demonstration on synthetic data.
+
 ### Suggested studies
 
 See [STUDIES.md](STUDIES.md) for a ranked list of case studies that
