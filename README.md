@@ -38,7 +38,10 @@ is in the current MVP.
 
 1. **Canonicalize heterogeneous trace formats** into a shared atom
    alphabet. Built-in adapters for SWE-agent, Agentless, DARS, and
-   Moatless; custom adapters plug in through a `TraceAdapter` protocol.
+   Moatless at the agent-action layer; a gumtree adapter for
+   AST-edit-script traces (language-neutral across Python, JS, Java,
+   etc. via the GumTreeDiff CLI). Custom adapters plug in through a
+   `TraceAdapter` protocol.
 2. **Learn a BPE motif vocabulary** from a corpus of canonical-atom
    sequences. Vocabulary size `V` is configurable; the learned
    vocabulary is a persisted artifact that downstream commands consume

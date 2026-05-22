@@ -15,6 +15,12 @@ patterns, stats).
 
 from __future__ import annotations
 
+from procgrep.adapters_gumtree import (
+    gumtree_adapter,
+    gumtree_atom,
+    parse_gumtree_jsondiff,
+    run_jsondiff,
+)
 from procgrep.bpe import MotifVocabulary, fit_bpe, load_vocab, save_vocab
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.encode import Fingerprint, encode
@@ -57,13 +63,17 @@ __all__ = [
     "encode",
     "entropies_per_group",
     "fit_bpe",
+    "gumtree_adapter",
+    "gumtree_atom",
     "jsd",
     "jsd_matrix",
     "leave_one_group_out",
     "load_patterns",
     "load_vocab",
     "match_patterns",
+    "parse_gumtree_jsondiff",
     "register_adapter",
+    "run_jsondiff",
     "save_vocab",
     "umap_project",
 ]
