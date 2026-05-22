@@ -2,7 +2,7 @@
 
 Procedural fingerprinting of LLM coding-agent rollouts.
 
-## Intent
+### Intent
 
 `procgrep` answers one specific kind of question: *do two agents, holding
 some factors fixed and varying others, produce structurally distinct
@@ -20,9 +20,9 @@ artifacts.
 The library was extracted from the analysis pipeline used in *Procedural
 Grep: Structural Variation for Agent Rollouts*, where it characterized
 the procedural fingerprints of nine LLM coding agents across five
-paradigm-by-scaffold cells.
+paradigm-by-scaffold configurations.
 
-## Modes of use
+### Modes of use
 
 Three ways `procgrep` is typically applied, ordered by how mature each
 is in the current MVP.
@@ -39,10 +39,9 @@ is in the current MVP.
 3. **Deployment signal.** Run the Level 1 pattern matcher against
    procedural prefixes (first K atoms) of live trajectories to flag
    runs heading toward known failure shapes (stuck edit loops,
-   missing localize-before-edit, missing tests-before-submit). Cheap,
-   works alongside any agent, useful as an early-stop or warning.
+   missing localize-before-edit, missing tests-before-submit).
 
-## Capabilities
+### Capabilities
 
 1. **Canonicalize heterogeneous trace formats** into a shared atom
    alphabet. Built-in adapters for SWE-agent, Agentless, DARS, and
@@ -54,7 +53,7 @@ is in the current MVP.
 3. **Encode trajectories as motif-frequency distributions** under a
    fixed vocabulary, with L1 normalization.
 4. **Compute Jensen-Shannon divergence** between fingerprints at any
-   group granularity: per-agent, per-cell, per-controlled-eval-arm.
+   group granularity: per-agent, per-group, per-controlled-eval-arm.
 5. **Project the fingerprint space** with UMAP for visual inspection.
 6. **Run a leave-one-group-out predictive probe** to test whether
    procedural structure transfers across groups, or whether each
@@ -68,11 +67,11 @@ is in the current MVP.
    (perplexity) per group, per-trajectory entropy summarized by
    group, and top-K motifs ranked by log-odds or by JSD
    contribution between any two groups. Suitable for controlled-eval
-   summaries and per-cell descriptive tables.
+   summaries and per-group descriptive tables.
 
-## Use-cases
+### Use-cases
 
-### 1. Cross-scaffold structural audit
+#### 1. Cross-scaffold structural audit
 
 You have N agents across M scaffolds attempting the same benchmark.
 You want to know whether the scaffold dominates structure, or the
@@ -81,26 +80,26 @@ agent, build the JSD matrix, and inspect the resulting block
 structure. The leave-one-scaffold-out probe quantifies predictive
 transfer.
 
-### 2. Procedural diff for two agents
+#### 2. Procedural diff for two agents
 
 Two agents produce comparable success rates on the same benchmark.
 Are they doing the same thing? Fingerprint both, compute the JSD,
 and rank motifs by their contribution to the divergence.
 
-### 3. Within-scaffold paradigm signature
+#### 3. Within-scaffold paradigm signature
 
-Within one scaffold cell, you have agents trained under different
+Within one scaffold, you have agents trained under different
 paradigms (for example, dense-RLHF vs extended-thinking). Fingerprint
 each, compare the motif distributions, and surface paradigm-specific
 signatures like stuck edit loops.
 
-### 4. Saturation and coverage probing
+#### 4. Saturation and coverage probing
 
 Sweep the BPE vocabulary size `V` and measure when the JSD matrix
 stabilizes. Identifies the procedural resolution at which group
 distinctions emerge.
 
-### 5. Controlled evaluations
+#### 5. Controlled evaluations
 
 Hold base model, scaffold, and benchmark fixed; vary one factor
 (temperature, seed, RLHF variant, scaffold flag). Capture N traces
@@ -123,7 +122,7 @@ leave-one-arm-out predictive probe.
    `leave_one_group_out` with `label_field="group"` to test whether
    each arm is structurally novel.
 
-## Non-goals (MVP)
+### Non-goals (MVP)
 
 - No compositional invariant DSL with temporal operators. The pattern
   matcher in `procgrep.patterns` ships regex over atom sequences only.
@@ -133,7 +132,7 @@ leave-one-arm-out predictive probe.
   analysis library.
 - No web dashboard. Figures emit as static PNG or SVG.
 
-## How does this relate to DSPy?
+### How does this relate to DSPy?
 
 `procgrep` and DSPy operate on different layers and are complementary,
 not competing.
@@ -156,7 +155,7 @@ The name "procedural-DSPy" appears in the paper's future-work section
 as a label for a compositional invariant DSL with temporal operators
 over the procedural layer. That DSL is not part of the MVP.
 
-## Installation
+### Installation
 
 ```bash
 pip install procgrep
@@ -171,9 +170,9 @@ pip install -e ".[dev]"
 pre-commit install
 ```
 
-## Examples
+### Examples
 
-### CLI: build a fingerprint and a JSD matrix
+#### CLI: build a fingerprint and a JSD matrix
 
 ```bash
 # Canonicalize raw traces into atom sequences.
@@ -205,7 +204,7 @@ The library ships a tiny synthetic corpus and rule file under
 [`examples/`](examples/) so the pipeline above can be run end-to-end
 without supplying your own traces.
 
-### Python: fingerprint and compare two agents
+#### Python: fingerprint and compare two agents
 
 There are two equivalent entry points. The public API takes already-
 adapted `Trace` objects; the `procgrep.io` helpers handle JSONL
@@ -229,7 +228,7 @@ for record in matrix.to_records():
     print(record)
 ```
 
-### Python: group-level descriptive stats
+#### Python: group-level descriptive stats
 
 ```python
 from procgrep import (
@@ -266,7 +265,7 @@ for m in top:
     print(m.motif, m.log_odds, m.p_a, m.p_b)
 ```
 
-### Python: match a procedural pattern
+#### Python: match a procedural pattern
 
 ```python
 from procgrep import canonicalize, load_patterns, match_patterns
@@ -298,14 +297,14 @@ rules:
     must_hold: true
 ```
 
-## Suggested studies
+### Suggested studies
 
 See [STUDIES.md](STUDIES.md) for a ranked list of case studies that
 `procgrep` is well-suited to, including the temperature-sweep phase
 transition, success-vs-failure procedural prefix signature, and the
 DSPy compile-time procedural audit.
 
-## Coding-style anchors
+### Notes
 
 - Python 3.10+, `from __future__ import annotations` at the top of every module.
 - Type hints on every public signature; `mypy --strict` clean.
@@ -313,12 +312,12 @@ DSPy compile-time procedural audit.
 - Single-purpose functions, top-down readable modules, docstrings on the public API.
 - Deterministic seeds for any randomness; default seed is `0`.
 
-## Citation
+### Citation
 
 If you use `procgrep` in research, please cite the paper that this
 library was extracted from. A BibTeX entry will be added on first
 release.
 
-## License
+### License
 
 MIT. See [LICENSE](LICENSE).
