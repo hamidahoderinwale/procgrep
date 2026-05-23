@@ -1,22 +1,14 @@
 """HuggingFace dataset ingestion helper.
 
-Thin wrapper that converts a HuggingFace dataset directly into a list of
-canonical :class:`procgrep.types.Trace` objects, so the common workflow
-collapses to a few lines::
-
-    from procgrep import lineage_diff
-    from procgrep.hf import from_hf
+Converts a HuggingFace dataset directly into a list of canonical
+:class:`procgrep.types.Trace` objects::
 
     parent = from_hf("SWE-bench/SWE-smith-trajectories", adapter="swe-smith",
                      split="tool", trace_id_field="traj_id", agent_field="model")
-    child = from_hf("your-org/post-trained-trajectories", adapter="swe-smith",
-                    trace_id_field="traj_id", agent_field="model")
     diff = lineage_diff(parent=parent, child=child)
 
-The ``datasets`` library is an *optional* dependency; this module imports
-it lazily so installing procgrep without ``datasets`` keeps the package
-importable. ``from_hf`` raises a clear :class:`ImportError` if the
-library is missing.
+The ``datasets`` library is an optional dependency, imported lazily;
+:func:`from_hf` raises a clear :class:`ImportError` when it's absent.
 """
 
 from __future__ import annotations
@@ -40,49 +32,23 @@ def from_hf(
     limit: int | None = None,
     revision: str | None = None,
 ) -> list[Trace]:
-    """Load a HuggingFace dataset and canonicalize to a list of Traces.
+    """Load a HuggingFace dataset and canonicalize to Traces.
 
-    Wraps :func:`datasets.load_dataset` and feeds the rows through
-    :func:`procgrep.canonicalize`. The named ``adapter`` must already be
-    registered (built-in adapters self-register at package import time).
+    Wraps :func:`datasets.load_dataset` and pipes rows through
+    :func:`procgrep.canonicalize`. ``adapter`` must already be
+    registered (built-ins self-register at import).
 
     Args:
-        dataset_name: HuggingFace dataset identifier
-            (e.g., ``"SWE-bench/SWE-smith-trajectories"``).
-        adapter: Adapter name (registered via
-            :func:`procgrep.canonicalize.register_adapter`). The adapter
-            is responsible for translating each row's scaffold-specific
-            shape into a canonical atom sequence.
-        split: Optional split name (``"train"``, ``"validation"``,
-            ``"tool"``, etc.). If ``None``, ``load_dataset`` returns a
-            :class:`DatasetDict` and this function iterates whatever
-            default split is associated with the first key -- for
-            predictable behavior, pass an explicit split.
-        config_name: Optional dataset configuration name, forwarded as
-            ``name=`` to ``load_dataset``.
-        streaming: If ``True``, stream the dataset rather than
-            materializing it. Useful for very large corpora; pair with
-            ``limit`` to bound memory.
-        trace_id_field: Per-row key holding the trace id. Passed to
-            :func:`canonicalize`.
-        agent_field: Per-row key holding the agent name. Passed to
-            :func:`canonicalize`.
-        group_field: Optional per-row key holding a grouping label.
-            Passed to :func:`canonicalize`.
-        limit: Optional cap on the number of rows ingested. Honored
-            both in eager and streaming modes; recommended during
-            development to keep iteration tight.
-        revision: Optional git revision (commit hash or branch) of the
-            dataset on the Hub.
-
-    Returns:
-        Canonical :class:`Trace` objects in dataset row order.
+        split: Pass an explicit split for predictable behavior. With
+            ``None``, ``load_dataset`` returns a ``DatasetDict``.
+        streaming: Stream rather than materialize; pair with ``limit``
+            to bound memory.
+        limit: Cap on rows ingested (honored in both modes).
+        revision: Git revision on the Hub.
 
     Raises:
-        ImportError: If the optional ``datasets`` library is not
-            installed. Install with ``pip install datasets``.
-        KeyError: If the requested adapter is not registered. Propagated
-            from :func:`procgrep.canonicalize.get_adapter`.
+        ImportError: ``datasets`` not installed.
+        KeyError: ``adapter`` not registered.
     """
     load_dataset = _import_load_dataset()
 
@@ -106,10 +72,10 @@ def from_hf(
 
 
 def _import_load_dataset() -> Any:
-    """Lazily import :func:`datasets.load_dataset` with a clear error.
+    """Lazily import :func:`datasets.load_dataset`.
 
-    Split out so the type checker doesn't have to model the optional
-    ``datasets`` import, and so the import error path is unit-testable.
+    Split out so the type checker doesn't see the optional import and
+    so the import-error path is unit-testable.
     """
     try:
         from datasets import load_dataset
@@ -129,17 +95,15 @@ def _bounded(
 ) -> list[dict[str, object]]:
     """Materialize at most ``limit`` rows from a HuggingFace dataset.
 
-    ``ds`` is typed as :class:`typing.Any` because the concrete
-    ``datasets.Dataset`` / ``IterableDataset`` types are not statically
-    visible without the optional dependency installed; the helper relies
-    on the duck-typed ``select`` / ``take`` / ``__iter__`` / ``__len__``
-    interfaces that both expose.
+    ``ds`` is :class:`typing.Any` because the concrete
+    ``Dataset`` / ``IterableDataset`` types aren't visible without
+    ``datasets`` installed; we duck-type
+    ``select`` / ``take`` / ``__iter__`` / ``__len__``.
     """
     if limit is None:
         return [dict(row) for row in ds]
     if streaming:
         return [dict(row) for row in ds.take(limit)]
-    # Eager mode: use index slicing to avoid iterating past the cap.
     capped = ds.select(range(min(limit, len(ds))))
     return [dict(row) for row in capped]
 

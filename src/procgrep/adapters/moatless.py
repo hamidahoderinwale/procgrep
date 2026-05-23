@@ -1,11 +1,10 @@
 """Moatless trace adapter.
 
-Moatless (https://github.com/aorwall/moatless-tools) emits traces
-whose action steps carry an ``action`` name (CamelCase tool labels
-like ``FindCode``, ``RequestCodeChange``) and an optional ``thoughts``
-string. This adapter maps the action name through a synonym table to
-a canonical atom and prepends ``ATOM_THINK`` when a step has non-
-empty thoughts text.
+Records carry an ``actions`` list of dicts with a CamelCase
+``action`` name (``FindCode``, ``RequestCodeChange``) and optional
+``thoughts``. Maps action names through `ATOM_MAP` and prepends
+``ATOM_THINK`` on non-empty thoughts. See
+https://github.com/aorwall/moatless-tools.
 """
 
 from __future__ import annotations

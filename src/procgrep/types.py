@@ -1,27 +1,10 @@
 """Core data types for `procgrep`.
 
-This module defines the small, stable vocabulary of types that the rest
-of the package consumes. Keeping these together in one file lets a
-reader understand the data model in one sitting before encountering
-the algorithms that operate on it.
-
-Three concepts:
-
-1. An `Atom` is a single canonical action label. The canonical alphabet
-   is small and curated; the constants `ATOM_LOCALIZE`, `ATOM_EDIT`,
-   etc. enumerate the alphabet used by the built-in scaffold adapters.
-   Users may register additional atoms via custom adapters.
-
-2. An `AtomSequence` is the procedural shape of one trajectory: an
-   ordered list of atoms in the order they were emitted by the agent.
-
-3. A `Trace` is one trajectory plus its identity (trace id, agent
-   name), an optional grouping label used for cross-group comparison,
-   and a free-form metadata dictionary.
-
-A `TraceAdapter` is the function shape that converts a raw, scaffold-
-specific trace record into an `AtomSequence`. Adapters live in
-`procgrep.canonicalize` and are registered by name there.
+Defines `Atom` (a canonical action label), `AtomSequence` (the ordered
+atom list for one trajectory), `Trace` (one trajectory plus identity
+and grouping metadata), and `TraceAdapter` (the function shape that
+converts a raw trace record to atoms). Built-in atoms are enumerated
+as `ATOM_*` constants.
 """
 
 from __future__ import annotations
@@ -31,13 +14,13 @@ from dataclasses import dataclass, field
 from typing import TypeAlias
 
 Atom: TypeAlias = str
-"""A single canonical action label, e.g. ``"edit"`` or ``"run_test"``."""
+"""A canonical action label, e.g. ``"edit"`` or ``"run_test"``."""
 
 AtomSequence: TypeAlias = list[Atom]
-"""The ordered procedural shape of one trajectory."""
+"""Ordered atoms for one trajectory."""
 
 TraceAdapter: TypeAlias = Callable[[Mapping[str, object]], AtomSequence]
-"""Function that maps a raw scaffold-specific trace record to atoms."""
+"""Maps a raw trace record to an atom sequence."""
 
 
 ATOM_LOCALIZE: Atom = "localize"
@@ -67,10 +50,10 @@ CANONICAL_ATOMS: frozenset[Atom] = frozenset(
         ATOM_OTHER,
     }
 )
-"""The default canonical atom alphabet used by built-in adapters."""
+"""Default atom alphabet used by built-in adapters."""
 
-MOTIF_SEPARATOR: str = "▁"
-"""Separator used to glue atoms into multi-atom BPE motifs (``"edit▁run_test"``)."""
+PROCEDURE_SEPARATOR: str = "▁"
+"""Glues atoms into multi-atom BPE procedures (``"edit▁run_test"``)."""
 
 
 @dataclass(frozen=True)
@@ -78,17 +61,13 @@ class Trace:
     """One agent trajectory, canonicalized into atoms.
 
     Attributes:
-        trace_id: Stable identifier unique within a corpus.
-        agent: Name of the agent that produced the trajectory.
-        atoms: The canonical procedural shape (ordered atom list).
-        group: Optional grouping label used by JSD and the probe
-            (paradigm x scaffold cell, controlled-eval arm, etc.).
-            If omitted, downstream commands fall back to ``agent``
-            as the grouping variable.
-        metadata: Free-form, JSON-serializable metadata. Reserved
-            for project-specific fields (instance id, success flag,
-            wallclock, etc.); `procgrep` itself does not interpret
-            this dictionary.
+        trace_id: Stable identifier within a corpus.
+        agent: Agent that produced the trajectory.
+        atoms: Ordered atom list.
+        group: Grouping label for JSD and probes. Falls back to
+            ``agent`` when unset.
+        metadata: JSON-serializable, project-specific. Not interpreted
+            by `procgrep`.
     """
 
     trace_id: str

@@ -22,16 +22,16 @@ Computed metrics:
 * mean_traj_length     -- mean number of atoms per trajectory in
                           the group
 * effective_vocab      -- effective vocabulary size = exp(entropy
-                          of the group-mean motif distribution)
-* mean_entropy         -- mean of per-trajectory motif entropy
+                          of the group-mean procedure distribution)
+* mean_entropy         -- mean of per-trajectory procedure entropy
                           across the group
 * within_group_jsd     -- mean pairwise JSD between fingerprints
                           inside the group (the "noise floor" of
                           the group)
-* motif_concentration  -- Herfindahl-Hirschman index on the group-
-                          mean motif distribution (sum of squared
-                          motif probabilities; high = mass on few
-                          motifs)
+* procedure_concentration  -- Herfindahl-Hirschman index on the group-
+                          mean procedure distribution (sum of squared
+                          procedure probabilities; high = mass on few
+                          procedures)
 * atom_gini            -- Gini coefficient on the per-group atom
                           frequency vector (high = a few atoms
                           dominate the group's behavior)
@@ -161,11 +161,11 @@ def compute_metrics(
         pairs = [jsd(a.distribution(), b.distribution()) for a, b in combinations(fps, 2)]
         within_jsd[g] = float(np.mean(pairs))
 
-    motif_concentration: dict[str, float] = {}
+    procedure_concentration: dict[str, float] = {}
     for g in groups:
         fps = fps_by_group[g]
         mean_dist = np.mean([fp.distribution() for fp in fps], axis=0)
-        motif_concentration[g] = float(np.sum(mean_dist**2))
+        procedure_concentration[g] = float(np.sum(mean_dist**2))
 
     atom_gini: dict[str, float] = {}
     for g in groups:
@@ -179,7 +179,7 @@ def compute_metrics(
         "effective_vocab": {g: float(v) for g, v in eff_vocab.items()},
         "mean_entropy": {g: float(v) for g, v in mean_entropy.items()},
         "within_group_jsd": within_jsd,
-        "motif_concentration": motif_concentration,
+        "procedure_concentration": procedure_concentration,
         "atom_gini": atom_gini,
     }
 

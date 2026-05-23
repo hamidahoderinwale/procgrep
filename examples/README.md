@@ -17,7 +17,7 @@ examples/
 └── python/
     ├── 01_quickstart.py               (end-to-end Python API)
     ├── 02_controlled_eval.py          (within/across-arm JSD + probe)
-    ├── 03_discriminative_motifs.py    (v0.1.1 stats helpers)
+    ├── 03_discriminative_procedures.py    (v0.1.1 stats helpers)
     ├── 04_deployment_signal.py        (prefix-by-prefix pattern matching)
     ├── 05_custom_adapter.py           (register a TraceAdapter for a new scaffold)
     ├── 08_metric_orthogonality.py     (candidate dimensions + pairwise correlation)
@@ -40,7 +40,7 @@ Run any script directly:
 ```bash
 python examples/python/01_quickstart.py
 python examples/python/02_controlled_eval.py
-python examples/python/03_discriminative_motifs.py
+python examples/python/03_discriminative_procedures.py
 python examples/python/04_deployment_signal.py
 python examples/python/05_custom_adapter.py
 python examples/python/08_metric_orthogonality.py
@@ -57,12 +57,12 @@ What each script demonstrates:
 |---|---|
 | `01_quickstart.py` | Full pipeline (`canonicalize` -> `fit_bpe` -> `encode` -> `jsd_matrix`) end to end in Python. |
 | `02_controlled_eval.py` | The controlled-eval workflow: within-arm JSD as the noise floor, across-arm JSD as the signal, leave-one-arm-out probe. |
-| `03_discriminative_motifs.py` | The v0.1.1 stats helpers: per-group atom frequencies, effective vocabulary size, per-trajectory entropy summary, top discriminative motifs between two groups. |
+| `03_discriminative_procedures.py` | The v0.1.1 stats helpers: per-group atom frequencies, effective vocabulary size, per-trajectory entropy summary, top discriminative procedures between two groups. |
 | `04_deployment_signal.py` | Prefix-by-prefix pattern matching to flag a trajectory mid-stream. Simulates the runtime use of the Level 1 matcher. |
 | `05_custom_adapter.py` | Registering a `TraceAdapter` for a non-built-in scaffold and running the rest of the pipeline against its output. |
 | `08_metric_orthogonality.py` | Compute the six procgrep-side candidate dimensions per group and check their pairwise correlation. Suggests an independent subset above a configurable threshold. Needs ~10+ groups to be meaningful; small fixtures yield degenerate output by design. See [METRICS.md](../METRICS.md). |
 | `09_match_agent_to_task.py` | Match each task to the agent whose past procedure most resembles "what works on this kind of task" (smallest JSD between agent signature and task reference). Compares against the best-overall agent and a random baseline. Needs traces with `instance_id` + `outcome` metadata. |
-| `10_agent_attribution.py` | Author-attribution stylometry baseline. Leave-one-group-out probe with agent as the prediction target, compared against three naive baselines (raw atom-frequency, length-only, majority-class). Tells you whether BPE motifs carry information beyond the marginal atom distribution. |
+| `10_agent_attribution.py` | Author-attribution stylometry baseline. Leave-one-group-out probe with agent as the prediction target, compared against three naive baselines (raw atom-frequency, length-only, majority-class). Tells you whether BPE procedures carry information beyond the marginal atom distribution. |
 | `11_within_trajectory_drift.py` | Slice each trace into prefix/middle/suffix, encode each slice as its own fingerprint, then ask whether the slice position is learnable and whether attribution transfers across slice positions. Kills the stationarity assumption other analyses make implicitly. |
 | `12_gumtree_adapter.py` | End-to-end demo of the gumtree adapter on AST-edit-script traces across Python, JavaScript, and Java. Shows the fine-grained node-typed atom vocabulary (`ast_insert:MethodInvocation`, ...) and the `parse_gumtree_jsondiff` helper that converts raw `gumtree jsondiff` output into adapter input. |
 | `13_cross_language_attribution.py` | Strongest form of the attribution baseline: LOGO probe with language as the held-out group and agent as the prediction target. Tests whether the agent's procedural fingerprint is language-portable when built on gumtree AST atoms. |

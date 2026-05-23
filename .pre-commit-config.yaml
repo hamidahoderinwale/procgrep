@@ -23,5 +23,6 @@ repos:
         additional_dependencies:
           - types-pyyaml
           - numpy>=1.24
+          - typer>=0.12
         args: ["--config-file=pyproject.toml"]
         files: ^src/procgrep/

@@ -35,30 +35,30 @@ trajectory on average. A coarse proxy for procedural verbosity.
 
 ### 2. Effective vocabulary size
 
-What it measures. How many distinct motifs a group "uses" in
+What it measures. How many distinct procedures a group "uses" in
 practice, weighted by how often. Equivalent to the perplexity of
-the group's mean motif distribution.
+the group's mean procedure distribution.
 
-* Definition: `exp(H(group-mean motif distribution))` in nats.
-* Units: dimensionless (effective count of equally-used motifs).
+* Definition: `exp(H(group-mean procedure distribution))` in nats.
+* Units: dimensionless (effective count of equally-used procedures).
 * Range: `[1, V]` where `V` is the BPE vocabulary size.
 * Computation: `procgrep.effective_vocab_size_per_group(fps, group_by="group")`.
 * What high/low mean. High = the group's procedural behavior
-  spans many distinct motifs uniformly (rich repertoire). Low =
-  the group concentrates on a few signature motifs.
+  spans many distinct procedures uniformly (rich repertoire). Low =
+  the group concentrates on a few signature procedures.
 
 ### 3. Mean per-trajectory entropy
 
 What it measures. How spread-out each individual trajectory's
-motif distribution is, averaged across the group's trajectories.
+procedure distribution is, averaged across the group's trajectories.
 
 * Definition: `median(Fingerprint.entropy() for fp in group)` in nats.
 * Units: nats.
 * Range: `[0, log(V)]`.
 * Computation: `procgrep.entropies_per_group(fps, group_by="group")` returns the median, IQR, and range.
 * What high/low mean. High = the typical trajectory in the group
-  uses many motifs roughly equally. Low = the typical trajectory
-  is dominated by one or two motifs.
+  uses many procedures roughly equally. Low = the typical trajectory
+  is dominated by one or two procedures.
 
 ### 4. Within-group mean pairwise JSD
 
@@ -78,26 +78,26 @@ comparison.
   identity. Any across-group JSD claim must be evaluated against
   this floor.
 
-### 5. Motif concentration (HHI)
+### 5. Procedure concentration (HHI)
 
-What it measures. How concentrated a group's motif distribution is
-on a few dominant motifs. Borrows the Herfindahl-Hirschman index
+What it measures. How concentrated a group's procedure distribution is
+on a few dominant procedures. Borrows the Herfindahl-Hirschman index
 from economics.
 
 * Definition: `sum(p_i^2 for p_i in group_mean_distribution)`.
 * Units: dimensionless probability-squared.
 * Range: `[1/V, 1]`. Theoretical floor `1/V` at perfectly uniform
-  distribution; ceiling 1 when all mass is on one motif.
+  distribution; ceiling 1 when all mass is on one procedure.
 * Computation: not a single function call; ~3 lines composing
   `Fingerprint.distribution()` and numpy. See
   [`examples/python/08_metric_orthogonality.py`](examples/python/08_metric_orthogonality.py).
-* What high/low mean. High = a handful of motifs account for most
+* What high/low mean. High = a handful of procedures account for most
   of the group's procedural mass (specialist). Low = procedural
-  mass is spread across many motifs (generalist).
+  mass is spread across many procedures (generalist).
 
 ### 6. Atom-frequency Gini
 
-What it measures. How unequally raw atoms (not motifs) are
+What it measures. How unequally raw atoms (not procedures) are
 distributed within a group. Independent of the BPE vocabulary.
 
 * Definition: Gini coefficient on the group's per-atom count

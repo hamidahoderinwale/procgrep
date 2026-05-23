@@ -1,16 +1,12 @@
-"""Procedural fingerprinting of LLM coding-agent rollouts.
+"""Procedural fingerprinting of LLM coding-agent trajectories.
 
-`procgrep` canonicalizes heterogeneous agent traces into a shared atom
-alphabet, learns a BPE motif vocabulary, encodes trajectories as motif
-distributions, and supports cross-group comparison via Jensen-Shannon
-divergence, leave-one-group-out probes, UMAP projection, and pattern
-matching. A `stats` module exposes group-level descriptive and
-discriminative summary statistics on top of the core pipeline.
+Canonicalizes agent traces into a shared atom alphabet, learns a BPE
+procedure vocabulary, encodes trajectories as procedure distributions,
+and compares groups via Jensen-Shannon divergence, leave-one-group-out
+probes, UMAP projection, and pattern matching. `stats` adds group-level
+descriptive and discriminative summaries.
 
-The public API is re-exported from this module; see the README for
-intent, capabilities, and use-cases. Implementation modules live as
-siblings (canonicalize, bpe, encode, jsd, umap_project, probe,
-patterns, stats).
+Public API is re-exported here; see the README for usage.
 """
 
 from __future__ import annotations
@@ -22,7 +18,7 @@ from procgrep.adapters.gumtree import (
     parse_gumtree_jsondiff,
     run_jsondiff,
 )
-from procgrep.bpe import MotifVocabulary, fit_bpe, load_vocab, save_vocab
+from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, save_vocab
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.encode import Fingerprint, encode
 from procgrep.jsd import JsdMatrix, jsd, jsd_matrix
@@ -30,11 +26,11 @@ from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
 from procgrep.probe import ProbeResult, leave_one_group_out
 from procgrep.stats import (
-    DiscriminativeMotif,
+    DiscriminativeProcedure,
     GroupAtomFrequencies,
     GroupEntropyStats,
     atom_frequencies_per_group,
-    discriminative_motifs,
+    discriminative_procedures,
     effective_vocab_size_per_group,
     entropies_per_group,
 )
@@ -47,22 +43,22 @@ __all__ = [
     "Atom",
     "AtomSequence",
     "AxisResult",
-    "DiscriminativeMotif",
+    "DiscriminativeProcedure",
     "Fingerprint",
     "GroupAtomFrequencies",
     "GroupEntropyStats",
     "JsdMatrix",
     "LineageDiff",
-    "MotifVocabulary",
     "PatternReport",
     "ProbeResult",
+    "ProcedureVocabulary",
     "Trace",
     "TraceAdapter",
     "UmapResult",
     "__version__",
     "atom_frequencies_per_group",
     "canonicalize",
-    "discriminative_motifs",
+    "discriminative_procedures",
     "effective_vocab_size_per_group",
     "encode",
     "entropies_per_group",

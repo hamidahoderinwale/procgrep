@@ -1,22 +1,13 @@
 """Leave-one-group-out predictive transfer probe.
 
-The probe answers: *given fingerprints labeled by group, can a
-classifier trained on all-but-one group correctly identify the held-
-out group's label?* When labels are tied 1:1 to groups (e.g., the
-"group" is also the prediction target), the held-out label is by
-construction absent from training, and the probe quantifies
-structural novelty rather than accuracy.
+Trains a classifier on all-but-one group's fingerprints and tests on
+the held-out group. When labels are 1:1 with groups the held-out
+label is absent from training, so the probe measures structural
+novelty. When labels repeat across groups (controlled-eval arms with
+shared targets), it's a standard OOD generalization test.
 
-When labels can repeat across groups (the common controlled-eval
-case, where each arm is a group but the prediction target is shared
-across arms), the probe is a standard out-of-distribution
-generalization test.
-
-The implementation uses scikit-learn's `LeaveOneGroupOut` for fold
-construction and a multinomial logistic regression with L2
-regularization as the default classifier; this matches the choices
-in the originating paper. The classifier choice is exposed via a
-hook so projects can swap in any sklearn-compatible estimator.
+Defaults to multinomial L2-regularized logistic regression; pass any
+sklearn-compatible factory to swap it.
 """
 
 from __future__ import annotations
@@ -33,7 +24,7 @@ from sklearn.model_selection import LeaveOneGroupOut
 from procgrep.encode import Fingerprint
 
 ClassifierFactory = Callable[[int], Any]
-"""A callable that takes a seed and returns a fresh sklearn estimator."""
+"""``seed -> fresh sklearn estimator``."""
 
 
 @dataclass(frozen=True)
@@ -41,13 +32,10 @@ class ProbeResult:
     """Outcome of a leave-one-group-out probe.
 
     Attributes:
-        groups: Group names in canonical (sorted) order.
-        per_group_accuracy: Mapping from held-out group name to the
-            classifier's accuracy on that held-out group.
-        overall_accuracy: Mean accuracy across all held-out groups.
-        confusion: Nested mapping ``true_group -> predicted_label ->
-            count``, giving the distribution of predictions made on
-            each held-out group.
+        groups: Group names in sorted order.
+        per_group_accuracy: Held-out group -> classifier accuracy.
+        overall_accuracy: Mean of ``per_group_accuracy``.
+        confusion: ``true_group -> predicted_label -> count``.
     """
 
     groups: tuple[str, ...]
@@ -66,17 +54,10 @@ def leave_one_group_out(
     """Run the leave-one-group-out probe.
 
     Args:
-        fingerprints: Fingerprints to probe. Must carry consistent
-            ``group`` labels.
-        label_field: Either ``"group"`` (predict the group label) or
-            ``"agent"`` (predict the agent name).
-        classifier: Optional factory ``seed -> sklearn estimator``.
-            Defaults to a multinomial logistic regression with L2
-            regularization.
-        seed: Random seed forwarded to the classifier factory.
-
-    Returns:
-        A `ProbeResult` with per-group accuracy and confusion.
+        label_field: ``"group"`` predicts the group label;
+            ``"agent"`` predicts the agent name.
+        classifier: Factory ``seed -> sklearn estimator``. Defaults
+            to multinomial L2 logistic regression.
     """
     fps = list(fingerprints)
     if not fps:
@@ -114,7 +95,7 @@ def leave_one_group_out(
 
 
 def _extract_labels(fps: list[Fingerprint], label_field: str) -> npt.NDArray[np.str_]:
-    """Pull the prediction labels out of the fingerprints."""
+    """Pull prediction labels out of the fingerprints."""
     if label_field == "group":
         return np.array([fp.group for fp in fps])
     if label_field == "agent":
@@ -123,11 +104,10 @@ def _extract_labels(fps: list[Fingerprint], label_field: str) -> npt.NDArray[np.
 
 
 def _default_classifier(seed: int) -> LogisticRegression:
-    """The probe's default estimator: multinomial logistic regression.
+    """Default estimator: multinomial L2 logistic regression.
 
-    Sklearn 1.7 removed the ``multi_class`` argument; multinomial
-    behavior is selected automatically by the solver when the label
-    set has more than two classes.
+    Sklearn 1.7 removed ``multi_class``; the solver auto-selects
+    multinomial behavior when there are more than two classes.
     """
     return LogisticRegression(
         penalty="l2",

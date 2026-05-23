@@ -1,22 +1,9 @@
 """Project fingerprints into 2D with UMAP.
 
-UMAP (McInnes et al., 2018) is the default low-dimensional projection
-for visualizing the procedural space. This module is a thin wrapper
-around `umap-learn` that pins seed-dependent randomness for
-reproducibility and returns a structured result alongside the
-hyperparameters used.
-
-Two granularities are supported:
-
-* Per-fingerprint projection: every trajectory becomes one 2D point.
-* Per-group projection: each group's mean distribution becomes one
-  2D point, with a label.
-
-When the number of points is small (per-group projection over a
-handful of cells), UMAP's defaults are inappropriate; the caller is
-expected to tune ``n_neighbors`` downward. The function exposes the
-hyperparameters explicitly and records them on the result so that
-downstream figures can cite the exact parameters.
+Thin wrapper around `umap-learn` that pins the random seed and records
+hyperparameters on the result. Granularity is ``"trace"`` (one point
+per trajectory) or ``"group"`` (one point per group mean). Small
+point sets need a lower ``n_neighbors`` than the UMAP default.
 """
 
 from __future__ import annotations
@@ -37,13 +24,9 @@ class UmapResult:
     """A UMAP projection plus its provenance.
 
     Attributes:
-        labels: The label for each row (trace id or group name).
-        coords: ``(n, 2)`` array of 2D coordinates aligned to
-            ``labels``.
-        n_neighbors: UMAP hyperparameter recorded for provenance.
-        min_dist: UMAP hyperparameter recorded for provenance.
-        metric: Distance metric used.
-        seed: Random seed used.
+        labels: Row label (trace id or group name).
+        coords: ``(n, 2)`` array aligned to ``labels``.
+        n_neighbors, min_dist, metric, seed: UMAP hyperparameters.
     """
 
     labels: tuple[str, ...]
@@ -66,22 +49,12 @@ def umap_project(
     """Project fingerprints to 2D coordinates.
 
     Args:
-        fingerprints: The trajectories to project.
-        granularity: ``"trace"`` for one point per trajectory; ``"group"``
-            for one point per group label (using the group-mean
-            distribution).
-        n_neighbors: UMAP local-neighborhood size. Must be less than
-            the number of points; when projecting at group
-            granularity over a handful of groups, lower this.
-        min_dist: UMAP minimum-distance hyperparameter.
-        metric: Distance metric (``"cosine"`` is the standard choice
-            for L1-normalized distributions).
-        seed: Random seed for UMAP's internal RNG. Fixes the layout
-            up to numerical noise.
-
-    Returns:
-        A `UmapResult` whose ``labels`` and ``coords`` rows are
-        aligned.
+        granularity: ``"trace"`` (one point per trajectory) or
+            ``"group"`` (one point per group mean).
+        n_neighbors: Must be less than the number of points. Lower
+            this for small point sets.
+        metric: ``"cosine"`` is the standard choice for L1-normalized
+            distributions.
     """
     labels, matrix = _stack(fingerprints, granularity)
     if n_neighbors >= matrix.shape[0]:
@@ -113,7 +86,7 @@ def _stack(
     fingerprints: Iterable[Fingerprint],
     granularity: str,
 ) -> tuple[tuple[str, ...], npt.NDArray[np.float64]]:
-    """Build the matrix UMAP consumes, plus matching row labels."""
+    """Build the matrix UMAP consumes plus matching row labels."""
     fps = list(fingerprints)
     if granularity == "trace":
         labels = tuple(fp.trace_id for fp in fps)

@@ -15,7 +15,7 @@
 # manual annotation (e.g., FrontierSWE Wan 2.1's 6/30 cases).
 #
 # Procgrep's role in reward-hacking research is DISCOVERY: given a
-# corpus where reward-hacking labels exist, `discriminative_motifs`
+# corpus where reward-hacking labels exist, `discriminative_procedures`
 # can surface BPE-level procedures that distinguish cheating from
 # clean trajectories. A published reward-hacking rule file would
 # then anchor each rule to that discovery experiment's empirical
