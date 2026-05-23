@@ -10,7 +10,7 @@ from procgrep.bpe import fit_bpe
 from procgrep.encode import Fingerprint, encode
 from procgrep.stats import (
     atom_frequencies_per_group,
-    discriminative_motifs,
+    discriminative_procedures,
     effective_vocab_size_per_group,
     entropies_per_group,
 )
@@ -21,12 +21,12 @@ def _make_fingerprint(counts: tuple[int, ...], *, group: str = "g") -> Fingerpri
     return Fingerprint(trace_id="t", agent="a", group=group, counts=counts)
 
 
-def test_fingerprint_entropy_zero_for_single_motif() -> None:
+def test_fingerprint_entropy_zero_for_single_procedure() -> None:
     fp = _make_fingerprint((10, 0, 0, 0))
     assert fp.entropy() == 0.0
 
 
-def test_fingerprint_entropy_log_two_for_balanced_two_motifs() -> None:
+def test_fingerprint_entropy_log_two_for_balanced_two_procedures() -> None:
     fp = _make_fingerprint((5, 5, 0, 0))
     assert math.isclose(fp.entropy(), math.log(2), abs_tol=1e-9)
 
@@ -74,15 +74,15 @@ def test_atom_frequencies_per_group_per_trajectory_rate_is_meaningful(
         pytest.fail("EDIT atom not present in editor's top frequencies")
 
 
-def test_effective_vocab_size_uniform_single_motif() -> None:
-    # Single fingerprint with all mass on one motif: effective vocab = 1.
+def test_effective_vocab_size_uniform_single_procedure() -> None:
+    # Single fingerprint with all mass on one procedure: effective vocab = 1.
     fps = [_make_fingerprint((10, 0, 0, 0), group="A")]
     result = effective_vocab_size_per_group(fps)
     assert math.isclose(result["A"], 1.0, abs_tol=1e-9)
 
 
-def test_effective_vocab_size_uniform_over_four_motifs() -> None:
-    # Uniform distribution over 4 motifs: effective vocab = 4.
+def test_effective_vocab_size_uniform_over_four_procedures() -> None:
+    # Uniform distribution over 4 procedures: effective vocab = 4.
     fps = [_make_fingerprint((1, 1, 1, 1), group="B")]
     result = effective_vocab_size_per_group(fps)
     assert math.isclose(result["B"], 4.0, abs_tol=1e-9)
@@ -115,30 +115,30 @@ def test_entropies_per_group_summary_shape(structured_corpus: list) -> None:
         assert entry.max >= entry.q3
 
 
-def test_discriminative_motifs_returns_topk(structured_corpus: list) -> None:
+def test_discriminative_procedures_returns_topk(structured_corpus: list) -> None:
     sequences = [t.atoms for t in structured_corpus]
     vocab = fit_bpe(sequences, vocab_size=20)
     fps = encode(structured_corpus, vocab=vocab)
-    top = discriminative_motifs(
+    top = discriminative_procedures(
         fps, vocab, group_a="editor", group_b="searcher", k=5, group_by="agent"
     )
     assert len(top) <= 5
-    # Editor and searcher use disjoint motif palettes (editor centers on EDIT
+    # Editor and searcher use disjoint procedure palettes (editor centers on EDIT
     # and RUN_TEST; searcher on SEARCH_REPO and READ_FILE). After BPE merges
-    # those may be glued into multi-atom motifs, so we do not check for a
-    # specific atom name; instead we check that the top motif has a strongly
+    # those may be glued into multi-atom procedures, so we do not check for a
+    # specific atom name; instead we check that the top procedure has a strongly
     # nonzero log-odds, indicating clear discrimination.
     assert top
     assert abs(top[0].log_odds) > 1.0
 
 
-def test_discriminative_motifs_jsd_ranking_returns_nonnegative_contributions(
+def test_discriminative_procedures_jsd_ranking_returns_nonnegative_contributions(
     structured_corpus: list,
 ) -> None:
     sequences = [t.atoms for t in structured_corpus]
     vocab = fit_bpe(sequences, vocab_size=20)
     fps = encode(structured_corpus, vocab=vocab)
-    top = discriminative_motifs(
+    top = discriminative_procedures(
         fps,
         vocab,
         group_a="editor",
@@ -151,12 +151,12 @@ def test_discriminative_motifs_jsd_ranking_returns_nonnegative_contributions(
         assert m.jsd_contribution >= 0.0
 
 
-def test_discriminative_motifs_rejects_unknown_ranking(structured_corpus: list) -> None:
+def test_discriminative_procedures_rejects_unknown_ranking(structured_corpus: list) -> None:
     sequences = [t.atoms for t in structured_corpus]
     vocab = fit_bpe(sequences, vocab_size=20)
     fps = encode(structured_corpus, vocab=vocab)
     with pytest.raises(ValueError, match="ranking"):
-        discriminative_motifs(
+        discriminative_procedures(
             fps,
             vocab,
             group_a="editor",
@@ -166,9 +166,9 @@ def test_discriminative_motifs_rejects_unknown_ranking(structured_corpus: list) 
         )
 
 
-def test_discriminative_motifs_rejects_unknown_group(structured_corpus: list) -> None:
+def test_discriminative_procedures_rejects_unknown_group(structured_corpus: list) -> None:
     sequences = [t.atoms for t in structured_corpus]
     vocab = fit_bpe(sequences, vocab_size=20)
     fps = encode(structured_corpus, vocab=vocab)
     with pytest.raises(ValueError, match="no fingerprints"):
-        discriminative_motifs(fps, vocab, group_a="ghost", group_b="searcher", group_by="agent")
+        discriminative_procedures(fps, vocab, group_a="ghost", group_b="searcher", group_by="agent")

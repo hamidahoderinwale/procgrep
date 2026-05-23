@@ -1,47 +1,26 @@
 """Structured procedural-level diff between a parent and a child model.
 
-`lineage_diff` characterizes what a documented training procedure
-(distillation, SFT, RLHF, instruction tuning, version step) did at
-the procedural level. Given canonical trajectories from the parent
-and the child evaluated on a shared task suite, it produces a
-structured :class:`LineageDiff` object with one :class:`AxisResult`
-per requested measurement axis.
+Given canonical trajectories from a parent and child on a shared task
+suite, :func:`lineage_diff` returns a :class:`LineageDiff` with one
+:class:`AxisResult` per requested axis. Each diff is a data point; a
+collection across many lineage steps becomes a catalog of what
+training procedures do at the procedural level.
 
-This module composes existing `procgrep` primitives (atom frequencies,
-per-trajectory entropy) into an aggregation suitable for verifying
-whether a training-method paper's preservation claims hold up in
-trajectories. The diff *object* is the contribution; individual diffs
-are data points, and a collection of diffs across many lineage steps
-becomes a reference catalog of "what training procedures do
-procedurally".
+Axes:
 
-The MVP ships four axes:
+* ``"vocabulary"`` -- Jaccard similarity over the set of atoms emitted.
+* ``"entropy"`` -- Mean per-trajectory entropy on each side; shift
+  (parent minus child) is positive under child mode-collapse.
+* ``"outcome_quadrant"`` -- Requires an outcome label in metadata.
+  Reports vocabulary preservation per pass / fail stratum.
+* ``"conditional"`` -- Markov-conditional JSD between parent and
+  child next-atom distributions given the previous
+  ``conditional_context_k`` atoms. Catches sequence-structure drift
+  that marginal axes miss.
 
-* ``"vocabulary"`` — Jaccard similarity of the *set* of canonical
-  atoms produced. Surfaces vocabulary collapse (procedures lost in
-  the child) and vocabulary growth (procedures the parent never
-  emitted).
-* ``"entropy"`` — Mean per-trajectory Shannon entropy on each side.
-  The shift (parent minus child) is positive when the child
-  concentrates on a smaller set of procedures (mode-collapse signature).
-* ``"outcome_quadrant"`` — Requires an outcome label in trace
-  metadata (e.g., ``resolved: bool``). Decomposes the diff into
-  pass / fail strata and reports per-stratum vocabulary preservation.
-  Lets a reader separate "the child preserved successful procedures"
-  from "the child preserved failure modes".
-* ``"conditional"`` — Markov-conditional Jensen-Shannon divergence
-  between parent and child distributions over next-atom choices,
-  given a prefix of the previous ``conditional_context_k`` atoms.
-  Catches sequence-structure drift that marginal vocabulary and
-  entropy miss: a child that always picks test after edit where the
-  parent picked another edit shows high conditional JSD on prefix
-  ``("edit",)`` even though both sides have identical marginal
-  counts.
-
-Additional axes (``"recovery"``, ``"failures"``, ``"ood"``, ``"phase"``)
-are designed but not implemented; they will be added as concrete audits
-demand them. Each new axis is a separate function with the same
-:class:`AxisResult` return type.
+Additional axes (``"recovery"``, ``"failures"``, ``"ood"``,
+``"phase"``) are designed but unimplemented; add them as concrete
+audits require.
 """
 
 from __future__ import annotations
@@ -55,7 +34,7 @@ from procgrep.jsd import jsd as _jsd
 from procgrep.types import Atom, Trace
 
 DEFAULT_AXES: tuple[str, ...] = ("vocabulary", "entropy")
-"""Axes computed when no ``along=`` argument is passed to :func:`lineage_diff`."""
+"""Default axes when no ``along=`` is passed to :func:`lineage_diff`."""
 
 
 @dataclass(frozen=True)
@@ -63,22 +42,14 @@ class AxisResult:
     """One axis of a lineage diff.
 
     Attributes:
-        axis: Short name of the axis, matching the requested key
-            (``"vocabulary"``, ``"entropy"``, ``"outcome_quadrant"``).
-        summary_value: A single scalar capturing the axis's headline
-            measurement (Jaccard similarity, entropy shift, etc.).
-            Interpretation depends on the axis; see the module
-            docstring.
-        detail: Structured per-axis detail (sets of preserved /
-            lost / gained items, mean and median statistics,
-            interpretation notes). All values are JSON-serializable.
-        alphabet: Atom alphabet under which this axis was computed.
-            Defaults to ``"canonical"`` (the shared canonical alphabet
-            used by built-in adapters). Other common values include
-            ``"native"`` (the scaffold's own action vocabulary). Users
-            may pass any string; the field is informational, used by
-            readers of the diff to interpret results correctly when
-            multiple alphabets are reported in one LineageDiff.
+        axis: Short axis name (``"vocabulary"``, ``"entropy"``,
+            ``"outcome_quadrant"``, ``"conditional"``).
+        summary_value: Headline scalar; interpretation depends on the
+            axis (see module docstring).
+        detail: Per-axis structured detail. JSON-serializable.
+        alphabet: Informational label identifying which atom alphabet
+            this axis was computed under (``"canonical"`` or
+            ``"native"`` are conventional; any string is allowed).
     """
 
     axis: str
@@ -91,19 +62,13 @@ class AxisResult:
 class LineageDiff:
     """Structured diff between two procedural distributions.
 
-    Returned by :func:`lineage_diff`. Composes existing `procgrep`
-    primitives into a research artifact suitable for paper sections,
-    automated audit reports, or contributions to a community delta
-    catalog.
+    Returned by :func:`lineage_diff`. Suitable for paper sections,
+    automated audit reports, and catalog entries.
 
     Attributes:
-        parent_label: Identifier for the parent in output (model name,
-            checkpoint id, etc.).
-        child_label: Identifier for the child in output.
-        n_parent: Number of parent-side trajectories analyzed.
-        n_child: Number of child-side trajectories analyzed.
-        axes: Ordered tuple of :class:`AxisResult`, one per requested
-            axis, in the same order as the ``along=`` argument.
+        axes: One :class:`AxisResult` per requested axis, in the same
+            order as the ``along=`` argument (and repeated per
+            alphabet when ``alphabet=`` is a sequence).
     """
 
     parent_label: str
@@ -113,7 +78,7 @@ class LineageDiff:
     axes: tuple[AxisResult, ...]
 
     def summary(self) -> str:
-        """Human-readable one-line-per-axis summary."""
+        """One-line-per-axis text summary."""
         lines = [
             f"LineageDiff: {self.parent_label} -> {self.child_label}",
             f"  n_parent={self.n_parent}, n_child={self.n_child}",
@@ -123,7 +88,7 @@ class LineageDiff:
         return "\n".join(lines)
 
     def to_markdown(self) -> str:
-        """Markdown audit report, suitable for paper sections or PR comments."""
+        """Markdown audit report for paper sections or PR comments."""
         lines = [
             f"# Lineage diff: `{self.parent_label}` -> `{self.child_label}`",
             "",
@@ -151,7 +116,7 @@ class LineageDiff:
         return "\n".join(lines)
 
     def to_records(self) -> dict[str, object]:
-        """JSON-friendly dict representation suitable for catalog entries."""
+        """JSON-friendly dict for catalog entries."""
         return {
             "parent_label": self.parent_label,
             "child_label": self.child_label,
@@ -183,65 +148,28 @@ def lineage_diff(
 ) -> LineageDiff:
     """Compute a structured procedural-level diff.
 
-    Composes `procgrep` primitives into a structured-diff object
-    characterizing how the child's procedural distribution differs
-    from the parent's along the requested axes.
-
-    Hierarchical multi-resolution: pass ``alphabet=["canonical",
-    "native"]`` to run each axis under both atom alphabets in a
-    single diff. The resulting LineageDiff carries one AxisResult
-    per (axis, alphabet) pair, each tagged with which alphabet it
-    came from. Useful when you want both cross-comparable canonical
-    results (for catalog aggregation) AND scaffold-native richness
-    (for within-scaffold depth) in a single audit.
+    Pass ``alphabet=["canonical", "native"]`` to run each axis under
+    both alphabets in one diff; the result's ``axes`` is ordered with
+    alphabet outer and axis inner, each tagged on
+    ``AxisResult.alphabet``.
 
     Args:
-        parent: Parent-side canonical traces (e.g., from the base model
-            on a shared task suite).
-        child: Child-side canonical traces (e.g., from the post-trained
-            model on the same task suite).
-        parent_label: Identifier used in the output (model name,
-            checkpoint id, etc.).
-        child_label: Identifier used in the output.
-        along: Names of axes to compute. Defaults to
-            ``("vocabulary", "entropy")``. The ``"outcome_quadrant"``
-            axis additionally requires ``outcome_field`` to identify
-            the per-trace metadata field carrying the outcome label.
-        outcome_field: Name of the metadata field carrying the binary
-            outcome label for each trace (e.g., ``"resolved"``).
-            Required if ``"outcome_quadrant"`` is among the requested
-            axes; ignored otherwise.
-        alphabet: Atom alphabet(s) to compute axes under. A single
-            string (default ``"canonical"``) runs each requested axis
-            once, tagged with that alphabet. A sequence of strings
-            (e.g., ``["canonical", "native"]``) runs each axis once
-            per alphabet; the resulting LineageDiff.axes contains all
-            results in nested order (alphabet outer, axis inner),
-            with each AxisResult.alphabet field recording the source.
-            Alphabet names are informational labels; the actual
-            projection (if any) is supplied via canonical_projection.
-        canonical_projection: Optional callable mapping each native
-            atom to its canonical equivalent. Applied to all traces
-            when computing axes under the ``"canonical"`` alphabet.
-            Leave as ``None`` if your traces already emit canonical
-            atoms (which is the default for the built-in adapters).
-            When projection is None, the ``"canonical"`` mode is a
-            no-op pass-through.
-        conditional_context_k: Prefix length (in atoms) used by the
-            ``"conditional"`` axis. Default 1 (Markov-1: condition
-            only on the immediately-preceding atom). Larger k yields
-            sparser conditional distributions but captures longer-
-            range structure. Ignored if ``"conditional"`` is not in
-            ``along``.
-
-    Returns:
-        A :class:`LineageDiff` with one :class:`AxisResult` per
-        requested (axis, alphabet) pair.
+        along: Axes to compute. ``"outcome_quadrant"`` also needs
+            ``outcome_field``.
+        outcome_field: Metadata key holding the binary outcome
+            (e.g. ``"resolved"``).
+        alphabet: One label or a sequence of labels. ``"canonical"``
+            applies ``canonical_projection`` when supplied; other
+            labels run on as-emitted atoms.
+        canonical_projection: Native-to-canonical atom map. ``None``
+            (default) makes the ``"canonical"`` pass a no-op.
+        conditional_context_k: Prefix length for the ``"conditional"``
+            axis. Larger k captures longer-range structure but yields
+            sparser distributions.
 
     Raises:
-        ValueError: If a requested axis name is not recognized, or if
-            ``"outcome_quadrant"`` is requested without
-            ``outcome_field``.
+        ValueError: Unknown axis name, or ``"outcome_quadrant"``
+            requested without ``outcome_field``.
     """
     parent_list = list(parent)
     child_list = list(child)
@@ -250,10 +178,8 @@ def lineage_diff(
 
     all_axes: list[AxisResult] = []
     for alpha in alphabets:
-        # Apply the canonical projection only when computing under
-        # the "canonical" alphabet. Other named alphabets are
-        # treated as the trace's native form and run on as-emitted
-        # atoms. Without a projection, "canonical" is a no-op label.
+        # Only the "canonical" pass applies the projection; other
+        # labels run on as-emitted atoms.
         if alpha == "canonical" and canonical_projection is not None:
             p_traces = _project_traces(parent_list, canonical_projection)
             c_traces = _project_traces(child_list, canonical_projection)
@@ -287,12 +213,7 @@ def _compute_axis(
     *,
     conditional_context_k: int = 1,
 ) -> AxisResult:
-    """Dispatch a single axis computation by name.
-
-    Each axis is a separate function with the same signature shape;
-    the dispatch is centralized here so the alphabet-loop in
-    :func:`lineage_diff` stays compact.
-    """
+    """Dispatch one axis computation by name."""
     if axis_name == "vocabulary":
         return _diff_vocabulary(parent, child)
     if axis_name == "entropy":
@@ -316,11 +237,9 @@ def _project_traces(
     traces: list[Trace],
     projection: Callable[[Atom], Atom],
 ) -> list[Trace]:
-    """Return new Trace objects with atoms projected through ``projection``.
+    """New Traces with atoms projected through ``projection``.
 
-    Other fields (trace_id, agent, group, metadata) are preserved.
-    Used by :func:`lineage_diff` to apply a canonical_projection when
-    requested without mutating the caller's input.
+    Other fields are preserved. Caller input is not mutated.
     """
     return [
         Trace(
@@ -335,11 +254,10 @@ def _project_traces(
 
 
 def _diff_vocabulary(parent: list[Trace], child: list[Trace]) -> AxisResult:
-    """Compute atom-vocabulary preservation as Jaccard similarity.
+    """Atom-vocabulary preservation as Jaccard similarity.
 
-    Reports the set of atoms each side emits at least once, plus
-    Jaccard similarity, plus the per-side disjoint sets (lost /
-    gained vocabulary).
+    Reports each side's atom set, the Jaccard, and the disjoint
+    parent-only / child-only sets.
     """
     parent_atoms = _collect_atoms(parent)
     child_atoms = _collect_atoms(child)
@@ -361,12 +279,10 @@ def _diff_vocabulary(parent: list[Trace], child: list[Trace]) -> AxisResult:
 
 
 def _diff_entropy(parent: list[Trace], child: list[Trace]) -> AxisResult:
-    """Compare per-trajectory atom-distribution entropy across sides.
+    """Per-trajectory atom-entropy comparison.
 
-    Computes mean and median per-trajectory Shannon entropy for each
-    side. The headline summary is ``parent_mean - child_mean``;
-    positive values indicate the child is more concentrated on a
-    smaller set of procedures (a mode-collapse signature).
+    Summary is ``parent_mean - child_mean``. Positive => child is
+    more concentrated (mode collapse).
     """
     parent_entropies = [_atom_entropy(trace.atoms) for trace in parent]
     child_entropies = [_atom_entropy(trace.atoms) for trace in child]
@@ -395,27 +311,19 @@ def _diff_conditional(
     *,
     context_k: int = 1,
 ) -> AxisResult:
-    """Markov-conditional divergence between parent and child distributions.
+    """Markov-conditional JSD between parent and child next-atom choices.
 
-    For each prefix of length ``context_k`` that appears in both
-    corpora, computes the empirical distribution over next-atom
-    choices and the Jensen-Shannon divergence between parent's and
-    child's choice distributions. The headline summary is the
-    parent-frequency-weighted mean across shared prefixes; weighting
-    keeps frequently-occurring contexts dominant and avoids letting
-    a single rare prefix swing the score.
+    For each prefix of length ``context_k`` shared by both corpora,
+    computes the empirical next-atom distribution on each side and
+    their JSD. Summary is the parent-frequency-weighted mean across
+    shared prefixes (rare prefixes get small weight).
 
-    What this catches that marginal axes miss: even when both sides
-    emit the same atoms at the same overall rates, the *sequence* of
-    decisions can differ. A child that always picks ``run_test`` after
-    ``edit`` where the parent picked another ``edit`` shows high
-    conditional JSD on prefix ``("edit",)`` despite both sides having
-    identical marginal counts of ``edit`` and ``run_test``.
-
-    What this misses: very-low-frequency prefixes get small weight; a
-    diff that affects only such tails will be invisible at the
-    weighted mean. Inspect the per-prefix detail in the result for
-    finer-grained patterns.
+    Catches sequence-structure drift that marginal axes miss: a child
+    that always picks ``run_test`` after ``edit`` where the parent
+    picked another ``edit`` shows high JSD on prefix ``("edit",)``
+    even at identical marginal counts. Inspect
+    ``top_divergent_prefixes`` for tail patterns the weighted mean
+    suppresses.
     """
     if context_k < 1:
         raise ValueError(f"context_k must be >= 1, got {context_k}")
@@ -488,12 +396,11 @@ def _collect_conditionals(
     traces: list[Trace],
     context_k: int,
 ) -> dict[tuple[Atom, ...], Counter[Atom]]:
-    """Build a Markov-conditional table from a corpus.
+    """Markov-conditional table from a corpus.
 
-    Returns a mapping from prefix (``context_k`` previous atoms) to a
-    Counter over the atom that followed each occurrence of that prefix
-    across the corpus. Traces shorter than ``context_k + 1`` contribute
-    no entries.
+    Maps each ``context_k``-atom prefix to a Counter over the atom
+    that followed it. Traces shorter than ``context_k + 1`` are
+    skipped.
     """
     conds: dict[tuple[Atom, ...], Counter[Atom]] = defaultdict(Counter)
     for trace in traces:
@@ -511,16 +418,13 @@ def _diff_outcome_quadrant(
     child: list[Trace],
     outcome_field: str,
 ) -> AxisResult:
-    """Decompose the diff by outcome (pass / fail) for each side.
+    """Decompose the diff by outcome (pass / fail).
 
-    Partitions each side's traces by the truthiness of
-    ``trace.metadata[outcome_field]``, then reports per-stratum
-    vocabulary preservation. Lets a reader separate "the child
-    preserved procedures on tasks that pass" from "the child preserved
-    failure-mode procedures".
-
-    The headline summary is pass-stratum Jaccard; the detail includes
-    fail-stratum Jaccard alongside per-stratum trajectory counts.
+    Partitions each side on the truthiness of
+    ``trace.metadata[outcome_field]`` and reports per-stratum
+    vocabulary preservation. Summary is the pass-stratum Jaccard;
+    detail also carries the fail-stratum Jaccard and per-stratum
+    counts.
     """
     parent_pass, parent_fail = _split_by_outcome(parent, outcome_field)
     child_pass, child_fail = _split_by_outcome(child, outcome_field)
@@ -546,11 +450,8 @@ def _diff_outcome_quadrant(
     )
 
 
-# Helpers --------------------------------------------------------------------
-
-
 def _collect_atoms(traces: list[Trace]) -> set[Atom]:
-    """Return the set of distinct atoms appearing across the traces."""
+    """Distinct atoms appearing across the traces."""
     out: set[Atom] = set()
     for trace in traces:
         out.update(trace.atoms)
@@ -558,11 +459,10 @@ def _collect_atoms(traces: list[Trace]) -> set[Atom]:
 
 
 def _atom_entropy(atoms: Sequence[Atom]) -> float:
-    """Shannon entropy of one trajectory's atom-frequency distribution, in nats.
+    """Shannon entropy of one trajectory's atom distribution, in nats.
 
-    Returns 0.0 for an empty trajectory or one with all-identical
-    atoms. The maximum is ``log(k)`` where ``k`` is the number of
-    distinct atoms in the trajectory.
+    Returns 0.0 on empty or single-atom trajectories. Max is
+    ``log(k)`` for k distinct atoms.
     """
     if not atoms:
         return 0.0
@@ -577,7 +477,7 @@ def _split_by_outcome(
     traces: list[Trace],
     outcome_field: str,
 ) -> tuple[list[Trace], list[Trace]]:
-    """Partition traces into (pass, fail) lists by the truthiness of a metadata field."""
+    """Partition traces by truthiness of ``metadata[outcome_field]``."""
     pass_: list[Trace] = []
     fail: list[Trace] = []
     for trace in traces:
@@ -589,7 +489,7 @@ def _split_by_outcome(
 
 
 def _jaccard(a: set[Atom], b: set[Atom]) -> float:
-    """Jaccard similarity of two atom sets, defined as 1.0 when both are empty."""
+    """Jaccard similarity; 1.0 when both sets are empty."""
     union = a | b
     if not union:
         return 1.0
@@ -597,14 +497,14 @@ def _jaccard(a: set[Atom], b: set[Atom]) -> float:
 
 
 def _mean(values: Sequence[float]) -> float:
-    """Arithmetic mean; returns 0.0 for an empty sequence."""
+    """Arithmetic mean; 0.0 on empty."""
     if not values:
         return 0.0
     return sum(values) / len(values)
 
 
 def _median(values: Sequence[float]) -> float:
-    """Median; returns 0.0 for an empty sequence."""
+    """Median; 0.0 on empty."""
     if not values:
         return 0.0
     ordered = sorted(values)
@@ -614,9 +514,8 @@ def _median(values: Sequence[float]) -> float:
     return 0.5 * (ordered[mid - 1] + ordered[mid])
 
 
-# Lightweight type alias for any axis-computing function. Exposed so
-# external packages can register additional axes in the future without
-# importing from this module's private namespace.
+# Exposed so external packages can register additional axes without
+# touching this module's private namespace.
 AxisFn = Callable[[list[Trace], list[Trace]], AxisResult]
 
 

@@ -1,78 +1,37 @@
 """Match procedural patterns against canonical atom sequences.
 
-This is the Level 1 pattern matcher: regular expressions over the
-space-separated string form of each trajectory's atom sequence. Each
-rule has a ``must_hold`` flag; the matcher reports the rule as a
-violation when the regex matches a sequence that must NOT contain it,
-or when the regex fails to match a sequence that MUST contain it.
+Level 1 pattern matcher: regexes over the space-joined atom sequence.
+Each rule's ``must_hold`` flag inverts the semantics — a sequence
+fails when a ``must_hold=False`` rule matches or when a
+``must_hold=True`` rule does not.
 
-The compositional invariant DSL (procedural-DSPy) with temporal
-operators, soft predicates, and distribution-level invariants is
-future work and is deliberately out of scope here. The current
-matcher is intentionally limited so that the surface stays small
-and obvious.
-
-Rule files are YAML, of the form:
+Rule files are YAML::
 
     rules:
       - name: no_long_edit_loops
         description: No run of 5+ consecutive edits.
         pattern: "(edit ){5,}"
         must_hold: false
-      - name: localize_before_edit
-        description: A localize must precede the first edit.
-        pattern: "localize .* edit"
-        must_hold: true
 
 Audit-to-monitor methodology
-============================
-
-The pattern matcher is both an *audit-time* and a *runtime* tool, and
-this section describes the discovery-then-deployment workflow that
-turns one into the other.
+----------------------------
 
 A defensible rule file is grounded in empirical evidence: each rule
-should correspond to a procedural pattern that has been *demonstrated*
-to correlate with a target behavior (failure, hacking, low quality,
-etc.) on a labeled corpus. The workflow:
+should correspond to a pattern shown to correlate with a target
+behavior on a labeled corpus.
 
-1. **Label a corpus.** Collect trajectories with known labels for the
-   target behavior (e.g., resolved vs. unresolved, cheating vs. clean,
-   high-quality vs. bloated patch). Manual annotation, held-out test
-   gap (SpecBench's Δ approach), or LLM-judge labelling all suffice.
+1. Label a corpus (manual, held-out test gap, or LLM-judge).
+2. Discover candidates via
+   :func:`procgrep.stats.discriminative_procedures`.
+3. Validate on a held-out split; record precision/recall per rule.
+4. Deploy: load with :func:`load_patterns`, evaluate live trajectory
+   prefixes with :func:`match_patterns`.
 
-2. **Discover candidate patterns.** Apply
-   :func:`procgrep.stats.discriminative_motifs` to the labeled corpus.
-   It surfaces BPE-derived motifs whose frequency distinguishes the
-   two groups most strongly (by log-odds or JSD contribution). Each
-   surfaced motif is a *candidate* rule.
-
-3. **Validate.** For each candidate motif, hold out a portion of the
-   corpus and measure precision/recall on the labels. Convert motifs
-   that survive cross-validation into pattern rules; document the
-   discovery corpus and validation numbers per rule.
-
-4. **Deploy.** Load the resulting YAML file via :func:`load_patterns`
-   and feed live trajectory prefixes to :func:`match_patterns` as a
-   deployment-time sensor. Violations become triggers for whatever
-   downstream system consumes them (alerting, snapshot/revert,
-   trajectory replay, human review).
-
-This is the *audit → monitor* pipeline: research findings turn into
-production sensors via a configuration change, not a rewrite. The
-contribution is methodological as much as it is mechanical.
-
-Important caveat: do NOT publish a rule file that claims to detect
-behavior X without going through the above validation. For example,
-rules listed as "reward-hacking signatures" without an empirical
-discovery experiment behind them would be unsupported conjecture --
-the failure-correlated patterns most easily expressible at the
-atom level are well-documented (see
+Failure-correlated is not hacking-correlated. Do not publish a rule
+file claiming to detect behavior X without the validation above. See
 ``examples/rules/known_failure_patterns.yaml`` for source-cited
-patterns from Beyond Resolution Rates, Code Agent Behaviour, and
-HAI-Code), but failure-correlated is not the same as
-hacking-correlated. Discovery from labeled data is the path that
-licenses the stronger claim.
+failure patterns from Beyond Resolution Rates, Code Agent Behaviour,
+and HAI-Code.
 """
 
 from __future__ import annotations
@@ -93,13 +52,11 @@ class Pattern:
     """One pattern-matching rule.
 
     Attributes:
-        name: Stable identifier for the rule.
-        description: Human-readable explanation.
-        pattern: Python regular expression evaluated against the
-            sequence ``" ".join(trace.atoms) + " "`` (trailing space
-            simplifies right-anchored matches against the last atom).
-        must_hold: If True, a trace fails when the regex does NOT
-            match. If False, a trace fails when the regex DOES match.
+        pattern: Regex evaluated against
+            ``" ".join(trace.atoms) + " "``. The trailing space
+            simplifies right-anchored matches on the last atom.
+        must_hold: True -> trace fails when regex does NOT match.
+            False -> trace fails when regex DOES match.
     """
 
     name: str
@@ -110,14 +67,13 @@ class Pattern:
 
 @dataclass(frozen=True)
 class PatternReport:
-    """Aggregate result of matching a set of patterns against traces.
+    """Aggregate result of matching patterns against traces.
 
     Attributes:
-        patterns: The rules that were evaluated.
-        violations: ``trace_id -> [rule_name, ...]`` for traces that
-            failed at least one rule.
-        pass_rate_per_rule: ``rule_name -> fraction of traces that
-            satisfied the rule``.
+        violations: ``trace_id -> [rule_name, ...]`` for traces with
+            at least one failure.
+        pass_rate_per_rule: ``rule_name -> fraction of passing
+            traces``.
     """
 
     patterns: tuple[Pattern, ...]
@@ -140,12 +96,7 @@ def match_patterns(
     traces: Iterable[Trace],
     patterns: Iterable[Pattern],
 ) -> PatternReport:
-    """Evaluate every pattern against every trace.
-
-    Returns:
-        A `PatternReport` summarizing per-trace violations and per-
-        rule pass rates.
-    """
+    """Evaluate every pattern against every trace."""
     pattern_tuple = tuple(patterns)
     compiled = [(p, re.compile(p.pattern)) for p in pattern_tuple]
     trace_list = list(traces)
@@ -172,7 +123,7 @@ def match_patterns(
 
 
 def _pattern_from_dict(entry: Any, *, source: str) -> Pattern:
-    """Validate a YAML rule dict and turn it into a `Pattern`."""
+    """Validate a YAML rule dict and build a `Pattern`."""
     if not isinstance(entry, dict):
         raise TypeError(f"rule entry in {source} is not a mapping: {entry!r}")
     missing = {"name", "pattern", "must_hold"} - set(entry)
@@ -187,7 +138,7 @@ def _pattern_from_dict(entry: Any, *, source: str) -> Pattern:
 
 
 def _is_violation(rx: re.Pattern[str], encoded: str, must_hold: bool) -> bool:
-    """Return True iff the trace fails this rule."""
+    """True iff the trace fails this rule."""
     matched = rx.search(encoded) is not None
     return (must_hold and not matched) or ((not must_hold) and matched)
 

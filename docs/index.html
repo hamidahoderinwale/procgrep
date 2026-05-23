@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>procgrep — procedural fingerprinting of LLM coding-agent rollouts</title>
-<meta name="description" content="procgrep: a Python library that turns LLM agent trace logs into a structural fingerprint you can compare, audit, and pattern-match against. Canonical atoms, BPE motifs, Jensen-Shannon divergence.">
+<meta name="description" content="procgrep: a Python library that turns LLM agent trace logs into a structural fingerprint you can compare, audit, and pattern-match against. Canonical atoms, BPE procedures, Jensen-Shannon divergence.">
 <meta name="theme-color" content="#FAFAFA">
 
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -126,11 +126,11 @@ JSONL on disk.
   </li>
   <li>
     <span class="name">fit_bpe</span>
-    <span class="desc">the atom corpus yields a BPE motif <dfn class="def" tabindex="0" data-def="Vocabulary: the full set of motif tokens learned by BPE over the corpus. Fit once on the combined corpus, then shared across all fingerprints downstream. Refitting per arm in a controlled eval breaks the comparison.">vocabulary</dfn></span>
+    <span class="desc">the atom corpus yields a BPE procedure <dfn class="def" tabindex="0" data-def="Vocabulary: the full set of procedure tokens learned by BPE over the corpus. Fit once on the combined corpus, then shared across all fingerprints downstream. Refitting per arm in a controlled eval breaks the comparison.">vocabulary</dfn></span>
   </li>
   <li>
     <span class="name">encode</span>
-    <span class="desc">each trace becomes a motif-frequency fingerprint</span>
+    <span class="desc">each trace becomes a procedure-frequency fingerprint</span>
   </li>
   <li>
     <span class="name">jsd_matrix</span>
@@ -588,10 +588,10 @@ raw = <span class="code-fn">list</span>(<span class="code-fn">read_jsonl</span>(
 <span class="code-comment"># 2. Canonicalize: scaffold-specific actions to shared atom alphabet.</span>
 traces = <span class="code-fn">canonicalize</span>(raw, adapter=<span class="code-string">"swe-agent"</span>)
 
-<span class="code-comment"># 3. Fit BPE: learn motif vocabulary across the corpus.</span>
+<span class="code-comment"># 3. Fit BPE: learn procedure vocabulary across the corpus.</span>
 vocab = <span class="code-fn">fit_bpe</span>((t.atoms <span class="code-keyword">for</span> t <span class="code-keyword">in</span> traces), vocab_size=<span class="code-num">200</span>, seed=<span class="code-num">0</span>)
 
-<span class="code-comment"># 4. Encode trajectories as motif-frequency fingerprints.</span>
+<span class="code-comment"># 4. Encode trajectories as procedure-frequency fingerprints.</span>
 fingerprints = <span class="code-fn">encode</span>(traces, vocab=vocab)
 
 <span class="code-comment"># 5. Compare.</span>
@@ -617,12 +617,12 @@ procgrep probe        --input fp.jsonl         --label-field group   --output pr
 <tbody>
 <tr><td><code>canonicalize</code></td><td>Built-in adapters for SWE-agent, Agentless, DARS, Moatless; custom adapters via the <code>TraceAdapter</code> protocol.</td></tr>
 <tr><td><code>fit_bpe</code></td><td>Greedy BPE merge over atom sequences; deterministic tie-breaking; persisted vocabulary.</td></tr>
-<tr><td><code>encode</code></td><td>Motif-frequency distributions under a fixed vocabulary; L1-normalized on demand.</td></tr>
+<tr><td><code>encode</code></td><td>Procedure-frequency distributions under a fixed vocabulary; L1-normalized on demand.</td></tr>
 <tr><td><code>jsd</code> · <code>jsd_matrix</code></td><td>Jensen-Shannon divergence (log base 2; values in [0, 1]) at any group granularity.</td></tr>
 <tr><td><code>umap_project</code></td><td>UMAP at trace or group granularity, seeded for reproducibility.</td></tr>
 <tr><td><code>leave_one_group_out</code></td><td>Predictive-transfer probe with sklearn <code>LeaveOneGroupOut</code> and multinomial logistic regression.</td></tr>
 <tr><td><code>match_patterns</code></td><td>Level 1 YAML rule format; regex over canonical atoms with <code>must_hold</code> semantics.</td></tr>
-<tr><td>stats helpers</td><td>Atom frequencies per group, effective vocabulary size, per-trajectory entropy, discriminative motifs.</td></tr>
+<tr><td>stats helpers</td><td>Atom frequencies per group, effective vocabulary size, per-trajectory entropy, discriminative procedures.</td></tr>
 </tbody>
 </table>
 
@@ -645,10 +645,10 @@ repository</a>.
 
 <ol>
   <li><code>mean_traj_length</code> &mdash; mean atoms per trajectory per group; coarse proxy for verbosity.</li>
-  <li><code>effective_vocab</code> &mdash; <code>exp(H(group-mean motif distribution))</code>; equivalent count of equally-used motifs.</li>
-  <li><code>mean_entropy</code> &mdash; median per-trajectory motif entropy across the group.</li>
+  <li><code>effective_vocab</code> &mdash; <code>exp(H(group-mean procedure distribution))</code>; equivalent count of equally-used procedures.</li>
+  <li><code>mean_entropy</code> &mdash; median per-trajectory procedure entropy across the group.</li>
   <li><code>within_group_jsd</code> &mdash; mean pairwise JSD inside the group; <em>the noise floor</em> for any across-group claim.</li>
-  <li><code>motif_concentration</code> &mdash; Herfindahl-Hirschman index on the group-mean motif distribution.</li>
+  <li><code>procedure_concentration</code> &mdash; Herfindahl-Hirschman index on the group-mean procedure distribution.</li>
   <li><code>atom_gini</code> &mdash; Gini coefficient on the group's raw atom-frequency vector (vocabulary-independent).</li>
 </ol>
 
@@ -890,16 +890,16 @@ rising from <mark>23% to 35%</mark>, with SUBMIT falling from
 9% to 2%. Detectable from the post-localization prefix alone.
 </p>
 
-<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> discriminative_motifs
+<pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> discriminative_procedures
 
 <span class="code-comment"># Long Type B and short Type B labeled in the `group` field.</span>
-top = <span class="code-fn">discriminative_motifs</span>(
+top = <span class="code-fn">discriminative_procedures</span>(
     long_and_short_fingerprints, vocab,
     group_a=<span class="code-string">"long_typeB"</span>, group_b=<span class="code-string">"short_typeB"</span>,
     k=<span class="code-num">10</span>, ranking=<span class="code-string">"log_odds"</span>,
 )
 <span class="code-keyword">for</span> m <span class="code-keyword">in</span> top:
-    <span class="code-fn">print</span>(m.motif, m.log_odds, m.p_a, m.p_b)
+    <span class="code-fn">print</span>(m.procedure, m.log_odds, m.p_a, m.p_b)
 <span class="code-comment"># EDIT_SRC_PY tops the list with positive log-odds (more in long failures).</span>
 </code></pre>
 
@@ -934,7 +934,7 @@ original paper found <em>stuck-edit-loops</em> (long
 <code>EDIT_SRC_PY</code> runs) as the dominant failure signature in
 its 3-agent corpus. Extending the same analysis to 9 agents flipped
 the picture: Claude-4 flails by stringing <code>SHELL_CD</code>
-atoms instead, and the post-localization motif distribution shows
+atoms instead, and the post-localization procedure distribution shows
 <code>EDIT_SRC_PY</code> proportion <em>decreasing</em> with
 trajectory length while <code>SHELL_CD</code> rises from near-zero
 to ~21%. Different agents over-emit different atoms when stuck.
@@ -1023,7 +1023,7 @@ in the corpus.
 [<span class="code-string">SEARCH</span>, <span class="code-string">edit_test_loop</span>, <span class="code-string">EDIT_SRC_PY</span>, <span class="code-string">SUBMIT</span>]
 
 <span class="code-comment"># After K passes, the vocabulary contains all base atoms plus</span>
-<span class="code-comment"># K named multi-atom motifs. Each trajectory now has a much</span>
+<span class="code-comment"># K named multi-atom procedures. Each trajectory now has a much</span>
 <span class="code-comment"># shorter, more structurally informative encoding.</span>
 </code></pre>
 
@@ -1069,14 +1069,14 @@ makes it well-behaved as a comparison metric.
 <ul>
   <li><strong>JSD = 0</strong> when P and Q are identical. The fingerprint of an agent compared to itself.</li>
   <li><strong>JSD ≈ 0.15</strong> in the paper's data: two agents in the same paradigm-by-scaffold cell (Claude-3 vs Claude-3.5 under SWE-agent).</li>
-  <li><strong>JSD ≈ 1.0</strong> when P and Q put their mass on disjoint motifs. The paper's Agentless vs SWE-agent comparison reaches this ceiling.</li>
+  <li><strong>JSD ≈ 1.0</strong> when P and Q put their mass on disjoint procedures. The paper's Agentless vs SWE-agent comparison reaches this ceiling.</li>
 </ul>
 
 <p>In code:</p>
 
 <pre><code><span class="code-keyword">from</span> procgrep <span class="code-keyword">import</span> jsd
 
-<span class="code-comment"># Two fingerprints, three-motif vocabulary:</span>
+<span class="code-comment"># Two fingerprints, three-procedure vocabulary:</span>
 p = [<span class="code-num">0.5</span>, <span class="code-num">0.3</span>, <span class="code-num">0.2</span>]   <span class="code-comment"># editor: heavy on edit, run_test, submit</span>
 q = [<span class="code-num">0.1</span>, <span class="code-num">0.2</span>, <span class="code-num">0.7</span>]   <span class="code-comment"># searcher: heavy on search and read</span>
 
@@ -1096,7 +1096,7 @@ are directly comparable across corpora and across vocabulary sizes.
 <h3>Why count-based fingerprints, not embeddings</h3>
 <p>
 Three reasons. <em>Interpretability:</em> each fingerprint dimension
-is a named motif, so JSD differences attribute to specific motifs
+is a named procedure, so JSD differences attribute to specific procedures
 that a reader can name and inspect. <em>No model dependency:</em>
 the fingerprint is deterministic and reproducible without loading a
 language model. <em>Fidelity to the paper's framing:</em> the paper
@@ -1149,8 +1149,8 @@ write-ups in <a href="https://github.com/hamidahoderinwale/procgrep/blob/main/ST
   trajectories.
 </li>
 <li>
-  <strong>Do rule-based and motif-based methods agree on the same finding?</strong>
-  Take a finding from an existing BPE-motif analysis on your corpus.
+  <strong>Do rule-based and procedure-based methods agree on the same finding?</strong>
+  Take a finding from an existing BPE-procedure analysis on your corpus.
   Write a regex rule that should catch the same signature. Run the
   rule via the pattern matcher. Two independent methods catching
   the same signature is the cross-method validation.

@@ -1,16 +1,10 @@
-"""Encode atom sequences as motif-frequency distributions.
+"""Encode atom sequences as procedure-frequency distributions.
 
-A `Fingerprint` is one trajectory's procedural shape expressed as a
-non-negative integer count vector over the vocabulary tokens, plus
-the originating trace's identity and grouping label. Counts are
-stored as the canonical representation; the L1-normalized
-distribution is derived on demand.
-
-This module is thin on purpose: `apply_vocab` from `procgrep.bpe`
-does the BPE tokenization, and `Counter` does the counting. The
-work here is plumbing: holding the vocabulary's token order fixed
-across all fingerprints so that downstream JSD and probe routines
-can compare distributions positionally.
+A `Fingerprint` is one trajectory's counts over the vocabulary tokens
+plus its identity and grouping label. Counts are the canonical form;
+the L1-normalized distribution is derived on demand. Token order is
+held fixed across all fingerprints so JSD and probe routines can
+compare distributions positionally.
 """
 
 from __future__ import annotations
@@ -22,21 +16,18 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 
-from procgrep.bpe import MotifVocabulary, apply_vocab
+from procgrep.bpe import ProcedureVocabulary, apply_vocab
 from procgrep.types import Trace
 
 
 @dataclass(frozen=True)
 class Fingerprint:
-    """One trajectory expressed as a motif count vector.
+    """One trajectory expressed as a procedure count vector.
 
     Attributes:
-        trace_id: Forwarded from the originating `Trace`.
-        agent: Forwarded from the originating `Trace`.
         group: Forwarded from the originating `Trace`. Falls back to
-            ``agent`` when the trace did not carry a group label.
-        counts: Tuple of length ``vocab.size`` aligned to
-            ``vocab.tokens()``.
+            ``agent`` when the trace had no group label.
+        counts: Length ``vocab.size``, aligned to ``vocab.tokens()``.
     """
 
     trace_id: str
@@ -46,16 +37,15 @@ class Fingerprint:
 
     @property
     def total(self) -> int:
-        """Total token count (sequence length after BPE)."""
+        """Token count (sequence length after BPE)."""
         return sum(self.counts)
 
     def distribution(self) -> npt.NDArray[np.float64]:
-        """Return the L1-normalized distribution over vocab tokens.
+        """L1-normalized distribution over vocab tokens.
 
-        An empty trajectory (``total == 0``) returns a uniform vector
-        so that downstream divergence routines do not divide by zero.
-        Callers who want to distinguish empty trajectories should
-        filter on ``total`` directly.
+        Empty trajectories (``total == 0``) return a uniform vector so
+        divergence routines do not divide by zero. Filter on ``total``
+        to distinguish them.
         """
         arr = np.asarray(self.counts, dtype=np.float64)
         total = float(arr.sum())
@@ -64,12 +54,11 @@ class Fingerprint:
         return np.asarray(arr / total, dtype=np.float64)
 
     def entropy(self) -> float:
-        """Shannon entropy of the motif distribution, in nats.
+        """Shannon entropy of the procedure distribution, in nats.
 
-        Returns 0.0 for a trajectory whose mass is on a single motif;
-        returns ``log(vocab_size)`` for the uniform (empty-trajectory)
-        case. Useful as a per-trajectory diversity score; aggregate
-        statistics live in `procgrep.stats.entropies_per_group`.
+        Returns 0.0 when all mass is on one procedure, ``log(vocab_size)``
+        for the uniform (empty-trajectory) case. See
+        `procgrep.stats.entropies_per_group` for aggregates.
         """
         dist = self.distribution()
         positive = dist[dist > 0]
@@ -78,19 +67,11 @@ class Fingerprint:
         return float(-np.sum(positive * np.log(positive)))
 
 
-def encode(traces: Iterable[Trace], *, vocab: MotifVocabulary) -> list[Fingerprint]:
-    """Encode an iterable of `Trace` objects under a fixed vocabulary.
+def encode(traces: Iterable[Trace], *, vocab: ProcedureVocabulary) -> list[Fingerprint]:
+    """Encode traces under a fixed vocabulary.
 
-    The vocabulary's token order is preserved across all fingerprints;
-    position `i` in every returned fingerprint corresponds to the same
-    token, namely ``vocab.tokens()[i]``.
-
-    Args:
-        traces: The trajectories to fingerprint.
-        vocab: The motif vocabulary to apply.
-
-    Returns:
-        One `Fingerprint` per input trace, in the same order.
+    Position ``i`` in every returned fingerprint maps to
+    ``vocab.tokens()[i]``. Output preserves input order.
     """
     index = vocab.index()
     size = vocab.size

@@ -16,7 +16,7 @@ This script:
    Java edits across two agents).
 2. Canonicalizes via the gumtree adapter — node-typed atoms.
 3. Reports the vocabulary that gumtree atoms induce.
-4. Fits a BPE motif vocabulary and prints the per-agent JSD.
+4. Fits a BPE procedure vocabulary and prints the per-agent JSD.
 5. Demonstrates the optional ``parse_gumtree_jsondiff`` helper on a
    hand-crafted raw gumtree JSON payload, showing the converted
    ``actions`` shape that the adapter consumes.
@@ -86,7 +86,7 @@ def main() -> None:
 
     fingerprints = encode(traces, vocab=vocab)
     matrix = jsd_matrix(fingerprints, group_by="agent")
-    print("\npairwise JSD by agent (BPE motif fingerprints):")
+    print("\npairwise JSD by agent (BPE procedure fingerprints):")
     for r in matrix.to_records():
         if str(r["row"]) < str(r["col"]):
             print(f"  {r['row']:15s} vs {r['col']:15s}  JSD = {r['jsd']:.4f}")

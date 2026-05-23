@@ -1,11 +1,9 @@
 """Agentless trace adapter.
 
-Agentless (https://github.com/OpenAutoCoder/Agentless) emits traces
-whose top-level record carries a list of phase steps under
-``actions``. Each step has a ``phase`` string naming the localization
-or repair phase and an optional ``reasoning`` string. This adapter
-maps the phase name through a synonym table to a canonical atom and
-prepends ``ATOM_THINK`` when a step has non-empty reasoning text.
+Records carry an ``actions`` list of phase dicts with a ``phase``
+name and optional ``reasoning``. Maps phase names through `ATOM_MAP`
+and prepends ``ATOM_THINK`` on non-empty reasoning. See
+https://github.com/OpenAutoCoder/Agentless.
 """
 
 from __future__ import annotations

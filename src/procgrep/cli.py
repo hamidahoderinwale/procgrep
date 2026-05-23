@@ -1,23 +1,11 @@
 """Command-line interface for `procgrep`.
 
-The CLI is a thin layer over the library: each subcommand reads
-inputs from file paths, calls one or two library functions, and
-writes outputs to file paths. Commands compose by chaining file
-paths; nothing flows between commands except on disk, which keeps
-the pipeline reproducible and easy to inspect at every stage.
+Subcommands chain file paths: each one reads JSONL/JSON inputs, calls
+a library function, and writes JSONL/JSON outputs. Nothing flows
+between commands except on disk.
 
-Subcommands:
-
-* `canonicalize`: raw scaffold-specific JSONL into canonical atom
-  JSONL.
-* `fit-bpe`: canonical atom JSONL into a BPE motif vocabulary JSON.
-* `encode`: canonical atom JSONL plus vocabulary into fingerprint
-  JSONL.
-* `jsd`: fingerprint JSONL into a pairwise JSD matrix JSON.
-* `umap`: fingerprint JSONL into UMAP coordinates JSON.
-* `probe`: fingerprint JSONL into a leave-one-group-out probe JSON.
-* `match-patterns`: canonical atom JSONL plus a YAML rules file into
-  a pattern-violation report JSON.
+Subcommands: `canonicalize`, `fit-bpe`, `encode`, `jsd`, `umap`,
+`probe`, `match-patterns`, `list-adapters`.
 """
 
 from __future__ import annotations
@@ -47,7 +35,7 @@ from procgrep.patterns import match_patterns as match_patterns_fn
 
 app = typer.Typer(
     name="procgrep",
-    help="Procedural fingerprinting of LLM coding-agent rollouts.",
+    help="Procedural fingerprinting of LLM coding-agent trajectories.",
     no_args_is_help=True,
     add_completion=False,
 )
@@ -92,7 +80,7 @@ def fit_bpe_cmd(
     seed: Annotated[int, typer.Option(help="Provenance seed.")] = 0,
     min_pair_frequency: Annotated[int, typer.Option(help="Minimum pair count to merge.")] = 2,
 ) -> None:
-    """Learn a BPE motif vocabulary from canonical traces."""
+    """Learn a BPE procedure vocabulary from canonical traces."""
     traces = list(records_to_traces(read_jsonl(input_path)))
     vocab = fit_bpe(
         (t.atoms for t in traces),
@@ -113,7 +101,7 @@ def encode(
     vocab_path: Annotated[Path, typer.Option("--vocab", "-v", help="Vocabulary JSON.")],
     output_path: Annotated[Path, typer.Option("--output", "-o", help="Fingerprint JSONL.")],
 ) -> None:
-    """Encode canonical traces as motif-frequency fingerprints."""
+    """Encode canonical traces as procedure-frequency fingerprints."""
     vocab = load_vocab(vocab_path)
     traces = records_to_traces(read_jsonl(input_path))
     fingerprints = encode_fn(traces, vocab=vocab)

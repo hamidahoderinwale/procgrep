@@ -1,52 +1,35 @@
 """Gumtree-based AST-edit-script adapter.
 
-`procgrep` itself is post-hoc and language-agnostic; for source-level
-agent traces we need a language-neutral *atom* layer. Gumtree
-(https://github.com/GumTreeDiff/gumtree) produces an AST edit script
-between two source files for any language Gumtree has a tree generator
-for (Python, JS, TS, Java, C/C++, Go, Ruby, etc.). This module turns
-that edit script into procgrep atoms.
+Gumtree produces an AST edit script between two source files for any
+language it has a tree generator for. This adapter turns that script
+into procgrep atoms. See https://github.com/GumTreeDiff/gumtree.
 
-Fine-grained node-typed atoms
------------------------------
-
-A gumtree action carries both an operation (``insert-node``,
-``delete-tree``, ``update-node``, ``move-tree``) and the node type it
-operates on (``MethodInvocation``, ``Identifier``, ``StringLiteral``,
-...). We preserve both by emitting composite atoms of the form
-``"<op>:<node_type>"``::
+Atoms are composite ``"<op>:<node_type>"`` strings preserving both
+the operation and the node type::
 
     insert-tree MethodInvocation  ->  "ast_insert:MethodInvocation"
     delete-node Identifier        ->  "ast_delete:Identifier"
     update-node Literal           ->  "ast_update:Literal"
     move-tree Block               ->  "ast_move:Block"
 
-The vocabulary therefore grows with the number of distinct node types
-that appear in the corpus. This is a deliberate tradeoff: structural
-information per atom is high; cross-scaffold comparison against the
-small SWE-agent / Agentless alphabet is *not* meaningful at this layer
-and is not the use-case this adapter targets.
+The vocabulary scales with the corpus's distinct node types. This is
+high structural information per atom; cross-scaffold comparison
+against the small SWE-agent / Agentless alphabet is not the use case.
 
-The input shape this adapter expects
-------------------------------------
-
-Each record is a dict with at least::
+Expected record shape::
 
     {
         "trace_id": "...",
         "agent":    "...",
         "actions":  [
             {"action": "insert-tree", "node_type": "MethodInvocation"},
-            {"action": "delete-node", "node_type": "Identifier"},
             ...
         ],
     }
 
-If you have raw gumtree ``jsondiff`` output, ``parse_gumtree_jsondiff``
-converts it into the ``actions`` shape above. If you have a pair of
-source files on disk and ``gumtree`` on your PATH, ``run_jsondiff``
-shells out to the gumtree CLI and returns the parsed JSON, ready to
-feed into the parser.
+:func:`parse_gumtree_jsondiff` converts raw gumtree ``jsondiff`` JSON
+into ``actions`` form. :func:`run_jsondiff` shells out to the gumtree
+CLI when both source files are on disk and ``gumtree`` is on PATH.
 """
 
 from __future__ import annotations
@@ -68,7 +51,7 @@ AST_UPDATE: str = "ast_update"
 AST_MOVE: str = "ast_move"
 
 NODE_TYPE_SEPARATOR: str = ":"
-"""Separator joining the AST operation prefix and the node-type label."""
+"""Separator between the AST operation prefix and the node-type label."""
 
 _GUMTREE_OP_PREFIX: dict[str, str] = {
     "insert-node": AST_INSERT,
@@ -79,38 +62,26 @@ _GUMTREE_OP_PREFIX: dict[str, str] = {
     "move-node": AST_MOVE,
     "move-tree": AST_MOVE,
 }
-"""Gumtree edit-script operation name -> procgrep atom prefix.
+"""Gumtree operation name -> procgrep atom prefix.
 
-Both the ``-node`` and ``-tree`` variants collapse to the same prefix:
-the operation matters; the subtree-vs-single-node distinction is a
-gumtree implementation detail.
+``-node`` and ``-tree`` variants collapse to the same prefix; the
+distinction is a gumtree implementation detail.
 """
 
 UNKNOWN_NODE_TYPE: str = "?"
-"""Node-type placeholder used when the input record omits ``node_type``."""
+"""Placeholder used when a record omits ``node_type``."""
 
+# Gumtree jsondiff represents a node as "<NodeType>: <label> [s,e]" or
+# just "<NodeType> [s,e]" -- we take the leading identifier.
 _TREE_TYPE_RE = re.compile(r"^\s*([A-Za-z_][\w.$]*)")
-"""Extract the leading type token from a gumtree ``tree`` string.
-
-Gumtree's ``jsondiff`` represents a node as ``"<NodeType>: <label> [s,e]"``
-or simply ``"<NodeType> [s,e]"`` depending on whether the node carries a
-label. We treat the leading identifier as the node-type label.
-"""
 
 
 def gumtree_atom(operation: str, node_type: str) -> Atom:
-    """Compose a fine-grained gumtree atom from operation + node type.
+    """Compose a gumtree atom from operation + node type.
 
-    Args:
-        operation: One of the keys of ``_GUMTREE_OP_PREFIX`` (e.g.
-            ``"insert-tree"``).
-        node_type: Gumtree AST node-type label (e.g.
-            ``"MethodInvocation"``). Falls back to
-            :data:`UNKNOWN_NODE_TYPE` if empty.
-
-    Returns:
-        A composite atom string. Operations outside the gumtree
-        vocabulary collapse to :data:`procgrep.types.ATOM_OTHER`.
+    Operations outside the gumtree vocabulary collapse to
+    :data:`procgrep.types.ATOM_OTHER`. Empty ``node_type`` falls back
+    to :data:`UNKNOWN_NODE_TYPE`.
     """
     prefix = _GUMTREE_OP_PREFIX.get(operation)
     if prefix is None:
@@ -120,18 +91,11 @@ def gumtree_atom(operation: str, node_type: str) -> Atom:
 
 
 def gumtree_adapter(record: Mapping[str, Any]) -> AtomSequence:
-    """Map a gumtree-shaped trace record into a sequence of atoms.
+    """Map a gumtree-shaped record into atoms.
 
-    The record must carry an ``actions`` field listing dicts, each with
-    an ``action`` (gumtree operation name) and ``node_type`` (AST
-    node-type label). Any dict whose ``action`` is not in the gumtree
-    vocabulary emits :data:`procgrep.types.ATOM_OTHER`.
-
-    Args:
-        record: One gumtree-flavored trace record.
-
-    Returns:
-        The ordered list of atoms produced by the record's actions.
+    The record's ``actions`` is a list of dicts with ``action``
+    (gumtree operation name) and ``node_type``. Unknown operations
+    emit :data:`procgrep.types.ATOM_OTHER`.
     """
     steps = record.get("actions", [])
     if not isinstance(steps, list):
@@ -147,23 +111,10 @@ def gumtree_adapter(record: Mapping[str, Any]) -> AtomSequence:
 
 
 def parse_gumtree_jsondiff(payload: Mapping[str, Any]) -> list[dict[str, str]]:
-    """Convert raw gumtree ``jsondiff`` output into the adapter input shape.
+    """Convert raw gumtree ``jsondiff`` output to adapter input shape.
 
-    Gumtree's ``jsondiff`` JSON has an ``actions`` array whose entries
-    look like::
-
-        {"action": "insert-tree", "tree": "MethodInvocation [12,45]",
-         "parent": "...", "at": 3}
-
-    This helper extracts the operation and the leading node-type token
-    from each entry and returns a list of ``{"action", "node_type"}``
-    dicts ready to be embedded in a procgrep record under ``actions``.
-
-    Args:
-        payload: Parsed gumtree ``jsondiff`` JSON (top-level dict).
-
-    Returns:
-        List of ``{"action": <op>, "node_type": <type>}`` dicts.
+    Returns one ``{"action", "node_type"}`` dict per entry in
+    ``payload["actions"]``, ready to embed in a procgrep record.
     """
     out: list[dict[str, str]] = []
     raw_actions = payload.get("actions", [])
@@ -187,29 +138,19 @@ def run_jsondiff(
     gumtree_bin: str = "gumtree",
     timeout: float | None = None,
 ) -> dict[str, Any]:
-    """Invoke the gumtree CLI's ``jsondiff`` subcommand on two source files.
+    """Invoke ``gumtree jsondiff`` on two source files.
 
-    Procgrep declares gumtree as an external tool dependency, not a
-    Python import. This helper is provided for convenience when both
-    files exist on the local filesystem and the ``gumtree`` binary is
-    on ``PATH``; it is optional and never invoked from procgrep's own
-    library code.
+    Convenience helper; never invoked from library code. Gumtree is an
+    external tool dependency, not a Python import.
 
     Args:
-        before: Path to the *before* source file.
-        after: Path to the *after* source file.
-        gumtree_bin: Name of the gumtree binary to invoke. Override
-            for non-standard installations.
-        timeout: Optional subprocess timeout in seconds.
-
-    Returns:
-        Parsed gumtree ``jsondiff`` JSON (the dict containing
-        ``matches`` and ``actions``).
+        gumtree_bin: Override for non-standard installations.
+        timeout: Subprocess timeout in seconds.
 
     Raises:
-        FileNotFoundError: If ``gumtree_bin`` is not on PATH.
-        subprocess.CalledProcessError: If gumtree exits non-zero.
-        json.JSONDecodeError: If gumtree's stdout is not valid JSON.
+        FileNotFoundError: ``gumtree_bin`` not on PATH.
+        subprocess.CalledProcessError: Gumtree exited non-zero.
+        json.JSONDecodeError: Gumtree's stdout was not valid JSON.
     """
     if shutil.which(gumtree_bin) is None:
         raise FileNotFoundError(
@@ -230,7 +171,7 @@ def run_jsondiff(
 
 
 def _register() -> None:
-    """Register the gumtree adapter under the name ``"gumtree"``."""
+    """Register under the name ``"gumtree"``."""
     register_adapter("gumtree", gumtree_adapter, overwrite=True)
 
 

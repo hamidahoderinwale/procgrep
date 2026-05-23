@@ -68,9 +68,9 @@ contribution, and how directly the study cites back to the paper.
   each, matched task split.
 - **Falsifier.** Either no detectable procedural shift (suggests
   procedure is driven by scaffold not prompt; itself an interesting
-  null), or shift orthogonal to outcome-relevant motifs.
+  null), or shift orthogonal to outcome-relevant procedures.
 - **Capabilities exercised.** canonicalize, fit_bpe (shared vocab),
-  encode, jsd, optional patterns to spot specific motif changes.
+  encode, jsd, optional patterns to spot specific procedure changes.
 - **Why it ranks #3.** Cleanest empirical demonstration of the
   two-layers framing the paper uses. Pairs `procgrep` with DSPy
   rather than competing with it.
@@ -79,7 +79,7 @@ contribution, and how directly the study cites back to the paper.
 
 - **Hypothesis.** Procedural fingerprint shifts non-monotonically
   with reasoning budget. High budgets produce stuck-think-loops
-  with a distinct motif signature, analogous to the stuck-edit-loop
+  with a distinct procedure signature, analogous to the stuck-edit-loop
   identified at the action layer.
 - **Data.** One extended-thinking model, max-thinking-tokens in
   {0, 2k, 8k, 32k}, N=30 per arm.
@@ -118,7 +118,7 @@ contribution, and how directly the study cites back to the paper.
 | 11 | Tool-restriction ablations (disable run_test, force one edit per turn) | Mechanistic; clean controlled-eval shape. |
 | 12 | Cost-vs-procedure regression (predict $/task from fingerprint) | Practitioner-facing; ties procedure to budget. |
 | 13 | Model-version longitudinal drift (GPT-4 to GPT-4o to GPT-4-Turbo) | Tracks "what changed" in releases. |
-| 14 | Agent attribution stylometry baseline (LOGO probe with `label_field="agent"` + naive baselines) | Methodology pre-requisite for every other study; tells you whether BPE motifs carry information beyond raw atom frequencies. |
+| 14 | Agent attribution stylometry baseline (LOGO probe with `label_field="agent"` + naive baselines) | Methodology pre-requisite for every other study; tells you whether BPE procedures carry information beyond raw atom frequencies. |
 | 15 | Within-trajectory drift (prefix/middle/suffix slice fingerprints) | Tests the stationarity assumption every other study makes implicitly. Free; reuses existing corpora. |
 | 16 | Cross-language attribution via gumtree AST atoms | Strongest form of the attribution claim: does an agent's procedural fingerprint transfer across held-out languages? Only possible once gumtree atoms replace the language-specific tool-surface atoms. |
 
@@ -135,8 +135,8 @@ contribution, and how directly the study cites back to the paper.
   bundled `examples/synthetic_gumtree_traces.jsonl` runs as a
   smoke test; the meaningful version uses a real same-task-
   multi-model corpus (held-out task family as the LOGO group).
-- **Falsifier.** BPE-motif accuracy at or below raw-atom accuracy
-  in every fold. The motif vocabulary then isn't earning its keep
+- **Falsifier.** BPE-procedure accuracy at or below raw-atom accuracy
+  in every fold. The procedure vocabulary then isn't earning its keep
   on this corpus.
 - **Capabilities exercised.** `canonicalize`, `fit_bpe`, `encode`,
   `leave_one_group_out`, plus a small inline scikit-learn LOGO
@@ -191,7 +191,7 @@ contribution, and how directly the study cites back to the paper.
   `SimpleName` are the same concept but distinct atoms).
 - **Capabilities exercised.** `canonicalize` with the `gumtree`
   adapter, `fit_bpe`, `encode`, `leave_one_group_out`,
-  `discriminative_motifs`.
+  `discriminative_procedures`.
 - **Why it ranks here.** Strongest form of the attribution
   claim; no other existing code-stylometry framework can ask
   this question because tokens-of-source-text approaches are

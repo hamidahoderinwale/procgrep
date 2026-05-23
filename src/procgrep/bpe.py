@@ -1,31 +1,12 @@
-"""Learn a BPE motif vocabulary over canonical atom sequences.
+"""Learn a BPE procedure vocabulary over canonical atom sequences.
 
-Byte-Pair Encoding (Sennrich et al., 2016) was originally designed
-for subword tokenization. Here we apply it to atom-level sequences:
-the base alphabet is the set of canonical atoms observed in the
-corpus, and each merge step glues the most frequent adjacent pair
-into a new motif token.
-
-The output is a `MotifVocabulary`: an ordered list of base atoms
-plus an ordered list of merge operations. The vocabulary is the
-single source of truth that the rest of the pipeline (`encode`,
-`jsd`, `umap_project`, `probe`, `patterns`) consumes. It serializes
-to JSON for reproducibility.
-
-The algorithm is the classical greedy one:
-
-1. Count adjacent-pair frequencies across all sequences.
-2. Pick the most frequent pair (ties broken lexicographically for
-   determinism).
-3. Stop if the best pair occurs fewer than `min_pair_frequency`
-   times, or if the target vocabulary size is reached.
-4. Replace every occurrence of the pair in every sequence with a
-   merged token, record the merge, and repeat.
-
-The only subtlety is the merge-application order: within a single
-training step we left-to-right scan each sequence and merge greedily,
-the same way BPE is applied at inference time. This avoids the
-"overlapping pairs" ambiguity.
+Byte-Pair Encoding (Sennrich et al., 2016) applied to atom-level
+sequences: the base alphabet is the corpus's unique atoms; each merge
+glues the most frequent adjacent pair into a new procedure token.
+Output is a `ProcedureVocabulary` (atoms + ordered merges), serializable
+to JSON and consumed by `encode`, `jsd`, `umap_project`, `probe`, and
+`patterns`. Ties on pair frequency break lexicographically for
+deterministic output.
 """
 
 from __future__ import annotations
@@ -36,22 +17,20 @@ from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
-from procgrep.types import MOTIF_SEPARATOR, Atom, AtomSequence
+from procgrep.types import PROCEDURE_SEPARATOR, Atom, AtomSequence
 
 
 @dataclass(frozen=True)
-class MotifVocabulary:
-    """A learned BPE motif vocabulary.
+class ProcedureVocabulary:
+    """A learned BPE procedure vocabulary.
 
     Attributes:
         atoms: Base alphabet, sorted lexicographically.
-        merges: Ordered tuple of merge operations. Each entry is a
-            ``(left, right)`` pair; applying the merge replaces every
-            adjacent occurrence of ``left`` followed by ``right`` with
-            the joined token ``left + MOTIF_SEPARATOR + right``.
-        seed: Seed recorded for provenance. The fitting algorithm is
-            deterministic, so the seed is informational only; it has
-            no effect on the learned vocabulary given fixed inputs.
+        merges: Ordered ``(left, right)`` pairs. Applying a merge
+            replaces adjacent ``left, right`` with
+            ``left + PROCEDURE_SEPARATOR + right``.
+        seed: Recorded for provenance. The algorithm is deterministic,
+            so the seed has no effect on the result given fixed inputs.
         min_pair_frequency: Frequency floor used during training.
     """
 
@@ -62,21 +41,20 @@ class MotifVocabulary:
 
     @property
     def size(self) -> int:
-        """Total vocabulary size: atoms plus merged motifs."""
+        """Atoms plus merged procedures."""
         return len(self.atoms) + len(self.merges)
 
     def tokens(self) -> tuple[str, ...]:
-        """All tokens in canonical order: atoms first, then merges.
+        """Tokens in canonical order: atoms first, then merges.
 
-        The position of each token in this tuple is its index in
-        encoded fingerprints. Stable across calls and across loads
-        from disk.
+        A token's position here is its index in encoded fingerprints
+        and is stable across loads.
         """
         merged = tuple(_join(left, right) for left, right in self.merges)
         return self.atoms + merged
 
     def index(self) -> dict[str, int]:
-        """Token -> index mapping for fast lookup during encoding."""
+        """Token to index map for encoding."""
         return {t: i for i, t in enumerate(self.tokens())}
 
 
@@ -86,27 +64,22 @@ def fit_bpe(
     vocab_size: int,
     seed: int = 0,
     min_pair_frequency: int = 2,
-) -> MotifVocabulary:
-    """Learn a BPE motif vocabulary from canonical atom sequences.
+) -> ProcedureVocabulary:
+    """Learn a BPE procedure vocabulary from atom sequences.
 
     Args:
-        sequences: Iterable of canonical atom sequences (one per
-            trajectory). Will be materialized into a list internally.
-        vocab_size: Target vocabulary size (base atoms + merges).
-            Must be at least the number of unique atoms in the corpus.
-        seed: Seed recorded on the returned vocabulary for provenance.
-            The algorithm is deterministic for fixed inputs.
-        min_pair_frequency: Stop merging once the most frequent pair
-            falls below this threshold.
+        vocab_size: Target size (atoms + merges). Must be at least the
+            number of unique atoms in the corpus.
+        min_pair_frequency: Stop merging once the top pair drops below
+            this floor.
 
     Returns:
-        A `MotifVocabulary` with ``size <= vocab_size`` (the algorithm
-        may stop early if the corpus lacks pairs above the frequency
-        floor).
+        A `ProcedureVocabulary` with ``size <= vocab_size``. May stop early
+        when no pair clears the frequency floor.
 
     Raises:
-        ValueError: If ``vocab_size`` is less than the number of unique
-            atoms in the input corpus.
+        ValueError: If ``vocab_size`` is below the corpus's unique-atom
+            count.
     """
     materialized: list[list[str]] = [list(s) for s in sequences]
     atoms = tuple(sorted({a for s in materialized for a in s}))
@@ -127,7 +100,7 @@ def fit_bpe(
         merges.append(pair)
         materialized = [_apply_merge(seq, pair) for seq in materialized]
 
-    return MotifVocabulary(
+    return ProcedureVocabulary(
         atoms=atoms,
         merges=tuple(merges),
         seed=seed,
@@ -135,20 +108,16 @@ def fit_bpe(
     )
 
 
-def apply_vocab(seq: AtomSequence, vocab: MotifVocabulary) -> list[str]:
-    """Apply a learned vocabulary's merges to a single atom sequence.
-
-    Returns the tokenized sequence (atoms or merged motifs), suitable
-    for downstream counting by `procgrep.encode.encode`.
-    """
+def apply_vocab(seq: AtomSequence, vocab: ProcedureVocabulary) -> list[str]:
+    """Tokenize an atom sequence using a learned vocabulary's merges."""
     out = list(seq)
     for pair in vocab.merges:
         out = _apply_merge(out, pair)
     return out
 
 
-def save_vocab(vocab: MotifVocabulary, path: Path) -> None:
-    """Serialize a vocabulary to JSON at ``path``."""
+def save_vocab(vocab: ProcedureVocabulary, path: Path) -> None:
+    """Write a vocabulary to JSON at ``path``."""
     payload = {
         "atoms": list(vocab.atoms),
         "merges": [list(m) for m in vocab.merges],
@@ -158,10 +127,10 @@ def save_vocab(vocab: MotifVocabulary, path: Path) -> None:
     path.write_text(json.dumps(payload, indent=2, sort_keys=False) + "\n")
 
 
-def load_vocab(path: Path) -> MotifVocabulary:
-    """Load a vocabulary previously written by `save_vocab`."""
+def load_vocab(path: Path) -> ProcedureVocabulary:
+    """Load a vocabulary written by `save_vocab`."""
     payload = json.loads(path.read_text())
-    return MotifVocabulary(
+    return ProcedureVocabulary(
         atoms=tuple(payload["atoms"]),
         merges=tuple((m[0], m[1]) for m in payload["merges"]),
         seed=int(payload["seed"]),
@@ -170,16 +139,14 @@ def load_vocab(path: Path) -> MotifVocabulary:
 
 
 def _join(left: str, right: str) -> str:
-    """Glue two tokens into one BPE motif token."""
-    return left + MOTIF_SEPARATOR + right
+    """Glue two tokens into one procedure token."""
+    return left + PROCEDURE_SEPARATOR + right
 
 
 def _most_frequent_pair(sequences: list[list[str]], min_frequency: int) -> tuple[str, str] | None:
-    """Find the most frequent adjacent pair across all sequences.
+    """Return the top adjacent pair, or None if none clears ``min_frequency``.
 
-    Returns None if no pair meets ``min_frequency``. Ties on count are
-    broken by lexicographic order on the pair (left, right) for
-    deterministic output.
+    Ties break lexicographically.
     """
     counts: Counter[tuple[str, str]] = Counter()
     for seq in sequences:
@@ -197,7 +164,7 @@ def _most_frequent_pair(sequences: list[list[str]], min_frequency: int) -> tuple
 
 
 def _apply_merge(seq: list[str], pair: tuple[str, str]) -> list[str]:
-    """Left-to-right greedy merge of ``pair`` in a single sequence."""
+    """Greedy left-to-right merge of ``pair`` in one sequence."""
     left, right = pair
     merged = _join(left, right)
     out: list[str] = []
@@ -214,7 +181,7 @@ def _apply_merge(seq: list[str], pair: tuple[str, str]) -> list[str]:
 
 
 __all__ = [
-    "MotifVocabulary",
+    "ProcedureVocabulary",
     "apply_vocab",
     "fit_bpe",
     "load_vocab",

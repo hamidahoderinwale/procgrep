@@ -26,7 +26,7 @@ optimization produced a procedural-layer shift.
 Three reasons.
 
 - **Interpretability.** Each fingerprint dimension is a named
-  motif. Differences in JSD can be attributed to specific motifs;
+  procedure. Differences in JSD can be attributed to specific procedures;
   the stuck-edit-loop finding works because of this.
 - **No model dependency.** Reproducible without loading a
   sentence-transformer; deterministic given a fixed vocabulary.
@@ -130,7 +130,7 @@ question rather than a procgrep configuration question.
 ## How is "fingerprint" used here?
 
 Strictly: a fingerprint is a non-negative integer count vector over
-a fixed BPE motif vocabulary, normalized to sum to one for use as a
+a fixed BPE procedure vocabulary, normalized to sum to one for use as a
 probability distribution. It is not a hash, not an embedding, and
 not a cryptographic identity. Multiple trajectories can share a
 fingerprint, especially under aggressive BPE merges.
