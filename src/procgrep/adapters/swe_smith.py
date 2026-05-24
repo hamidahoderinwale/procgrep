@@ -156,6 +156,14 @@ def _classify_simple(cmd: str) -> tuple[Atom, str]:
     if s.startswith("echo ") and ">" in s:
         return ATOM_CREATE_FILE, "echo_redirect"
 
+    # Classic SWE-agent verbs with arguments: ``edit /path/to/file``, ``open foo.py``,
+    # ``scroll_down 50``, ``goto 100``, ``search_dir 'pattern' /path``, etc. Older
+    # SWE-agent submissions in the SWE-bench/experiments archive use this style;
+    # our exact-match lookup at the top only catches bare verbs without args.
+    first_token = s.split(None, 1)[0] if s else ""
+    if first_token in _BARE_ACTION_MAP:
+        return _BARE_ACTION_MAP[first_token], first_token
+
     # Fallback: first token, lowercased, as a bucket tag.
     first = s.split(None, 1)[0].lower() if s else "empty"
     return ATOM_OTHER, f"other:{first}"

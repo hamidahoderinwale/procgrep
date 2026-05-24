@@ -213,3 +213,46 @@ def test_canonical_projection_unknown_native_falls_back() -> None:
 def test_real_corpus_patterns(action: str, expected_canonical: str) -> None:
     canonical, _ = classify_swe_smith_action(action)
     assert canonical == expected_canonical, f"failed: {action!r} -> {canonical}"
+
+
+# --- Classic SWE-agent verbs with arguments (older submissions) ---
+
+
+def test_bare_verb_with_args_edit() -> None:
+    canonical, native = classify_swe_smith_action("edit /path/to/file 100:120\nnew_content")
+    assert canonical == ATOM_EDIT
+    assert native == "edit"
+
+
+def test_bare_verb_with_args_open() -> None:
+    canonical, native = classify_swe_smith_action("open /testbed/foo.py")
+    assert canonical == ATOM_READ_FILE
+    assert native == "open"
+
+
+def test_bare_verb_with_args_scroll_down() -> None:
+    canonical, native = classify_swe_smith_action("scroll_down")
+    assert canonical == ATOM_READ_FILE
+    assert native == "scroll_down"
+
+
+def test_bare_verb_with_args_goto() -> None:
+    canonical, native = classify_swe_smith_action("goto 50")
+    assert canonical == ATOM_READ_FILE
+    assert native == "goto"
+
+
+def test_bare_verb_with_args_search_dir() -> None:
+    canonical, native = classify_swe_smith_action("search_dir 'class ParkingLot' /testbed")
+    assert canonical == ATOM_SEARCH_REPO
+    assert native == "search_dir"
+
+
+def test_bash_rules_still_win_over_bare_verb_lookup() -> None:
+    """``find /testbed -name foo`` must classify via the bash-find rule
+    (which preserves the compound shape), not via the bare-verb fallback,
+    even though ``find`` is not in ``_BARE_ACTION_MAP`` (only ``find_file``).
+    """
+    canonical, native = classify_swe_smith_action("find /testbed -name foo")
+    assert canonical == ATOM_SEARCH_REPO
+    assert native == "find"
