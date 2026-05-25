@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from dataclasses import asdict
 from pathlib import Path
-from typing import Annotated
+from typing import Annotated, Any
 
 import typer
 
@@ -201,6 +201,230 @@ def match_patterns_cmd(
         f"evaluated {len(report.patterns)} rules on {len(traces)} traces; "
         f"{n_violators} traces violated at least one rule; wrote {output_path}"
     )
+
+
+@app.command()
+def compare(
+    agent_a: Annotated[Path, typer.Argument(help="Fingerprint JSONL for agent A.")],
+    agent_b: Annotated[Path, typer.Argument(help="Fingerprint JSONL for agent B.")],
+    name_a: Annotated[str, typer.Option("--name-a", help="Display name for agent A.")] = "",
+    name_b: Annotated[str, typer.Option("--name-b", help="Display name for agent B.")] = "",
+    top_n: Annotated[int, typer.Option(help="Discriminative bigrams to show per side.")] = 5,
+    output: Annotated[
+        Path | None, typer.Option("--output", "-o", help="Write JSON report here (optional).")
+    ] = None,
+) -> None:
+    """Compare two agents: JSD, discriminative bigrams, positional divergence, pass rates."""
+    import json as _json
+    from collections import Counter as _Counter
+
+    import numpy as _np
+
+    label_a = name_a or agent_a.stem
+    label_b = name_b or agent_b.stem
+
+    def _load(path: Path) -> list[dict[str, Any]]:
+        return [_json.loads(line) for line in path.read_text().splitlines() if line.strip()]
+
+    rows_a = _load(agent_a)
+    rows_b = _load(agent_b)
+    typer.echo(f"\n{'='*64}")
+    typer.echo(f"  {label_a}  ({len(rows_a)} trajectories)")
+    typer.echo(f"  {label_b}  ({len(rows_b)} trajectories)")
+    typer.echo(f"{'='*64}")
+
+    canon_atoms = [
+        "edit",
+        "read_file",
+        "run_test",
+        "search_repo",
+        "create_file",
+        "delete_file",
+        "think",
+        "error",
+        "other",
+    ]
+    eps = 1e-9
+
+    def _dist(
+        rows: list[dict[str, Any]], key: str = "atoms_canonical"
+    ) -> tuple[_np.ndarray, list[str]]:
+        cnt: _Counter[str] = _Counter()
+        for r in rows:
+            for a in r.get(key, []):
+                cnt[str(a)] += 1
+        vocab = canon_atoms if key == "atoms_canonical" else sorted(cnt)
+        v = _np.array([cnt.get(a, 0) + eps for a in vocab], dtype=float)
+        return v / v.sum(), vocab
+
+    def _jsd_val(p: _np.ndarray, q: _np.ndarray) -> float:
+        m = (p + q) / 2
+
+        def kl(a: _np.ndarray, b: _np.ndarray) -> float:
+            return float(_np.sum(a * _np.log(a / b)))
+
+        return (kl(p, m) + kl(q, m)) / 2
+
+    # ── 1. Unigram JSD ────────────────────────────────────────────────────────
+    pa, canon_v = _dist(rows_a, "atoms_canonical")
+    pb, _ = _dist(rows_b, "atoms_canonical")
+    canon_jsd = _jsd_val(pa, pb)
+
+    # Native vocab must be shared (each agent may use different tool names)
+    nat_cnt_a: _Counter[str] = _Counter()
+    nat_cnt_b: _Counter[str] = _Counter()
+    for r in rows_a:
+        for a in r.get("atoms_native", []):
+            nat_cnt_a[a] += 1
+    for r in rows_b:
+        for a in r.get("atoms_native", []):
+            nat_cnt_b[a] += 1
+    nat_vocab = sorted(set(nat_cnt_a) | set(nat_cnt_b))
+    nat_a = _np.array([nat_cnt_a.get(a, 0) + eps for a in nat_vocab], dtype=float)
+    nat_a /= nat_a.sum()
+    nat_b = _np.array([nat_cnt_b.get(a, 0) + eps for a in nat_vocab], dtype=float)
+    nat_b /= nat_b.sum()
+    native_jsd = _jsd_val(nat_a, nat_b)
+
+    typer.echo(f"\n  Canonical JSD : {canon_jsd:.4f}  (atom-level composition)")
+    typer.echo(f"  Native JSD    : {native_jsd:.4f}  (scaffold-specific tool usage)")
+
+    # ── 2. Pass rates ─────────────────────────────────────────────────────────
+    def _pass_rate(rows: list[dict[str, Any]]) -> str:
+        labeled = [r for r in rows if r.get("resolved") is not None]
+        if not labeled:
+            return "—"
+        return (
+            f"{sum(bool(r['resolved']) for r in labeled)/len(labeled):.1%} ({len(labeled)} labeled)"
+        )
+
+    typer.echo(f"\n  Pass rate  {label_a}: {_pass_rate(rows_a)}")
+    typer.echo(f"  Pass rate  {label_b}: {_pass_rate(rows_b)}")
+
+    # ── 3. Trajectory length ──────────────────────────────────────────────────
+    def _median_len(rows: list[dict[str, Any]]) -> float:
+        lens = [len(r.get("atoms_canonical", [])) for r in rows]
+        return float(_np.median(lens)) if lens else 0
+
+    typer.echo(f"\n  Median steps  {label_a}: {_median_len(rows_a):.0f}")
+    typer.echo(f"  Median steps  {label_b}: {_median_len(rows_b):.0f}")
+
+    # ── 4. Discriminative bigrams ─────────────────────────────────────────────
+    def _bigram_dist(rows: list[dict[str, Any]]) -> tuple[_np.ndarray, list[str]]:
+        cnt: _Counter[str] = _Counter()
+        for r in rows:
+            seq = r.get("atoms_canonical", [])
+            for i in range(len(seq) - 1):
+                cnt[f"{seq[i]}|{seq[i+1]}"] += 1
+        vocab = sorted(cnt)
+        v = _np.array([cnt.get(b, 0) + eps for b in vocab], dtype=float)
+        return v / v.sum(), vocab
+
+    # Build shared bigram vocab
+    bg_cnt_a: _Counter[str] = _Counter()
+    bg_cnt_b: _Counter[str] = _Counter()
+    for r in rows_a:
+        seq = r.get("atoms_canonical", [])
+        for i in range(len(seq) - 1):
+            bg_cnt_a[f"{seq[i]}|{seq[i+1]}"] += 1
+    for r in rows_b:
+        seq = r.get("atoms_canonical", [])
+        for i in range(len(seq) - 1):
+            bg_cnt_b[f"{seq[i]}|{seq[i+1]}"] += 1
+    bg_vocab = sorted(set(bg_cnt_a) | set(bg_cnt_b))
+    bpa = _np.array([bg_cnt_a.get(b, 0) + eps for b in bg_vocab], dtype=float)
+    bpa /= bpa.sum()
+    bpb = _np.array([bg_cnt_b.get(b, 0) + eps for b in bg_vocab], dtype=float)
+    bpb /= bpb.sum()
+    bigram_jsd = _jsd_val(bpa, bpb)
+
+    diff = bpa - bpb
+    ranked_desc = sorted(zip(diff, bg_vocab, strict=False), reverse=True)
+    ranked_asc = sorted(zip(diff, bg_vocab, strict=False))
+    # Top A = highest positive delta (most over-represented in A)
+    top_a = [(d, bg) for d, bg in ranked_desc if d > 0][:top_n]
+    # Top B = most negative delta (most over-represented in B)
+    top_b = [(abs(d), bg) for d, bg in ranked_asc if d < 0][:top_n]
+
+    typer.echo(f"\n  Bigram JSD    : {bigram_jsd:.4f}  (transition structure)")
+    typer.echo(f"\n  {label_a} signature (over-represented transitions):")
+    for d, bg in top_a:
+        src, tgt = bg.split("|")
+        typer.echo(f"    {src:14s}→ {tgt:14s}  Δp={d:+.4f}")
+    typer.echo(f"\n  {label_b} signature (over-represented transitions):")
+    for d, bg in top_b:
+        src, tgt = bg.split("|")
+        typer.echo(f"    {src:14s}→ {tgt:14s}  Δp={-d:+.4f}")
+
+    # ── 5. Positional divergence ──────────────────────────────────────────────
+    seqs_a: list[list[str]] = [list(r.get("atoms_canonical", [])) for r in rows_a]
+    seqs_b: list[list[str]] = [list(r.get("atoms_canonical", [])) for r in rows_b]
+    peak_k, peak_jsd = 0, 0.0
+    pos_jsds = []
+    for k in range(40):
+
+        def _pos_dist(seqs: list[list[str]], k: int) -> _np.ndarray | None:
+            cnt: _Counter[str] = _Counter()
+            n = 0
+            for seq in seqs:
+                if k < len(seq):
+                    cnt[seq[k]] += 1
+                    n += 1
+            if n < 10:
+                return None
+            v = _np.array([cnt.get(a, 0) + eps for a in canon_atoms], dtype=float)
+            result: _np.ndarray = v / v.sum()
+            return result
+
+        pa_k = _pos_dist(seqs_a, k)
+        pb_k = _pos_dist(seqs_b, k)
+        if pa_k is None or pb_k is None:
+            break
+        d = _jsd_val(pa_k, pb_k)
+        pos_jsds.append(d)
+        if d > peak_jsd:
+            peak_jsd = d
+            peak_k = k
+
+    typer.echo(f"\n  Peak positional divergence: step {peak_k}  (JSD={peak_jsd:.3f})")
+    typer.echo(
+        f"  {'Step':>6s}  "
+        + "  ".join(f"{canon_atoms[i][:6]:>6s}" for i in range(len(canon_atoms)))
+    )
+    for label, rows in [(label_a, rows_a), (label_b, rows_b)]:
+        if peak_k < len(rows[0].get("atoms_canonical", [])):
+            cnt: _Counter[str] = _Counter()
+            n = 0
+            for r in rows:
+                seq = r.get("atoms_canonical", [])
+                if peak_k < len(seq):
+                    cnt[seq[peak_k]] += 1
+                    n += 1
+            dist_str = "  ".join(f"{cnt.get(a,0)/max(1,n):>6.2f}" for a in canon_atoms)
+            typer.echo(f"  {label[:18]:>18s}  {dist_str}")
+
+    typer.echo(f"\n{'='*64}\n")
+
+    # ── 6. Optional JSON output ───────────────────────────────────────────────
+    if output:
+        report = {
+            "agent_a": label_a,
+            "agent_b": label_b,
+            "n_a": len(rows_a),
+            "n_b": len(rows_b),
+            "canonical_jsd": round(canon_jsd, 5),
+            "native_jsd": round(native_jsd, 5),
+            "bigram_jsd": round(bigram_jsd, 5),
+            "peak_step": peak_k,
+            "peak_step_jsd": round(peak_jsd, 5),
+            "positional_curve": [round(v, 5) for v in pos_jsds],
+            "discriminative_bigrams": {
+                label_a: [{"bigram": bg, "delta_p": round(d, 5)} for d, bg in top_a],
+                label_b: [{"bigram": bg, "delta_p": round(d, 5)} for d, bg in top_b],
+            },
+        }
+        write_json(output, report)
+        typer.echo(f"report written to {output}")
 
 
 @app.command(name="list-adapters")
