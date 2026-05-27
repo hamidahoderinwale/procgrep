@@ -64,6 +64,7 @@ packages = ["src/procgrep"]
 line-length = 100
 target-version = "py310"
 src = ["src", "tests"]
+exclude = ["case-studies"]
 
 [tool.ruff.lint]
 select = [
