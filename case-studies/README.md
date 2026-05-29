@@ -1,49 +1,48 @@
 # procgrep — empirical case studies
 
-Analysis scripts for the paper *Procedural Grep: Structural Variation for Agent Rollouts*.
-All scripts run against fingerprint JSONL files produced by `pull_and_fingerprint.py`
-from the public SWE-bench S3 archive (`s3://swe-bench-submissions/`).
+Reproduces the empirical results in *Procedural Grep: Structural Variation for Agent Rollouts*. Each script reads fingerprint JSONLs (one row per trajectory: `instance_id`, `atoms_canonical`, `atoms_native`, `resolved`) and writes a JSON or PNG.
 
 ## Setup
 
 ```bash
-pip install procgrep  # or: pip install -e ../
-pip install altair vl-convert-python pandas numpy scikit-learn scipy
+pip install procgrep altair vl-convert-python pandas numpy scikit-learn scipy
 ```
 
 ## Data pipeline
 
-| Script | What it does |
+Adapter scripts convert raw trajectory formats into a uniform fingerprint JSONL.
+
+| Script | Input format |
 |---|---|
-| `pull_and_fingerprint.py` | Pull `.traj` files from S3 and extract canonical + native atom sequences |
-| `pull_from_cache.py` | Fingerprint agents from the local trajectory cache (DARS, Claude-3.7) |
-| `pull_openhands.py` | OpenHands tool-call format adapter |
-| `pull_tools_claude37.py` | Claude native XML `<function_calls>` format adapter |
-| `extract_patches.py` | Extract patch metadata for reward-hacking analysis |
-| `extract_rich_features.py` | Token counts, file counts, cost per trajectory |
+| `pull_and_fingerprint.py` | SWE-agent `.traj` JSON from S3 |
+| `pull_tools_claude37.py` | Claude native `<function_calls>` text |
+| `pull_openhands.py` | OpenHands tool-call traces |
+| `pull_from_cache.py` | Local SWE-agent / DARS trajectory cache |
+| `extract_patches.py` | S3 `patch.diff` blobs (for fix-type analysis) |
 
 ## Analysis
 
-| Script | What it produces |
-|---|---|
-| `multi_agent_analysis.py` | JSD matrices, identification probe |
-| `discriminative_procedures_analysis.py` | BPE-learned habits exclusive to each agent |
-| `discriminative_bigrams.py` | Transition-level fingerprints, positional divergence curves |
-| `positional_divergence.py` | Which step diverges most across agents |
-| `metric_comparison.py` | JSD vs KL / Hellinger / TV / Cosine robustness check |
-| `behavioral_features.py` | Exploration vs exploitation zeitgeist features |
-| `tier1b_matched_pairs.py` | Same-outcome-different-procedure (SODP) matched pair analysis |
-| `regression_analysis.py` | Outcome prediction from procedural features (AUC = 0.81) |
-| `identification_probe_stratified.py` | Stratified k-fold agent identification probe |
-| `ood_analysis.py` | Per-trajectory OOD score distribution |
-| `patch_type_figures.py` | Fix-type breakdown (source-only vs source+tests) by agent |
+**Per-agent fingerprints**
+- `multi_agent_analysis.py` — pairwise JSD matrix, identification probe
+- `behavioral_features.py` — search-first %, edit streaks, recovery, interleave
+- `discriminative_procedures_analysis.py` — BPE habits exclusive to each agent
+- `discriminative_bigrams.py` — transition-level fingerprints
+
+**Cross-agent comparison**
+- `positional_divergence.py` — per-step JSD between agent pairs
+- `metric_comparison.py` — JSD vs KL / Hellinger / TV / Cosine robustness
+- `identification_probe_stratified.py` — stratified k-fold agent identification
+- `tier1b_matched_pairs.py` — same-outcome-different-procedure (SODP) pairs
+
+**Outcome-aware**
+- `regression_analysis.py` — outcome prediction from procedural features (AUC = 0.81)
+- `ood_analysis.py` — per-trajectory OOD score distribution
+- `patch_type_figures.py` — source-only vs source+tests breakdown
 
 ## Figures
 
 ```bash
-python make_figures.py         # all 14 paper figures → results/paper_figures/
-python regression_figures.py   # regression figures
-python patch_type_figures.py   # fix-type dot plot
+python make_figures.py          # all paper figures → results/paper_figures/
 ```
 
 ## CLI
