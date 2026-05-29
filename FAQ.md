@@ -2,9 +2,7 @@
 
 ## What does procgrep do, in one sentence?
 
-It measures how LLM coding agents actually work, not just whether
-they succeed, by canonicalizing their tool-call traces into a shared
-alphabet and comparing them with Jensen-Shannon divergence.
+It reads agent trace logs and tells you how agents differ in *how they work* — which actions they take, in what order, and whether that matches what successful agents do.
 
 ## How is procgrep different from DSPy?
 
@@ -21,22 +19,15 @@ are useful together: a researcher can optimize an agent with DSPy
 and use procgrep to measure whether the natural-language-layer
 optimization produced a procedural-layer shift.
 
-## Why count-based fingerprints and not embeddings?
+## Why count procedures rather than use embeddings?
 
 Three reasons.
 
-- **Interpretability.** Each fingerprint dimension is a named
-  procedure. Differences in JSD can be attributed to specific procedures;
-  the stuck-edit-loop finding works because of this.
-- **No model dependency.** Reproducible without loading a
-  sentence-transformer; deterministic given a fixed vocabulary.
-- **Faithful to the paper's framing.** The paper argues procedure
-  has discrete structure; embedding the atoms with a continuous LM
-  would smear that structure into a similarity space.
+- **You can read the answer.** Each feature is a named action sequence. When two agents differ, you can see exactly which sequences account for the difference — "Claude-4 does `create_file → run_test` far more than GPT-4." An embedding distance can't tell you that.
+- **No model required.** Reproducible without loading any neural network; deterministic given the same vocabulary.
+- **The structure is discrete.** Agent actions are discrete events in a specific order, not a continuous signal. Compressing them into an embedding trades away the ordering information that often explains why trajectories differ.
 
-Embedding-based comparison is a legitimate alternative methodology
-and a possible future capability, but it is not the choice the
-paper commits to.
+Embedding-based comparison is a valid alternative but not what this library does.
 
 ## Can procgrep run my agent?
 
@@ -45,20 +36,13 @@ does not execute agents or call models. You capture traces with
 whatever harness you already have, then point procgrep at the
 resulting JSONL.
 
-## What is the canonicalization-layer caveat?
+## Does procgrep see everything the agent does?
 
-The procedural fingerprint reflects what the canonicalizer
-captures, not the agent's full behavior. If a scaffold delegates
-test execution to a planner whose actions do not surface as visible
-tool calls (as we found with Moatless), the fingerprint will be
-silent about those test executions. Reading "tests run zero times"
-in a fingerprint does not mean "the agent tested zero times"; it
-means "the captured atom stream did not include a test atom."
+Only what appears in the trace log. Some scaffolds run internal steps (like test execution inside a planner) that never surface as visible tool calls. If those steps aren't in the log, procgrep doesn't see them.
 
-A direct audit of one Moatless trajectory found 71 internal
-`RunTests` references inside the trace content, zero of which
-surfaced as canonicalized atoms. Behavior at the canonicalization
-layer is real and should be audited per-scaffold.
+One concrete example: a Moatless trajectory contained 71 internal `RunTests` references that never appeared as captured actions. procgrep would show "no tests run" — technically accurate about what was logged, but missing real behavior.
+
+When you get an unexpected result, check whether the scaffold you're using surfaces all its actions to the trace. This varies per scaffold and should be audited once per new adapter.
 
 ## How do I add a new scaffold?
 
@@ -79,22 +63,13 @@ register_adapter("my_scaffold", my_adapter)
 See `examples/python/05_custom_adapter.py` for a complete worked
 example.
 
-## What is the difference between the Level 1 pattern matcher and the procedural-DSPy DSL?
+## What can the pattern matcher express?
 
-The **Level 1 matcher** (current) takes regex patterns over
-space-joined atom sequences. It can express things like "no run of
-five consecutive edits" or "a localize atom must precede the first
-edit atom." It is stateless and position-aware.
+The current pattern matcher takes YAML rules where each rule is a regex over the space-joined atom sequence. It can express things like "no run of five consecutive edits without a test" or "a search must precede the first edit."
 
-The **procedural-DSPy DSL** (future, v1.0) adds compositional
-invariants with temporal operators ("eventually X follows Y"),
-variable binding across atoms, bounded loops, and probabilistic
-predicates ("edit-atom proportion is below 0.6"). Level 2 is what
-the paper's `Implications` section points at as future work.
+It cannot express temporal reasoning ("eventually X follows Y within 10 steps"), variable binding across atoms, or probabilistic predicates ("edit proportion below 0.6"). Those require a richer rule language that does not yet exist in procgrep.
 
-If your invariant is expressible in regex, the Level 1 matcher is
-enough. If you need temporal or distributional reasoning, you are
-waiting on procedural-DSPy.
+If your check can be stated as a pattern over the sequence — including contiguous runs, prefix requirements, and absence conditions — the current matcher handles it. For anything more structural, check back.
 
 ## Why MIT?
 
