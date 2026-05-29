@@ -61,7 +61,7 @@
   <div class="meta">
     <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>
     &nbsp;·&nbsp;
-    <a href="https://github.com/hamidahoderinwale/bidirect-align-dev-traces">github.com/hamidahoderinwale/bidirect-align-dev-traces</a> <span class="meta-note">(companion paper &amp; analysis)</span>
+    <a href="https://github.com/hamidahoderinwale/bidirect-align-dev-traces">github.com/hamidahoderinwale/bidirect-align-dev-traces</a> <span class="meta-note">(companion paper &amp; analysis &mdash; structural fingerprinting of agent fix patches via AST edit certificates; a complementary lens to procgrep's tool-call view)</span>
   </div>
 </header>
 
@@ -109,6 +109,20 @@ for Agent Rollouts</em>, where it characterized the procedural
 fingerprints of nine LLM coding agents across five paradigm-by-
 scaffold cells on <a href="https://www.swebench.com/">SWE-bench</a>
 Verified.
+</p>
+
+<p>
+<strong>Companion analysis.</strong> A separate
+<a href="https://github.com/hamidahoderinwale/bidirect-align-dev-traces">companion
+repository</a> hosts a complementary structural-fingerprinting
+study that operates on the agent <em>fix patches</em> themselves
+&mdash; AST-level edit certificates across 84 SWE-bench agents
+&mdash; rather than the tool-call trajectories procgrep
+canonicalizes. The two views are deliberately paired: procgrep
+asks "how did the agent move?", the companion asks "what did the
+agent change?", and the findings (structural diversity on
+co-solved instances, composition-over-primitives as the dominant
+failure mode, weak agent self-report) cross-reference each other.
 </p>
 
 <h2 id="pipeline">The pipeline</h2>
@@ -558,6 +572,41 @@ runs in milliseconds. Cheap enough to invoke on every step of a live
 agent. Limitation: regex over atom sequences cannot express temporal-
 logic invariants ("eventually X follows every Y"); that is the future
 procedural-DSPy DSL.
+</p>
+
+<p>
+<strong>Live demo.</strong> The bundled
+<a href="https://github.com/hamidahoderinwale/procgrep/blob/main/examples/python/07_live_monitor.py"><code>examples/python/07_live_monitor.py</code></a>
+wraps the prefix matcher in a production-shaped loop: it auto-selects
+the eager rule subset (rules that fire on appearance, which are
+monotone in prefix length, distinct from completion rules which only
+become meaningful at end-of-trajectory), iterates the corpus, interrupts
+each trajectory on the first eager violation, and reports how many
+atoms of remaining budget the interrupt saved. Sample output against
+the bundled synthetic corpus:
+</p>
+
+<pre><code>loaded 6 trajectories; watching eager rules: ['no_long_edit_loops']
+
+=== streaming syn-004 (agent=editor, length=7) ===
+  step   1  edit
+  step   2  edit
+  step   3  edit
+  step   4  edit
+  step   5  edit             !! no_long_edit_loops
+  -&gt; INTERRUPT at step 5: rule 'no_long_edit_loops'; saved 2/7 atoms (29% of budget)
+
+summary: 1/6 trajectories interrupted; 2 total atoms saved
+  syn-004    step   5  rule=no_long_edit_loops  saved=2
+</code></pre>
+
+<p>
+The 29% budget saving is modest because the synthetic corpus is
+small; on a real 30-step trajectory firing at step 5 the same
+interrupt would save ~83%. Pass <code>--realtime</code> to pace the
+output by configurable per-step sleep for terminal recordings;
+pass <code>--no-interrupt</code> to replay past the first violation
+for ablation comparisons.
 </p>
 
 <h2 id="install">Install</h2>
