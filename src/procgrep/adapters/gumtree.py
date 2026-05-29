@@ -159,15 +159,29 @@ def run_jsondiff(
             f"build records manually following the format documented in "
             f"procgrep.adapters_gumtree."
         )
-    result = subprocess.run(
+    # GumTree v4+ uses "textdiff -f JSON"; v3 used "jsondiff".
+    # Try v4 first, fall back to v3 if the subcommand is unknown.
+    for cmd in (
+        [gumtree_bin, "textdiff", "-f", "JSON", str(before), str(after)],
         [gumtree_bin, "jsondiff", str(before), str(after)],
-        check=True,
-        capture_output=True,
-        text=True,
-        timeout=timeout,
+    ):
+        try:
+            result = subprocess.run(
+                cmd,
+                check=True,
+                capture_output=True,
+                text=True,
+                timeout=timeout,
+            )
+            stdout = result.stdout.strip()
+            if stdout:
+                payload: dict[str, Any] = json.loads(stdout)
+                return payload
+        except subprocess.CalledProcessError:
+            continue
+    raise subprocess.CalledProcessError(
+        1, gumtree_bin, stderr="no JSON output from either v3 or v4 command"
     )
-    payload: dict[str, Any] = json.loads(result.stdout)
-    return payload
 
 
 def _register() -> None:

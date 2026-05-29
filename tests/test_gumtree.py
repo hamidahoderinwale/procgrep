@@ -243,6 +243,9 @@ def test_run_jsondiff_parses_subprocess_stdout(tmp_path: Path) -> None:
     run_mock.assert_called_once()
     args = run_mock.call_args[0][0]
     assert args[0] == "gumtree"
-    assert args[1] == "jsondiff"
-    assert args[2] == str(a)
-    assert args[3] == str(b)
+    # v4 uses "textdiff -f JSON"; v3 used "jsondiff" — adapter tries v4 first
+    assert args[1] == "textdiff"
+    assert args[2] == "-f"
+    assert args[3] == "JSON"
+    assert args[4] == str(a)
+    assert args[5] == str(b)
