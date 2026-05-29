@@ -1,12 +1,9 @@
 """SWE-agent trace adapter.
 
-SWE-agent (https://github.com/SWE-agent/SWE-agent) emits traces whose
-top-level record carries a list of action steps under ``actions``.
-Each step has an ``action`` string naming the tool call and an
-optional ``thought`` string carrying the model's reasoning. This
-adapter maps the action name through a synonym table to a canonical
-atom and prepends ``ATOM_THINK`` when a step has non-empty thought
-text.
+SWE-agent records carry an ``actions`` list of step dicts with an
+``action`` name and optional ``thought`` text. This adapter maps the
+action name through `ATOM_MAP` and prepends ``ATOM_THINK`` on
+non-empty thoughts. See https://github.com/SWE-agent/SWE-agent.
 """
 
 from __future__ import annotations

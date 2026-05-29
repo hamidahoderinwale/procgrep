@@ -1,0 +1,179 @@
+# known_failure_patterns.yaml
+#
+# Procedural-pattern rules drawn from the *failure-analysis* literature
+# for LLM coding agents. Each rule below is documented as a pattern that
+# correlates with TRAJECTORY FAILURE in published empirical work, with
+# the source paper cited per rule.
+#
+# Honest scope note: these are FAILURE-CORRELATED patterns, NOT
+# REWARD-HACKING-CORRELATED patterns. The two are not the same. To our
+# knowledge, no published work has established a direct link between
+# specific procedural action-sequence patterns and reward hacking
+# specifically -- reward-hacking detection in the literature is
+# overwhelmingly outcome-based (pass-rate gap, e.g., SpecBench's Δ),
+# semantic (LLM-as-judge on patches, e.g., HAI-Code Appendix A), or
+# manual annotation (e.g., FrontierSWE Wan 2.1's 6/30 cases).
+#
+# Procgrep's role in reward-hacking research is DISCOVERY: given a
+# corpus where reward-hacking labels exist, `discriminative_procedures`
+# can surface BPE-level procedures that distinguish cheating from
+# clean trajectories. A published reward-hacking rule file would
+# then anchor each rule to that discovery experiment's empirical
+# evidence (corpus, cross-val performance, hit-rate). Until then,
+# DO NOT publish a `reward_hacking_signatures.yaml` -- write rules
+# from labeled data, not from priors.
+#
+# Usage:
+#
+#     from procgrep import load_patterns, match_patterns
+#     rules = load_patterns("examples/rules/known_failure_patterns.yaml")
+#     report = match_patterns(traces, rules)
+#     # report.pass_rate_per_rule, report.violations[trace_id]
+
+rules:
+
+  # --------------------------------------------------------------------
+  # localize / context-gather before edit
+  #
+  # Source: "Beyond Resolution Rates: Behavioral Drivers of Coding
+  # Agent Success and Failure" (arxiv 2604.02547). Mehtiyev & Assunção
+  # examine 9,374 trajectories across 19 agents on SWE-Bench and find
+  # that agents which "gather context before editing and invest in
+  # validation succeed more often." Trajectories that skip the
+  # context-gathering step are consistently associated with failure
+  # in their analysis.
+  #
+  # What this rule catches: agents that emit an edit before any
+  # localize / search_repo / read_file atom -- a known failure
+  # signature.
+  # What it misses: gratuitous context-gathering (the agent reads or
+  # searches but never used the information productively).
+  # --------------------------------------------------------------------
+  - name: localize_before_edit
+    description: A localize / search_repo / read_file must precede the first edit.
+    pattern: "(localize|search_repo|read_file) .* edit"
+    must_hold: true
+
+  # --------------------------------------------------------------------
+  # tests run at least once
+  #
+  # Source: "Understanding Code Agent Behaviour: An Empirical Study of
+  # Success and Failure Trajectories" (arxiv 2511.00197). Trajectories
+  # that never run a test fail to verify their own edits and correlate
+  # with failure outcomes; HAI-Code §3.3 (Wang/Yang/Lieret et al. 2026)
+  # similarly notes that agents "writing superficial tests" or simply
+  # skipping verification produce low-quality patches.
+  #
+  # What this rule catches: trajectories that never invoke run_test.
+  # What it misses: cases where tests run but were superficial or
+  # the agent ignored failed tests.
+  # --------------------------------------------------------------------
+  - name: tests_run_at_least_once
+    description: The trajectory must contain at least one run_test atom.
+    pattern: "run_test"
+    must_hold: true
+
+  # --------------------------------------------------------------------
+  # test before submit
+  #
+  # Source: Same as the previous rule -- HAI-Code §3.3 and Code Agent
+  # Behaviour (2511.00197). Submitting without ever running a test is
+  # the strongest skip-verification signature.
+  #
+  # What this rule catches: trajectories where the agent submits before
+  # any test has been executed.
+  # What it misses: tests run after submit (rare but possible in some
+  # scaffolds); agents that run tests, see failures, and submit anyway.
+  # --------------------------------------------------------------------
+  - name: test_before_submit
+    description: A run_test must precede the first submit.
+    pattern: "run_test .* submit"
+    must_hold: true
+
+  # --------------------------------------------------------------------
+  # stuck edit loop
+  #
+  # Source: Folk pattern in the SWE-agent community; partially
+  # supported by Bouzenia & Pradel "Understanding Software Engineering
+  # Agents: A Study of Thought-Action-Result Trajectories" (arxiv
+  # 2506.18824), which observes that failed trajectories are
+  # "consistently longer and exhibit higher variance" than successful
+  # ones, with patterns of redundant action repetition.
+  #
+  # What this rule catches: 5+ consecutive edits without an
+  # intervening verification step -- a stuck-in-debugging or
+  # hammering-the-tests signature.
+  # What it misses: legitimate refactors that genuinely require
+  # many consecutive edits; smart agents that interleave one read or
+  # test between every few edits.
+  # --------------------------------------------------------------------
+  - name: stuck_edit_loop
+    description: 5 or more consecutive edits without an intervening action.
+    pattern: "(edit ){5,}"
+    must_hold: false
+
+  # --------------------------------------------------------------------
+  # read-only thrashing
+  #
+  # Source: Folk pattern; analogous structurally to "exploration
+  # without action" anti-patterns described in agent-RL practice and
+  # informally in Code Agent Behaviour (2511.00197).
+  #
+  # What this rule catches: extended consecutive reading without
+  # progressing to a search, edit, or test -- an agent stuck in
+  # exploration.
+  # What it misses: legitimate deep code reviews; thrashing
+  # disguised by occasional non-read interleaved actions.
+  # --------------------------------------------------------------------
+  - name: read_thrashing
+    description: 10 or more consecutive reads without any other action.
+    pattern: "(read_file ){10,}"
+    must_hold: false
+
+  # --------------------------------------------------------------------
+  # ends in submit
+  #
+  # Source: SWE-agent operational convention. A trajectory that
+  # doesn't end in submit is structurally incomplete -- the agent
+  # was either truncated by max-step limits, crashed, or ran out of
+  # context. Either way it's not a clean comparison baseline for
+  # success / failure analysis.
+  #
+  # What this rule catches: truncated or crashed trajectories.
+  # What it misses: trajectories that submit but did so after
+  # bypassing the actual task.
+  # --------------------------------------------------------------------
+  - name: ends_in_submit
+    description: The final atom must be submit.
+    pattern: "submit $"
+    must_hold: true
+
+# ----------------------------------------------------------------------
+# Patterns deliberately NOT in this file
+# ----------------------------------------------------------------------
+#
+# The following hack / failure classes require capability beyond the
+# canonical 11-atom alphabet and are out of scope here:
+#
+# - Grader / test-file inspection (FrontierSWE Wan 2.1 manual
+#   annotations, SpecBench "deliberate_exploits" category): requires
+#   file-class-aware adapter atoms (e.g., read_grader, edit_test).
+#   Planned extension to swe-smith adapter once empirically grounded.
+#
+# - Test-file modification: same -- needs file-aware atoms.
+#
+# - Lookup-table memorization (SpecBench's 2,900-line hash-table
+#   compiler exemplar, arxiv 2605.21384): requires reading the patch
+#   content. Outside atom-level pattern matching's reach; LLM-judge
+#   territory.
+#
+# - Verbose / scope-creep / overly defensive / overengineered code
+#   (HAI-Code Appendix A): semantic; LLM-judge against gold patch.
+#   See the HAI-Code paper for the reference methodology using
+#   Claude Haiku 4.5 + GPT-5 mini.
+#
+# - Functional discrepancies (HAI-Code §A.3 categories): semantic;
+#   requires either LLM-judge or execution-comparison.
+#
+# - Feature isolation (SpecBench): architectural; integration tests
+#   or LLM-judge required.

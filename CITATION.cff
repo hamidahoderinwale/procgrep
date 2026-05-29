@@ -5,8 +5,8 @@ message: >-
 title: "procgrep: Procedural fingerprinting of LLM coding-agent rollouts"
 abstract: >-
   procgrep canonicalizes heterogeneous LLM agent traces into a shared
-  atom alphabet, learns a BPE motif vocabulary, encodes trajectories
-  as motif-frequency distributions, and supports cross-group
+  atom alphabet, learns a BPE procedure vocabulary, encodes trajectories
+  as procedure-frequency distributions, and supports cross-group
   comparison via Jensen-Shannon divergence, leave-one-group-out
   predictive probes, UMAP projection, and pattern matching. Post-hoc
   analysis only; no model calls.

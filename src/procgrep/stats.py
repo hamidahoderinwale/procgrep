@@ -1,25 +1,16 @@
 """Group-level descriptive and discriminative statistics.
 
-A convenience layer above the core fingerprinting pipeline
-(`canonicalize`, `fit_bpe`, `encode`, `jsd`) that answers four
-questions every descriptive table and every cross-group comparison
-hits:
+Convenience layer over `canonicalize` / `fit_bpe` / `encode` / `jsd`:
 
-* `atom_frequencies_per_group`: which raw atoms dominate each group?
-* `effective_vocab_size_per_group`: how diverse is each group's
-  procedural vocabulary, expressed as the equivalent number of
-  uniformly-used motifs?
-* `entropies_per_group`: how diverse is the typical trajectory inside
-  each group?
-* `discriminative_motifs`: which motifs most strongly distinguish two
-  groups, ranked by log-odds ratio or by Jensen-Shannon-divergence
-  contribution?
+* `atom_frequencies_per_group` -- dominant raw atoms per group.
+* `effective_vocab_size_per_group` -- group-mean diversity as an
+  equivalent uniform-procedure count.
+* `entropies_per_group` -- per-trajectory entropy summary per group.
+* `discriminative_procedures` -- procedures distinguishing two groups,
+  ranked by log-odds or by JSD contribution.
 
-The helpers are pure functions of the existing `Trace`, `Fingerprint`,
-and `MotifVocabulary` types. No new dependencies, no breaking
-changes to other modules. Suitable for descriptive tables in papers
-and for controlled-eval summaries where the within-arm-vs-across-arm
-question dominates.
+All functions are pure over `Trace`, `Fingerprint`, and
+`ProcedureVocabulary`.
 """
 
 from __future__ import annotations
@@ -33,7 +24,7 @@ from typing import Literal
 import numpy as np
 import numpy.typing as npt
 
-from procgrep.bpe import MotifVocabulary
+from procgrep.bpe import ProcedureVocabulary
 from procgrep.encode import Fingerprint
 from procgrep.types import Atom, Trace
 
@@ -46,11 +37,8 @@ class GroupAtomFrequencies:
     """Top-K most-frequent raw atoms in one group.
 
     Attributes:
-        group: The group label this entry summarizes.
-        n_trajectories: Number of trajectories aggregated.
-        n_atoms_total: Sum of atom counts across all trajectories.
-        top: Ordered tuple of ``(atom, count, per_trajectory_rate)``
-            entries, length up to ``k``.
+        top: ``(atom, count, per_trajectory_rate)`` entries, up to
+            length ``k``.
     """
 
     group: str
@@ -63,14 +51,8 @@ class GroupAtomFrequencies:
 class GroupEntropyStats:
     """Per-trajectory Shannon entropy summary for one group.
 
-    Attributes:
-        group: The group label this entry summarizes.
-        n: Number of trajectories in the group.
-        median: Median per-trajectory entropy, in nats.
-        q1: Twenty-fifth percentile.
-        q3: Seventy-fifth percentile.
-        min: Minimum per-trajectory entropy.
-        max: Maximum per-trajectory entropy.
+    All entropy values are in nats. ``q1`` / ``q3`` are the 25th /
+    75th percentiles.
     """
 
     group: str
@@ -83,22 +65,19 @@ class GroupEntropyStats:
 
 
 @dataclass(frozen=True)
-class DiscriminativeMotif:
-    """One motif that distinguishes two groups.
+class DiscriminativeProcedure:
+    """One procedure that distinguishes two groups.
 
     Attributes:
-        motif: The token (atom or BPE-merged motif).
-        p_a: Group-mean probability of the motif in group A.
-        p_b: Group-mean probability of the motif in group B.
-        log_odds: ``log((p_a + eps) / (p_b + eps))``. Positive
-            means more common in group A; negative means more
-            common in group B.
-        jsd_contribution: This motif's contribution to the JSD
-            between the two group-mean distributions. Always
-            non-negative.
+        procedure: Token (atom or BPE-merged procedure).
+        p_a, p_b: Group-mean probability of the procedure in each group.
+        log_odds: ``log((p_a + eps) / (p_b + eps))``. Positive favors A,
+            negative favors B.
+        jsd_contribution: Non-negative contribution to the JSD between
+            the two group means.
     """
 
-    motif: str
+    procedure: str
     p_a: float
     p_b: float
     log_odds: float
@@ -111,20 +90,14 @@ def atom_frequencies_per_group(
     k: int = 20,
     group_by: GroupBy = "group",
 ) -> dict[str, GroupAtomFrequencies]:
-    """Top-K most-frequent raw atoms in each group.
+    """Top-K most-frequent raw atoms per group.
 
-    Operates on raw atom sequences (`Trace.atoms`), not on BPE
-    motifs. For motif-level frequencies use the fingerprint counts
-    directly.
+    Operates on `Trace.atoms`, not on BPE procedures; for
+    procedure-level frequencies use fingerprint counts directly.
 
     Args:
-        traces: Trajectories to aggregate. Materialized internally.
-        k: How many top atoms to keep per group.
-        group_by: ``"group"`` to use `Trace.grouping()`, ``"agent"``
-            to override and use `Trace.agent`.
-
-    Returns:
-        Mapping from group label to `GroupAtomFrequencies`.
+        group_by: ``"group"`` uses `Trace.grouping()`; ``"agent"``
+            uses `Trace.agent`.
     """
     by_group_counts: dict[str, Counter[Atom]] = defaultdict(Counter)
     by_group_n: Counter[str] = Counter()
@@ -156,19 +129,10 @@ def effective_vocab_size_per_group(
 ) -> dict[str, float]:
     """Effective vocabulary size per group.
 
-    Defined as ``exp(Shannon entropy of the group-mean motif
-    distribution)``. Interpretation: a group with effective vocab
-    ``N`` uses a procedural vocabulary equivalent in diversity to
-    a uniform distribution over ``N`` motifs. Equivalently, the
-    perplexity of the group-mean distribution under itself.
-
-    Args:
-        fingerprints: Fingerprints to aggregate. Materialized
-            internally.
-        group_by: ``"group"`` or ``"agent"``.
-
-    Returns:
-        Mapping from group label to effective vocab size (float >= 1.0).
+    ``exp(Shannon entropy of the group-mean procedure distribution)``.
+    A group with effective vocab ``N`` is as diverse as a uniform
+    distribution over ``N`` procedures (equivalently, the perplexity
+    of the group mean under itself). Always ``>= 1.0``.
     """
     by_group: dict[str, list[npt.NDArray[np.float64]]] = defaultdict(list)
     for fp in fingerprints:
@@ -196,17 +160,9 @@ def entropies_per_group(
 ) -> dict[str, GroupEntropyStats]:
     """Per-trajectory Shannon entropy summarized by group.
 
-    Computes each fingerprint's entropy via `Fingerprint.entropy()`,
-    then summarizes by group with median, IQR, and range. Useful
-    for surfacing groups whose typical trajectory is monolithic
-    (low entropy) versus diverse (high entropy).
-
-    Args:
-        fingerprints: Fingerprints to summarize.
-        group_by: ``"group"`` or ``"agent"``.
-
-    Returns:
-        Mapping from group label to `GroupEntropyStats`.
+    Each fingerprint's entropy via `Fingerprint.entropy()`, summarized
+    per group with median, IQR, and range. Surfaces groups whose
+    trajectories are monolithic (low entropy) vs. diverse (high).
     """
     by_group: dict[str, list[float]] = defaultdict(list)
     for fp in fingerprints:
@@ -227,9 +183,9 @@ def entropies_per_group(
     return out
 
 
-def discriminative_motifs(
+def discriminative_procedures(
     fingerprints: Iterable[Fingerprint],
-    vocab: MotifVocabulary,
+    vocab: ProcedureVocabulary,
     *,
     group_a: str,
     group_b: str,
@@ -237,31 +193,21 @@ def discriminative_motifs(
     ranking: Ranking = "log_odds",
     epsilon: float = 1e-6,
     group_by: GroupBy = "group",
-) -> list[DiscriminativeMotif]:
-    """Top-K motifs distinguishing ``group_a`` from ``group_b``.
+) -> list[DiscriminativeProcedure]:
+    """Top-K procedures distinguishing ``group_a`` from ``group_b``.
 
-    Computes group-mean motif distributions for both groups, then
-    ranks every motif by either its log-odds ratio or its
-    contribution to the Jensen-Shannon divergence between the two
-    group means. Returns the top ``k`` by the chosen ranking.
+    Ranks every procedure by absolute log-odds or by JSD contribution
+    between the two group-mean distributions. Other groups in
+    ``fingerprints`` are ignored. ``vocab`` must match the encoding.
 
     Args:
-        fingerprints: Fingerprints from at least the two named
-            groups. Other groups are ignored.
-        vocab: The vocabulary the fingerprints were encoded under.
-            The function checks that vocab size matches fingerprint
-            dimension.
-        group_a, group_b: The two group labels to compare.
-        k: Number of motifs to return.
-        ranking: ``"log_odds"`` sorts by absolute log-odds (motifs
-            with the largest A-vs-B ratio in either direction).
-            ``"jsd_contribution"`` sorts by the motif's contribution
-            to JSD (always non-negative).
-        epsilon: Smoothing constant for log-odds to avoid log(0).
-        group_by: ``"group"`` or ``"agent"``.
+        ranking: ``"log_odds"`` (signed A-vs-B ratio, sorted by
+            magnitude) or ``"jsd_contribution"`` (non-negative).
+        epsilon: Log-odds smoothing.
 
-    Returns:
-        List of `DiscriminativeMotif` of length up to ``k``.
+    Raises:
+        ValueError: If vocab size disagrees with fingerprint dim, or
+            if ``ranking`` is unrecognized.
     """
     fps = list(fingerprints)
     mean_a = _group_mean(fps, group_a, group_by)
@@ -273,7 +219,7 @@ def discriminative_motifs(
             f"dimension ({mean_a.shape[0]}); fingerprints must be encoded "
             "under the supplied vocabulary"
         )
-    rows: list[DiscriminativeMotif] = []
+    rows: list[DiscriminativeProcedure] = []
     for i, token in enumerate(tokens):
         pa = max(float(mean_a[i]), 0.0)
         pb = max(float(mean_b[i]), 0.0)
@@ -285,8 +231,8 @@ def discriminative_motifs(
         if pb > 0 and m > 0:
             jsd_c += 0.5 * pb * math.log(pb / m)
         rows.append(
-            DiscriminativeMotif(
-                motif=token,
+            DiscriminativeProcedure(
+                procedure=token,
                 p_a=pa,
                 p_b=pb,
                 log_odds=log_odds,
@@ -307,7 +253,7 @@ def _group_mean(
     group: str,
     group_by: GroupBy,
 ) -> npt.NDArray[np.float64]:
-    """L1-normalized mean of distributions for one group's fingerprints."""
+    """L1-normalized mean of one group's fingerprint distributions."""
     matching = [
         fp.distribution()
         for fp in fingerprints
@@ -324,13 +270,13 @@ def _group_mean(
 
 
 __all__ = [
-    "DiscriminativeMotif",
+    "DiscriminativeProcedure",
     "GroupAtomFrequencies",
     "GroupBy",
     "GroupEntropyStats",
     "Ranking",
     "atom_frequencies_per_group",
-    "discriminative_motifs",
+    "discriminative_procedures",
     "effective_vocab_size_per_group",
     "entropies_per_group",
 ]

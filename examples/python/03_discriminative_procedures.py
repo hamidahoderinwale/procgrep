@@ -4,15 +4,15 @@ Demonstrates the four helpers introduced in v0.1.1 stats module:
 
 * `atom_frequencies_per_group`: which raw atoms dominate each group.
 * `effective_vocab_size_per_group`: a group's procedural-vocabulary
-  diversity, expressed as the equivalent number of uniformly-used motifs.
+  diversity, expressed as the equivalent number of uniformly-used procedures.
 * `entropies_per_group`: per-trajectory Shannon entropy summarized
   by group.
-* `discriminative_motifs`: top motifs separating two groups, ranked
+* `discriminative_procedures`: top procedures separating two groups, ranked
   by log-odds (default) or by Jensen-Shannon-divergence contribution.
 
 Run from the repository root:
 
-    python examples/python/03_discriminative_motifs.py
+    python examples/python/03_discriminative_procedures.py
 """
 
 from __future__ import annotations
@@ -22,7 +22,7 @@ from pathlib import Path
 from procgrep import (
     atom_frequencies_per_group,
     canonicalize,
-    discriminative_motifs,
+    discriminative_procedures,
     effective_vocab_size_per_group,
     encode,
     entropies_per_group,
@@ -65,9 +65,9 @@ def main() -> None:
         print(f"  {group:15s} n={s.n}  median={s.median:.3f}  IQR=[{s.q1:.3f}, {s.q3:.3f}]")
 
     print("\n" + "=" * 64)
-    print("top discriminative motifs: control vs treatment")
+    print("top discriminative procedures: control vs treatment")
     print("=" * 64)
-    top = discriminative_motifs(
+    top = discriminative_procedures(
         fingerprints,
         vocab,
         group_a="control",
@@ -76,9 +76,9 @@ def main() -> None:
         ranking="log_odds",
         group_by="group",
     )
-    print(f"  {'motif':35s} {'p_a':>8s} {'p_b':>8s} {'log_odds':>10s}")
+    print(f"  {'procedure':35s} {'p_a':>8s} {'p_b':>8s} {'log_odds':>10s}")
     for m in top:
-        print(f"  {m.motif:35s} {m.p_a:8.3f} {m.p_b:8.3f} {m.log_odds:10.3f}")
+        print(f"  {m.procedure:35s} {m.p_a:8.3f} {m.p_b:8.3f} {m.log_odds:10.3f}")
 
 
 if __name__ == "__main__":

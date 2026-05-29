@@ -1,24 +1,10 @@
-"""Convert heterogeneous scaffold-specific traces into canonical atoms.
+"""Convert scaffold-specific traces into canonical atoms.
 
-The canonical alphabet (`procgrep.types.CANONICAL_ATOMS`) is the
-shared substrate that lets fingerprints from different scaffolds be
-compared. Each scaffold ships an *adapter*: a callable that takes
-one raw trace record and returns an `AtomSequence`. Built-in
-adapters live under `procgrep.adapters` and self-register at import
-time; custom-scaffold adapters can register through this module's
-public API.
-
-The module exposes:
-
-* `register_adapter(name, adapter)`: add an adapter to the registry.
-* `get_adapter(name)`: look an adapter up by name.
-* `list_adapters()`: enumerate the registered adapter names.
-* `canonicalize(traces, adapter=...)`: apply an adapter (by name or
-  callable) to a corpus of raw records, returning canonical `Trace`
-  objects.
-* `make_action_adapter(...)`: factory for the common
-  "list-of-actions" trace shape; the four built-in agent-action
-  adapters are built with this.
+Each scaffold ships an adapter (a callable from raw record to
+`AtomSequence`). Built-in adapters live under `procgrep.adapters` and
+self-register at import. Public API: `register_adapter`, `get_adapter`,
+`list_adapters`, `canonicalize`, and `make_action_adapter` for the
+common list-of-actions shape.
 """
 
 from __future__ import annotations
@@ -41,11 +27,9 @@ _ADAPTERS: dict[str, TraceAdapter] = {}
 def register_adapter(name: str, adapter: TraceAdapter, *, overwrite: bool = False) -> None:
     """Register an adapter under ``name``.
 
-    Args:
-        name: Lookup key (lowercase, hyphen-separated convention).
-        adapter: Callable mapping one raw record to an `AtomSequence`.
-        overwrite: If True, replace an existing entry with the same
-            name; otherwise raise `ValueError` on conflict.
+    Raises:
+        ValueError: If ``name`` is already registered and
+            ``overwrite`` is False.
     """
     if not overwrite and name in _ADAPTERS:
         raise ValueError(f"adapter already registered: {name!r}")
@@ -61,7 +45,7 @@ def get_adapter(name: str) -> TraceAdapter:
 
 
 def list_adapters() -> list[str]:
-    """Return the names of all registered adapters in sorted order."""
+    """Return registered adapter names, sorted."""
     return sorted(_ADAPTERS)
 
 
@@ -73,22 +57,11 @@ def canonicalize(
     agent_field: str = "agent",
     group_field: str | None = "group",
 ) -> list[Trace]:
-    """Canonicalize a corpus of raw trace records into `Trace` objects.
+    """Canonicalize raw trace records into `Trace` objects.
 
     Args:
-        traces: Iterable of dict-like records. Each record must carry
-            at minimum the trace id and agent fields named below; the
-            adapter pulls action information from the rest.
-        adapter: Adapter name (string) to look up in the registry,
-            or a callable conforming to `TraceAdapter`.
-        trace_id_field: Key in each record holding the trace id.
-        agent_field: Key in each record holding the agent name.
-        group_field: Optional key holding the grouping label. If the
-            field is absent in a record, the resulting `Trace.group`
-            is None.
-
-    Returns:
-        A list of `Trace` objects in the same order as the input.
+        adapter: Registered adapter name or a `TraceAdapter` callable.
+        group_field: Records missing this key produce ``Trace.group=None``.
     """
     fn: TraceAdapter = get_adapter(adapter) if isinstance(adapter, str) else adapter
     out: list[Trace] = []
@@ -117,29 +90,19 @@ def make_action_adapter(
     actions_path: str = "actions",
     default_atom: Atom = ATOM_OTHER,
 ) -> TraceAdapter:
-    """Build a TraceAdapter for the common "list-of-actions" shape.
+    """Build a TraceAdapter for the list-of-actions trace shape.
 
-    Many scaffold trace formats share a structure: the record contains
-    a list of action steps, each carrying a name and optional thought
-    text. This factory builds an adapter that walks the list, maps
-    each action's name through ``atom_map`` to a canonical atom, and
-    optionally prepends an ``ATOM_THINK`` atom whenever a step
-    carries non-empty thought text.
+    The record holds a list of step dicts; each step carries an action
+    name and optional thought text. The adapter maps each action name
+    through ``atom_map``, prepending an ``ATOM_THINK`` atom when
+    ``thought_field`` is set and non-empty for that step.
 
     Args:
-        action_field: Within each step dict, the key holding the
-            action name.
-        atom_map: Synonym table from action name to canonical atom.
-            Names not in the map fall through to ``default_atom``.
-        thought_field: If set, steps with non-empty values at this
-            key emit an ``ATOM_THINK`` atom before the action atom.
-        actions_path: Key in the outer record holding the list of
-            step dicts. Defaults to ``"actions"``.
-        default_atom: Atom emitted when a step's action name is not
-            in ``atom_map``.
-
-    Returns:
-        A callable suitable for `register_adapter`.
+        atom_map: Action name to canonical atom. Misses fall through
+            to ``default_atom``.
+        thought_field: When set, non-empty thought text emits
+            ``ATOM_THINK`` before the action atom.
+        actions_path: Key in the outer record holding the step list.
     """
 
     def adapter(record: Mapping[str, Any]) -> AtomSequence:

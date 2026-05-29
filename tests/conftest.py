@@ -5,7 +5,7 @@ Two corpora are reused across the analysis tests:
 * ``small_corpus``: a handful of short sequences with an obvious
   repeated bigram, suitable for asserting that BPE picks the correct
   most-frequent pair and that downstream counting is correct.
-* ``structured_corpus``: two agents with deliberately disjoint motif
+* ``structured_corpus``: two agents with deliberately disjoint procedure
   preferences across three groups. JSD between groups is high, and a
   leave-one-group-out probe should predict the agent label well.
 """
@@ -49,7 +49,7 @@ def small_corpus() -> list[Trace]:
 
 @pytest.fixture
 def structured_corpus() -> list[Trace]:
-    """Two agents with very different motif preferences across three groups.
+    """Two agents with very different procedure preferences across three groups.
 
     Agent ``editor`` heavily uses edit + run_test; agent ``searcher``
     heavily uses search + read. Each agent appears in three groups

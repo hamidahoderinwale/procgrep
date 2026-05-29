@@ -1,28 +1,11 @@
 """Jensen-Shannon divergence between procedural fingerprints.
 
-Jensen-Shannon divergence is the symmetric, bounded relative of
-Kullback-Leibler divergence. For two probability distributions ``p``
-and ``q`` and their pointwise mixture ``m = (p + q) / 2``:
+``JSD(p, q) = 0.5 * KL(p || m) + 0.5 * KL(q || m)`` where
+``m = (p + q) / 2``. Log base 2 bounds JSD to ``[0, 1]``.
 
-    JSD(p, q) = 0.5 * KL(p || m) + 0.5 * KL(q || m)
-
-With log base 2, JSD is bounded in ``[0, 1]``; with the natural log,
-in ``[0, ln 2]``. This module defaults to log base 2 so the matrix
-values are directly comparable across corpora and across vocabulary
-sizes.
-
-Two public functions:
-
-* `jsd(p, q)`: a scalar between two distributions.
-* `jsd_matrix(fingerprints, group_by=...)`: pairwise JSD between
-  group-mean distributions. The result is a flat list of
-  ``(row, col, jsd)`` records plus an ordered list of group names,
-  which serializes cleanly to JSON for downstream use.
-
-We deliberately avoid `scipy.spatial.distance.jensenshannon` because
-that function returns the Jensen-Shannon *distance* (square root of
-the divergence), not the divergence itself. Mixing the two in a
-research codebase is a known source of bugs.
+Public: `jsd` (scalar) and `jsd_matrix` (pairwise between group-mean
+distributions). We avoid `scipy.spatial.distance.jensenshannon` because
+it returns the square-root distance, not the divergence.
 """
 
 from __future__ import annotations
@@ -54,11 +37,10 @@ class JsdMatrix:
 
     Attributes:
         groups: Group names in canonical row/column order.
-        records: One `JsdRecord` per (row, col) pair. The full matrix
-            is symmetric with zero diagonal; we emit all entries
-            (including the diagonal and the lower triangle) for ease
-            of indexing.
-        base: Log base used for the divergence (2 by default).
+        records: One `JsdRecord` per ``(row, col)`` pair. The matrix is
+            symmetric with zero diagonal; full grid is emitted for
+            easy indexing.
+        base: Log base used for the divergence.
     """
 
     groups: tuple[str, ...]
@@ -66,7 +48,7 @@ class JsdMatrix:
     base: float
 
     def to_array(self) -> npt.NDArray[np.float64]:
-        """Materialize a dense ``(n, n)`` matrix in group order."""
+        """Dense ``(n, n)`` matrix in group order."""
         n = len(self.groups)
         idx = {g: i for i, g in enumerate(self.groups)}
         arr = np.zeros((n, n), dtype=np.float64)
@@ -87,16 +69,9 @@ def jsd(
 ) -> float:
     """Jensen-Shannon divergence between two distributions.
 
-    Args:
-        p: First distribution. Must be non-negative and sum to a
-            positive value; will be L1-normalized internally.
-        q: Second distribution; same constraints.
-        base: Logarithm base. Defaults to 2 so the result lies in
-            ``[0, 1]``.
-
-    Returns:
-        A float in ``[0, log_base(2)]``. The function is symmetric:
-        ``jsd(p, q) == jsd(q, p)`` up to floating-point error.
+    ``p`` and ``q`` must be non-negative with positive sum; both are
+    L1-normalized internally. Result lies in ``[0, log_base(2)]`` and
+    is symmetric up to floating-point error.
     """
     p_arr = _normalize(np.asarray(p, dtype=np.float64))
     q_arr = _normalize(np.asarray(q, dtype=np.float64))
@@ -112,21 +87,13 @@ def jsd_matrix(
 ) -> JsdMatrix:
     """Pairwise JSD between group-mean fingerprints.
 
-    Each group's mean distribution is the L1-renormalized average of
-    its members' L1-normalized distributions. The result is a
-    `JsdMatrix` containing every ordered pair, including diagonal
-    (zero) and lower-triangle entries.
+    Each group mean is the L1-renormalized average of its members'
+    L1-normalized distributions. The result covers every ordered pair,
+    including diagonal and lower triangle.
 
     Args:
-        fingerprints: The fingerprints to group and compare.
-        group_by: ``"group"`` to use `Fingerprint.group` (the standard
-            choice), or ``"agent"`` to override and group by agent
-            name. Most projects assign `group` upstream when
-            canonicalizing, so the default works in the common case.
-        base: Logarithm base passed through to `jsd`.
-
-    Returns:
-        A `JsdMatrix` in canonical (sorted) group order.
+        group_by: ``"group"`` uses `Fingerprint.group`; ``"agent"``
+            groups by agent name instead.
     """
     by_group: dict[str, list[npt.NDArray[np.float64]]] = {}
     for fp in fingerprints:
@@ -149,7 +116,7 @@ def jsd_matrix(
 
 
 def _normalize(arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """Return an L1-normalized copy; uniform on the all-zero edge case."""
+    """L1-normalized copy; uniform on the all-zero edge case."""
     total = float(arr.sum())
     if total <= 0.0:
         return np.full_like(arr, 1.0 / max(arr.size, 1))
@@ -161,12 +128,11 @@ def _kl(
     q: npt.NDArray[np.float64],
     base: float,
 ) -> float:
-    """KL divergence ``KL(p || q)`` with zero-handling.
+    """``KL(p || q)`` with zero-handling.
 
-    Terms where ``p == 0`` contribute zero (by convention 0 log 0 = 0).
-    Terms where ``q == 0`` and ``p > 0`` would diverge; we mask them
-    out because in practice the mixture ``m`` in JSD is positive
-    wherever either ``p`` or ``q`` is.
+    ``p == 0`` terms contribute zero. ``q == 0, p > 0`` terms are
+    masked: the JSD mixture ``m`` is positive wherever either input
+    is, so this branch is unreachable from `jsd`.
     """
     mask = (p > 0) & (q > 0)
     if not mask.any():

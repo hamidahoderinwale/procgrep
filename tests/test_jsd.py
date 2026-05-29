@@ -53,5 +53,5 @@ def test_jsd_matrix_separates_distinct_agents(structured_corpus: list) -> None:
     vocab = fit_bpe(sequences, vocab_size=20)
     fps = encode(structured_corpus, vocab=vocab)
     matrix = jsd_matrix(fps, group_by="agent").to_array()
-    # The editor and searcher agents use disjoint motif palettes.
+    # The editor and searcher agents use disjoint procedure palettes.
     assert matrix[0, 1] > 0.5

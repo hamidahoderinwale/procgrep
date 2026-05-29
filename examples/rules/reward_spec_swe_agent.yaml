@@ -1,0 +1,112 @@
+# procgrep reward specification — SWE-bench coding agent
+# Defines partial reward based on procedural milestones.
+#
+# Use case: supplement binary pass/fail with a [0, 1] procedural score
+# that rewards correct exploration, diagnosis, and verification even when
+# the final test doesn't pass. Train with: r_total = w_pass * pass + w_proc * proc_score
+#
+# Each phase is evaluated left-to-right; later phases require earlier ones.
+# Penalties are subtracted regardless of phase completion.
+
+name: swe_agent_procedural_reward_v1
+description: >
+  Partial reward for SWE-bench agents. Rewards structured exploration,
+  test-driven implementation, and iterative refinement. Penalises known
+  failure modes (edit streaks without tests, stuck reading loops).
+
+# ── Phases (additive, order-dependent) ────────────────────────────────────────
+phases:
+
+  - name: exploration
+    description: Agent searched or read the codebase before acting
+    reward: 0.10
+    require_any:
+      - atom: search_repo         # grepped or found files
+      - atom: read_file           # opened at least one file
+    min_occurrences: 2
+    before_first: edit            # must happen before first edit
+
+  - name: diagnosis
+    description: Agent thought about the problem before editing
+    reward: 0.10
+    require_pattern: [think]      # at least one think step
+    before_first: edit
+
+  - name: implementation
+    description: Agent made at least one edit
+    reward: 0.15
+    require_any:
+      - atom: edit
+      - atom: create_file
+    min_occurrences: 1
+
+  - name: test_verification
+    description: Agent ran tests after editing
+    reward: 0.25
+    require_sequence: [edit, run_test]   # edit followed eventually by run_test
+    max_gap: 5                           # within 5 steps
+
+  - name: iterative_refinement
+    description: Agent reflected and re-edited after a failed test
+    reward: 0.20
+    require_sequence: [run_test, think, edit]
+    min_occurrences: 1
+    # This is the test-reflect-edit loop; highest procedural signal for quality
+
+  - name: structured_completion
+    description: Agent submitted a patch
+    reward: 0.10
+    require_any:
+      - atom: submit
+    min_occurrences: 1
+
+# Maximum possible procedural score (phases only): 0.90
+# Binary pass contributes separately in training objective.
+
+# ── Failure-mode penalties ─────────────────────────────────────────────────────
+penalties:
+
+  - name: edit_streak
+    description: >
+      5+ consecutive edits without a test run (Moatless failure signal:
+      80% fail rate when edit streak ≥ 5).
+    pattern: [edit, edit, edit, edit, edit]
+    contiguous: true
+    penalty: 0.15
+
+  - name: stuck_reading
+    description: >
+      4+ alternating read/think steps without any edit (SWE-LM-32B
+      failure signature: read_file → think → read_file → think → error).
+    pattern: [read_file, think, read_file, think]
+    contiguous: true
+    penalty: 0.10
+
+  - name: no_search_before_edit
+    description: Agent jumped straight to editing without any exploration
+    require_absent_before: [search_repo, read_file]
+    before_first: edit
+    penalty: 0.05
+
+# ── Bonus rewards ──────────────────────────────────────────────────────────────
+bonuses:
+
+  - name: test_driven
+    description: >
+      Agent ran a test BEFORE making the first edit (Claude-4 exclusive
+      pattern: create_file → run_test — establishes a baseline first).
+    require_sequence: [run_test]
+    before_first: edit
+    reward: 0.10
+
+  - name: cleanup
+    description: >
+      Agent deleted temporary files before submitting (PASS child exclusive
+      pattern; housekeeping correlates with higher quality patches).
+    require_sequence: [delete_file, submit]
+    max_gap: 10
+    reward: 0.05
+
+# ── Scoring floor/ceiling ──────────────────────────────────────────────────────
+floor: 0.00      # minimum score regardless of penalties
+ceiling: 1.00    # cap at 1.0 (binary pass can take this)
