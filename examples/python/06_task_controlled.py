@@ -29,10 +29,10 @@ from itertools import combinations
 from pathlib import Path
 
 from procgrep import (
-    MotifVocabulary,
+    ProcedureVocabulary,
     Trace,
     canonicalize,
-    discriminative_motifs,
+    discriminative_procedures,
     encode,
     fit_bpe,
     jsd,
@@ -45,7 +45,7 @@ TRACES = ROOT / "examples" / "synthetic_task_traces.jsonl"
 
 
 def mean_pairwise_jsd(
-    traces: list[Trace], vocab: MotifVocabulary, label_a: str, label_b: str
+    traces: list[Trace], vocab: ProcedureVocabulary, label_a: str, label_b: str
 ) -> float | None:
     """Mean pairwise JSD between every (a, b) cross-pair under the given grouping.
 
@@ -127,15 +127,15 @@ def main() -> None:
         mean_across = sum(per_instance_outcome_jsd.values()) / len(per_instance_outcome_jsd)
         print(f"\n  mean success-vs-failure JSD averaged across instances: {mean_across:.4f}")
 
-    # Top motifs separating resolved from unresolved, pooled across
+    # Top procedures separating resolved from unresolved, pooled across
     # instances. With task held implicitly through pairing per instance,
-    # this is "what motifs differentiate outcome at fixed task" rolled
+    # this is "what procedures differentiate outcome at fixed task" rolled
     # up across the corpus.
     by_outcome = [replace(t, group=str(t.metadata["outcome"])) for t in traces]
     by_outcome_fps = encode(by_outcome, vocab=vocab)
-    print("\n  top discriminative motifs: resolved vs unresolved")
-    print(f"  {'motif':24s} {'p_resolved':>12s} {'p_unresolved':>14s} {'log_odds':>10s}")
-    top = discriminative_motifs(
+    print("\n  top discriminative procedures: resolved vs unresolved")
+    print(f"  {'procedure':24s} {'p_resolved':>12s} {'p_unresolved':>14s} {'log_odds':>10s}")
+    top = discriminative_procedures(
         by_outcome_fps,
         vocab,
         group_a="resolved",
@@ -145,7 +145,7 @@ def main() -> None:
         group_by="group",
     )
     for m in top:
-        print(f"  {m.motif:24s} {m.p_a:12.3f} {m.p_b:14.3f} {m.log_odds:10.3f}")
+        print(f"  {m.procedure:24s} {m.p_a:12.3f} {m.p_b:14.3f} {m.log_odds:10.3f}")
 
     # Sanity: per-(instance, outcome) trace count, so the reader can
     # see the pairing structure underlying the JSD numbers.
