@@ -3,7 +3,7 @@
 The question this script answers:
 
     Every other procgrep analysis treats a trajectory as a single
-    motif distribution: one fingerprint per trace. That assumes the
+    procedure distribution: one fingerprint per trace. That assumes the
     procedure is *stationary* over the course of the trajectory.
     But agents may have a "warm-up procedure" (early atoms) that
     differs from their "steady-state procedure" (later atoms), or

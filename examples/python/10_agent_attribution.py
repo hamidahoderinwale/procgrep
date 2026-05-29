@@ -4,7 +4,7 @@ The question this script answers:
 
     Given a trace produced under some held-out condition, can we
     correctly identify the agent that produced it from its
-    procedural fingerprint alone? And does the BPE motif vocabulary
+    procedural fingerprint alone? And does the BPE procedure vocabulary
     earn its keep relative to dumber representations of the same
     trace?
 
@@ -14,11 +14,11 @@ by a classifier trained on the other groups. If procedural style is
 agent-bound and language-/task-portable, attribution accuracy stays
 high across the LOGO folds.
 
-We compare the BPE-motif fingerprint against three naive baselines:
+We compare the BPE-procedure fingerprint against three naive baselines:
 
 1. **Raw atom-frequency.** Skip BPE entirely; encode each trajectory
    as its atom-level L1-normalized distribution. Tests whether BPE
-   motifs carry information beyond the marginal atom distribution.
+   procedures carry information beyond the marginal atom distribution.
 2. **Length-vector.** Each trajectory becomes a 1-D feature: its
    atom count. Tests whether attribution is reducible to "this agent
    produces longer traces."
@@ -162,7 +162,7 @@ def main() -> None:
     print(f"  agents : {agents}")
     print(f"  groups : {groups}")
 
-    # --- Representation 1: BPE motif fingerprint ----------------------------
+    # --- Representation 1: BPE procedure fingerprint ----------------------------
     vocab = fit_bpe((t.atoms for t in traces), vocab_size=args.vocab_size, seed=args.seed)
     fps: list[Fingerprint] = encode(traces, vocab=vocab)
     bpe_result = leave_one_group_out(fps, label_field="agent", seed=args.seed)
@@ -186,7 +186,7 @@ def main() -> None:
     header = f"  {'representation':22s} {'overall':>9s}  " + "  ".join(f"{g:>10s}" for g in groups)
     print(header)
     rows = [
-        ("BPE motif fingerprint", bpe_result.overall_accuracy, bpe_result.per_group_accuracy),
+        ("BPE procedure fingerprint", bpe_result.overall_accuracy, bpe_result.per_group_accuracy),
         ("raw atom-frequency", atom_overall, atom_per),
         ("length-only", len_overall, len_per),
         ("majority-class floor", maj_overall, maj_per),
@@ -196,9 +196,9 @@ def main() -> None:
         print(f"  {name:22s} {overall:>9.2f}  {cells}")
 
     print(
-        "\n  interpretation: BPE-motif accuracy meaningfully above raw-atom accuracy "
-        "means motifs carry information beyond marginal atom frequencies. "
-        "BPE-motif near length-only or majority-class accuracy means the "
+        "\n  interpretation: BPE-procedure accuracy meaningfully above raw-atom accuracy "
+        "means procedures carry information beyond marginal atom frequencies. "
+        "BPE-procedure near length-only or majority-class accuracy means the "
         "representation isn't earning its keep on this corpus."
     )
 

@@ -10,10 +10,10 @@ The question this script answers, in plain language:
 The mechanism is deliberately simple:
 
 1. For each task class (here, each `instance_id`), compute a
-   *reference fingerprint*: the mean motif distribution across
+   *reference fingerprint*: the mean procedure distribution across
    every trajectory on that task that ended in `resolved`.
 2. For each agent, compute the agent's own *signature
-   fingerprint*: the mean motif distribution across all of that
+   fingerprint*: the mean procedure distribution across all of that
    agent's trajectories.
 3. To pick an agent for a held-out task, find the agent whose
    signature is closest (smallest Jensen-Shannon divergence) to

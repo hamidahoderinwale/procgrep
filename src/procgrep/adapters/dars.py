@@ -1,10 +1,8 @@
 """DARS trace adapter.
 
-DARS-style traces carry a list of tool-call steps under ``actions``,
-each with a ``tool`` name and an optional ``thought`` string. This
-adapter maps the tool name through a synonym table to a canonical
-atom and prepends ``ATOM_THINK`` when a step has non-empty thought
-text.
+Records carry an ``actions`` list of tool-call dicts with a ``tool``
+name and optional ``thought``. Maps tool names through `ATOM_MAP` and
+prepends ``ATOM_THINK`` on non-empty thoughts.
 """
 
 from __future__ import annotations

@@ -1,20 +1,7 @@
-"""JSONL read/write helpers shared by the CLI subcommands.
+"""JSON / JSONL read-write helpers and wire-format converters.
 
-The CLI commands compose by writing intermediate artifacts (canonical
-traces, fingerprints, vocabularies, matrices) to disk and reading
-them back. Keeping the serialization in one module rather than
-inlining `json.dumps` in each subcommand keeps the format definitions
-in one place and makes the wire formats explicit.
-
-Three pairs of helpers:
-
-* `read_jsonl` / `write_jsonl`: line-delimited JSON for trace and
-  fingerprint corpora.
-* `read_json` / `write_json`: single-object JSON for vocabularies,
-  matrices, probe results, and UMAP coordinates.
-* `traces_to_records` / `records_to_traces` and
-  `fingerprints_to_records` / `records_to_fingerprints`: wire-format
-  conversion for the two domain types.
+JSONL is used for trace and fingerprint corpora; plain JSON for
+vocabularies, matrices, probe results, and UMAP coordinates.
 """
 
 from __future__ import annotations
@@ -29,7 +16,7 @@ from procgrep.types import Trace
 
 
 def read_jsonl(path: Path | str) -> Iterator[dict[str, Any]]:
-    """Yield one parsed JSON object per non-empty line of ``path``."""
+    """Yield one JSON object per non-empty line of ``path``."""
     with Path(path).open() as f:
         for line in f:
             line = line.strip()
@@ -38,11 +25,7 @@ def read_jsonl(path: Path | str) -> Iterator[dict[str, Any]]:
 
 
 def write_jsonl(path: Path | str, records: Iterable[dict[str, Any]]) -> int:
-    """Write records to ``path``, one JSON object per line.
-
-    Returns:
-        The number of records written.
-    """
+    """Write one JSON object per line to ``path``. Returns the count."""
     count = 0
     with Path(path).open("w") as f:
         for record in records:

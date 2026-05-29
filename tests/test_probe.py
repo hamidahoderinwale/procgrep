@@ -16,7 +16,7 @@ def test_probe_recovers_agent_label_across_held_out_groups(
 
     result = leave_one_group_out(fps, label_field="agent", seed=0)
     assert set(result.groups) == {"X", "Y", "Z"}
-    # The two agents use disjoint motifs, so the agent label transfers
+    # The two agents use disjoint procedures, so the agent label transfers
     # across held-out groups; overall accuracy should be near 1.0.
     assert result.overall_accuracy >= 0.9
 

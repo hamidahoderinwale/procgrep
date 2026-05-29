@@ -7,13 +7,13 @@ from pathlib import Path
 import pytest
 
 from procgrep.bpe import (
-    MotifVocabulary,
+    ProcedureVocabulary,
     apply_vocab,
     fit_bpe,
     load_vocab,
     save_vocab,
 )
-from procgrep.types import ATOM_EDIT, ATOM_RUN_TEST, MOTIF_SEPARATOR
+from procgrep.types import ATOM_EDIT, ATOM_RUN_TEST, PROCEDURE_SEPARATOR
 
 
 def test_fit_bpe_learns_most_frequent_pair_first(small_corpus: list) -> None:
@@ -47,7 +47,7 @@ def test_apply_vocab_glues_learned_pair(small_corpus: list) -> None:
     sequences = [t.atoms for t in small_corpus]
     vocab = fit_bpe(sequences, vocab_size=10)
     out = apply_vocab([ATOM_EDIT, ATOM_RUN_TEST, ATOM_EDIT, ATOM_RUN_TEST], vocab)
-    merged = ATOM_EDIT + MOTIF_SEPARATOR + ATOM_RUN_TEST
+    merged = ATOM_EDIT + PROCEDURE_SEPARATOR + ATOM_RUN_TEST
     assert out == [merged, merged]
 
 
@@ -65,7 +65,7 @@ def test_vocab_round_trips_through_disk(tmp_path: Path, small_corpus: list) -> N
     out_path = tmp_path / "vocab.json"
     save_vocab(vocab, out_path)
     loaded = load_vocab(out_path)
-    assert isinstance(loaded, MotifVocabulary)
+    assert isinstance(loaded, ProcedureVocabulary)
     assert loaded.atoms == vocab.atoms
     assert loaded.merges == vocab.merges
     assert loaded.seed == vocab.seed

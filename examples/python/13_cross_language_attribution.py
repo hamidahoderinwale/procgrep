@@ -41,7 +41,7 @@ from procgrep import (
     leave_one_group_out,
 )
 from procgrep.io import read_jsonl
-from procgrep.stats import discriminative_motifs
+from procgrep.stats import discriminative_procedures
 
 warnings.filterwarnings("ignore", category=FutureWarning, module=r"sklearn\..*")
 
@@ -113,19 +113,19 @@ def main() -> None:
         rendered = ", ".join(f"{a}={c}" for a, c in sorted(bucket.items()))
         print(f"  {true_lang:>10s}: {rendered}")
 
-    # Surface the motifs that most distinguish the two agents -- these are
+    # Surface the procedures that most distinguish the two agents -- these are
     # the structural signatures that need to be language-invariant for the
     # cross-language story to hold up.
     if len(agents) == 2:
         a, b = agents
-        ranked = discriminative_motifs(
+        ranked = discriminative_procedures(
             fps, vocab, group_a=a, group_b=b, k=10, ranking="log_odds", group_by="agent"
         )
         if ranked:
-            print(f"\ntop discriminative motifs ({a} vs {b}, log-odds-ranked):")
+            print(f"\ntop discriminative procedures ({a} vs {b}, log-odds-ranked):")
             for m in ranked:
                 print(
-                    f"  {m.motif:50s}  log_odds={m.log_odds:+.3f}  p_a={m.p_a:.3f}  p_b={m.p_b:.3f}"
+                    f"  {m.procedure:50s}  log_odds={m.log_odds:+.3f}  p_a={m.p_a:.3f}  p_b={m.p_b:.3f}"
                 )
 
 

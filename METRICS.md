@@ -1,178 +1,148 @@
-# Procedural metrics
+# Metrics
 
-The numbers `procgrep` can put on a corpus of agent trajectories,
-named as dimensions with formal definitions, units, ranges, and the
-public-API call that computes each. This file is the reference for
-the dimensional system the library exports — papers building on
-`procgrep` should cite specific metrics by name.
+What `procgrep` can measure about a group of agent trajectories, and what each number tells you.
 
-This taxonomy is **subject to refinement.** Several of these
-metrics are likely correlated on real corpora; the independent
-set should be determined per-corpus via
-[`examples/python/08_metric_orthogonality.py`](examples/python/08_metric_orthogonality.py).
-A surviving independent set on the 84-agent SWE-bench corpus is the
-empirical anchor; until that lands, treat the eight metrics below
-as candidates, not final.
+Each metric is defined per-group (e.g. per-agent, per-training-condition). Several are correlated — you usually don't need all of them. Start with JSD and entropy; add others if they answer a specific question.
 
-## Six procgrep-side metrics
+---
 
-These are computable from the procgrep public API alone — no edit
-patches, no chain-of-thought, no ground-truth labels required.
+## From the procgrep API
 
-### 1. Mean trajectory length
+### Trajectory length
 
-What it measures. How many canonical atoms a group's agents emit per
-trajectory on average. A coarse proxy for procedural verbosity.
+**What it tells you.** How many steps an agent takes on average.
 
-* Definition: `mean(len(t.atoms) for t in group)`.
-* Units: atoms per trajectory.
-* Range: `[1, inf)`. Higher means longer procedures.
-* Computation: trivial; `len()` on `Trace.atoms`.
-* What high/low mean. High = agents take many steps before
-  submitting (could be careful exploration, could be
-  thrashing). Low = agents act decisively (could be confident,
-  could be lazy).
+Long trajectories aren't better — they often indicate the agent is stuck. Claude-4 averages 65 steps with a 59% pass rate; Claude-3 Opus averages 17 steps with an 11.7% pass rate. Length alone doesn't predict outcome, but length combined with action type does.
 
-### 2. Effective vocabulary size
+```python
+mean_length = sum(len(t.atoms) for t in group) / len(group)
+```
 
-What it measures. How many distinct motifs a group "uses" in
-practice, weighted by how often. Equivalent to the perplexity of
-the group's mean motif distribution.
+---
 
-* Definition: `exp(H(group-mean motif distribution))` in nats.
-* Units: dimensionless (effective count of equally-used motifs).
-* Range: `[1, V]` where `V` is the BPE vocabulary size.
-* Computation: `procgrep.effective_vocab_size_per_group(fps, group_by="group")`.
-* What high/low mean. High = the group's procedural behavior
-  spans many distinct motifs uniformly (rich repertoire). Low =
-  the group concentrates on a few signature motifs.
+### Entropy
 
-### 3. Mean per-trajectory entropy
+**What it tells you.** How spread out an agent's actions are.
 
-What it measures. How spread-out each individual trajectory's
-motif distribution is, averaged across the group's trajectories.
+High entropy = the agent uses many different action types across its trajectories. Low entropy = it relies on a few. A distilled child model typically has lower entropy than its parent — it over-learned the focused patterns from successful demonstrations.
 
-* Definition: `median(Fingerprint.entropy() for fp in group)` in nats.
-* Units: nats.
-* Range: `[0, log(V)]`.
-* Computation: `procgrep.entropies_per_group(fps, group_by="group")` returns the median, IQR, and range.
-* What high/low mean. High = the typical trajectory in the group
-  uses many motifs roughly equally. Low = the typical trajectory
-  is dominated by one or two motifs.
+```python
+from procgrep import entropies_per_group
+stats = entropies_per_group(fingerprints, group_by="agent")
+# Returns median, IQR, range per group
+```
 
-### 4. Within-group mean pairwise JSD
+---
 
-What it measures. How procedurally consistent the group is with
-itself. Treated as the **noise floor** for any across-group
-comparison.
+### Jensen-Shannon divergence (JSD)
 
-* Definition: `mean(jsd(a.distribution(), b.distribution()) for a,b in pairs(group_fingerprints))`.
-* Units: bits (log-base-2 JSD) ranging in `[0, 1]`.
-* Range: `[0, 1]`.
-* Computation: compose `procgrep.jsd` over fingerprint pairs;
-  see [`examples/python/02_controlled_eval.py`](examples/python/02_controlled_eval.py)
-  for the recipe.
-* What high/low mean. High = trajectories inside the group differ
-  procedurally even from each other (procedure is not well-defined
-  for this group). Low = the group has a tight procedural
-  identity. Any across-group JSD claim must be evaluated against
-  this floor.
+**What it tells you.** How different two agents' procedure distributions are.
 
-### 5. Motif concentration (HHI)
+0 = identical. 1 = completely non-overlapping. The most useful single number for comparing agents. Pair with within-group JSD as a baseline — if two groups differ by 0.30 but each group varies internally by 0.25, the difference is marginal.
 
-What it measures. How concentrated a group's motif distribution is
-on a few dominant motifs. Borrows the Herfindahl-Hirschman index
-from economics.
+From 2,639 SWE-bench trajectories: same-era agents (Claude-3, GPT-4) differ by ~0.07. Different scaffolds (SWE-agent vs tools-format) on the same model differ by ~0.49. The child model (SWE-agent-LM-32B) differs from its parent (Claude-3.7) by only 0.10 — the closest pair in the corpus.
 
-* Definition: `sum(p_i^2 for p_i in group_mean_distribution)`.
-* Units: dimensionless probability-squared.
-* Range: `[1/V, 1]`. Theoretical floor `1/V` at perfectly uniform
-  distribution; ceiling 1 when all mass is on one motif.
-* Computation: not a single function call; ~3 lines composing
-  `Fingerprint.distribution()` and numpy. See
-  [`examples/python/08_metric_orthogonality.py`](examples/python/08_metric_orthogonality.py).
-* What high/low mean. High = a handful of motifs account for most
-  of the group's procedural mass (specialist). Low = procedural
-  mass is spread across many motifs (generalist).
+```python
+from procgrep import jsd_matrix
+matrix = jsd_matrix(fingerprints, group_by="agent")
+```
 
-### 6. Atom-frequency Gini
+---
 
-What it measures. How unequally raw atoms (not motifs) are
-distributed within a group. Independent of the BPE vocabulary.
+### Effective vocabulary size
 
-* Definition: Gini coefficient on the group's per-atom count
-  vector.
-* Units: dimensionless.
-* Range: `[0, 1]`. Zero = every atom equally used; one = a single
-  atom dominates.
-* Computation: standard Gini formula on `Counter(t.atoms for t in group)`.
-* What high/low mean. High = the group relies heavily on a small
-  number of action types (edit-heavy or search-heavy). Low = the
-  group uses the full action repertoire roughly evenly.
+**What it tells you.** How many distinct action patterns an agent actually uses, accounting for how often it uses each.
 
-## Two companion-paper metrics
+Two agents might both have 64 procedures in their vocabulary, but one might use 3 of them 90% of the time (low effective size) while the other spreads usage more evenly (high effective size). SWE-agent-LM-32B has the lowest effective vocabulary — it concentrates heavily on read-file loops.
 
-These require artifacts the `bidirect-align-dev-traces` companion
-repository computes (AST patches, structured edit-certificate
-data); they are listed here as part of the dimensional system that
-the joint paper proposes, with pointers to where each is computed.
+```python
+from procgrep import effective_vocab_size_per_group
+evs = effective_vocab_size_per_group(fingerprints, group_by="agent")
+```
 
-### 7. Edit-certificate Jaccard
+---
 
-What it measures. Pairwise structural similarity between two
-agents' patches on the same task. Distinct from JSD: operates on
-the *patch* (output), not on the *trajectory* (procedure).
+### Procedure concentration
 
-* Definition: Jaccard similarity over the set of `(direction,
-  AST-node-type)` pairs extracted from each agent's patch.
-* Units: dimensionless.
-* Range: `[0, 1]`. Zero = no overlap; one = identical edit shape.
-* Computation: `bidirect-align-dev-traces/analysis/` (scoped
-  certificates module). Not yet exposed as a Python public-API
-  function; packaging is a known gap.
-* What high/low mean. High = two agents converged on structurally
-  similar fixes. Low = different structural approaches to the
-  same problem.
+**What it tells you.** Whether an agent has one dominant approach or many.
 
-### 8. Composition-failure rate
+High concentration = specialist (this agent mostly does one thing, e.g. edit-heavy). Low concentration = generalist. Use this when you want to understand whether an agent's procedure is narrow or varied, without computing the full vocabulary.
 
-What it measures. The fraction of agent failures on a task class
-where the agent demonstrated every required primitive on *other*
-tasks but failed to combine them here. Distinguishes "lacks
-primitive" failures from "lacks composition" failures.
+```python
+# 3 lines: group mean fingerprint, then sum of squares
+import numpy as np
+mean_dist = np.mean([fp.distribution() for fp in group_fps], axis=0)
+hhi = float(np.sum(mean_dist ** 2))
+```
 
-* Definition: see `bidirect-align-dev-traces/scripts/compositional_generalization.py`.
-* Units: dimensionless ratio.
-* Range: `[0, 1]`.
-* Computation: companion repo only; not in procgrep.
-* What high/low mean. High = failures are mostly compositional
-  (agent has the parts but cannot assemble them). Low = failures
-  are mostly primitive-missing (agent never learned the
-  operations needed).
+---
 
-## How to use this taxonomy
+### Atom-frequency Gini
 
-1. **Pick a corpus.** Each dimension is defined per-group; a
-   corpus partitioned into ≥10 groups gives the orthogonality
-   analysis enough degrees of freedom to be meaningful.
-2. **Compute the procgrep-side six.** Use
-   [`examples/python/08_metric_orthogonality.py`](examples/python/08_metric_orthogonality.py)
-   to compute all six metrics and the pairwise correlation
-   between them.
-3. **Drop redundant pairs.** The script suggests an independent
-   subset using a default threshold of `|r| = 0.85`; pick a
-   threshold that matches your paper's tolerance.
-4. **Report the surviving set as your dimensional system** for
-   that corpus, with the correlation matrix in an appendix or
-   supplement.
-5. **Augment with companion-paper metrics** (#7, #8) when patch
-   data is available; the joint system is then the orthogonal
-   subset of #1-#8.
+**What it tells you.** Whether an agent relies heavily on a few action types (high Gini) or uses the full alphabet evenly (low Gini).
 
-## Status
+Unlike entropy (which operates on learned procedures), Gini operates directly on raw atom counts — no vocabulary needed. Useful for a quick first look without fitting BPE.
 
-This file is a starting point. The intended end-state is that
-the orthogonal subset on the 84-agent SWE-bench corpus is the
-"canonical" dimensional system the paper proposes — but that
-analysis hasn't been run on the real corpus yet. Until it has,
-treat this taxonomy as a hypothesis being refined.
+GPT-4o has the highest Gini in our corpus: ~53% of its actions are edits.
+
+```python
+from collections import Counter
+import numpy as np
+
+def gini(atoms):
+    counts = sorted(Counter(atoms).values())
+    n = len(counts)
+    return sum((2*i - n - 1) * c for i, c in enumerate(counts, 1)) / (n * sum(counts))
+```
+
+---
+
+### Procedural reward score
+
+**What it tells you.** How well a single trajectory followed a user-defined procedure — which phases it completed, which failure patterns it triggered, which best practices it earned.
+
+Unlike the metrics above (which describe a group), this scores one trajectory at a time. Useful for RL training signal and for real-time monitoring.
+
+From 498 child model trajectories: passing trajectories score 0.902, failing score 0.723. On 23 matched parent-pass/child-fail pairs, the score drops by 0.34 on average — and the `stuck_reading` penalty fires in the first 12 steps on 80% of those failures.
+
+```python
+from procgrep.reward import load_spec, score
+
+spec = load_spec("examples/rules/reward_spec_swe_agent.yaml")
+result = score(trajectory.atoms, spec)
+print(result.proc_score, result.triggered_penalties)
+```
+
+---
+
+## Requiring additional data
+
+These two metrics need patch diffs or task labels beyond what `procgrep` reads from trace logs.
+
+### Edit-certificate Jaccard
+
+How structurally similar are two agents' patches on the same task? (0 = nothing in common, 1 = identical edit shape.) Operates on the *output*, not the procedure — complementary to JSD.
+
+Computed in the `bidirect-align-dev-traces` companion repository; not yet in the `procgrep` API.
+
+---
+
+### Composition-failure rate
+
+What fraction of failures happened on tasks where the agent had previously solved all the sub-tasks individually? Separates "agent can't compose" from "agent never learned this skill."
+
+Computed in `bidirect-align-dev-traces/scripts/compositional_generalization.py`.
+
+---
+
+## Which metrics to use
+
+Most analyses need only JSD and entropy. Add others when:
+
+| Question | Metric to add |
+|---|---|
+| Is the agent consistent within itself? | Within-group pairwise JSD |
+| Does it rely on one approach or many? | Effective vocabulary size or Gini |
+| Is this trajectory good or bad? | Procedural reward score |
+| Did fine-tuning change the procedure? | All of the above via `lineage_diff` |
+| Are failures structurally different from patches? | Edit-certificate Jaccard |
