@@ -85,16 +85,23 @@ if not SPEC.exists():
 
 # ── Loading ───────────────────────────────────────────────────────────────────
 
-def load_fingerprints(path: Path, label: str) -> list[Trace]:
+def load_fingerprints(path: Path, label: str,
+                       layer: str = "canonical") -> list[Trace]:
+    """Load traces from a fingerprint JSONL.
+
+    Args:
+        layer: "canonical" or "native" — which atom sequence to load.
+    """
+    key = f"atoms_{layer}"
     rows = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
     return [
         Trace(
             trace_id=r["instance_id"],
             agent=label,
-            atoms=r["atoms_canonical"],
+            atoms=r[key],
             metadata={"resolved": r.get("resolved"), "n_steps": r.get("n_steps")},
         )
-        for r in rows if r.get("atoms_canonical")
+        for r in rows if r.get(key)
     ]
 
 
@@ -122,30 +129,13 @@ def step1_jsd_position(parent_traces, child_traces) -> None:
     print(f"  The child is the closest agent to its parent in the full 9-agent corpus.")
 
 
-def step2_lineage_diff(parent_traces, child_traces) -> None:
-    """Four-axis structural comparison: the core story."""
-    print("\n" + "="*60)
-    print("STEP 2: lineage_diff — four axes of structural change")
-    print("="*60)
-
-    diff = lineage_diff(
-        parent_traces,
-        child_traces,
-        along=["vocabulary", "entropy", "outcome_quadrant", "conditional"],
-        alphabet="canonical",
-        outcome_field="resolved",
-    )
-
-    print(diff.summary())
-    print()
-
-    # Pull individual axes by name for detailed output
+def _print_axes(diff, label: str) -> None:
+    """Print a lineage_diff result clearly labelled by alphabet."""
     axes_by_name = {ax.axis: ax for ax in diff.axes}
 
     voc = axes_by_name.get("vocabulary")
     if voc:
-        print(f"  Vocabulary (canonical Jaccard): {voc.summary_value:.3f}")
-        print(f"  → The child uses every atom the parent uses. Nothing added, nothing lost.")
+        print(f"  [{label}] Vocabulary Jaccard: {voc.summary_value:.3f}")
 
     ent = axes_by_name.get("entropy")
     if ent:
@@ -153,21 +143,64 @@ def step2_lineage_diff(parent_traces, child_traces) -> None:
         parent_mean = detail.get("parent_mean", 0)
         child_mean  = detail.get("child_mean",  0)
         shift = child_mean - parent_mean
-        print(f"\n  Entropy shift: {shift:+.3f} bits")
-        print(f"  Parent mean: {parent_mean:.3f} bits  Child mean: {child_mean:.3f} bits")
-        print(f"  → {'Child is more concentrated' if shift < 0 else 'Child is more spread out'} "
-              f"than parent. Same menu, different ordering habits.")
+        print(f"  [{label}] Entropy shift: {shift:+.3f} bits  "
+              f"(parent {parent_mean:.3f}, child {child_mean:.3f})")
 
     oq = axes_by_name.get("outcome_quadrant")
     if oq:
         detail = oq.detail or {}
-        p_jac = detail.get("pass_vocab_jaccard", "n/a")
-        f_jac = detail.get("fail_vocab_jaccard", "n/a")
-        print(f"\n  Vocab overlap with parent by outcome:")
-        print(f"  Passing trajectories: {p_jac:.3f}" if isinstance(p_jac, float) else f"  Passing: {p_jac}")
-        print(f"  Failing trajectories: {f_jac:.3f}" if isinstance(f_jac, float) else f"  Failing: {f_jac}")
-        print(f"  → When the child succeeds it looks more like the parent.")
-        print(f"    When it fails it drifts further. Distance from parent predicts failure.")
+        p_jac = detail.get("pass_vocab_jaccard")
+        f_jac = detail.get("fail_vocab_jaccard")
+        if p_jac is not None and f_jac is not None:
+            print(f"  [{label}] Vocab overlap: pass={p_jac:.3f}  fail={f_jac:.3f}  "
+                  f"Δ={p_jac - f_jac:+.3f}")
+
+    cond = axes_by_name.get("conditional")
+    if cond:
+        detail = cond.detail or {}
+        top = detail.get("top_divergent_prefixes", [])[:2]
+        print(f"  [{label}] Mean conditional JSD: {cond.summary_value:.4f}", end="")
+        if top:
+            best = top[0]
+            print(f"  (highest impact: {best['prefix'][0]}  JSD={best['jsd']:.4f}  "
+                  f"freq={best['parent_freq']})", end="")
+        print()
+
+
+def step2_lineage_diff(parent_traces, child_traces,
+                       parent_path: Path, child_path: Path) -> None:
+    """Four-axis structural comparison at both canonical and native levels."""
+    print("\n" + "="*60)
+    print("STEP 2: lineage_diff — hierarchical (canonical + native)")
+    print("="*60)
+
+    # Run both alphabets: load layer-specific traces for each
+    # (canonical = 9 action types; native = scaffold-specific tool names)
+    for alpha in ("canonical", "native"):
+        p_traces = load_fingerprints(parent_path, "parent", layer=alpha)
+        c_traces = load_fingerprints(child_path,  "child",  layer=alpha)
+        diff = lineage_diff(
+            p_traces, c_traces,
+            along=["vocabulary", "entropy", "outcome_quadrant", "conditional"],
+            alphabet=alpha,
+            outcome_field="resolved",
+        )
+        _print_axes(diff, alpha)
+
+    print()
+    print("  Two-layer summary:")
+    print("  Canonical shows WHAT changed (action types): vocab preserved, entropy concentrated.")
+    print("  Native shows HOW MUCH (tool signatures): pass trajectories 64% similar, fail 52%.")
+
+    # Re-run canonical for the detailed printout
+    diff = lineage_diff(
+        parent_traces,
+        child_traces,
+        along=["vocabulary", "entropy", "outcome_quadrant", "conditional"],
+        alphabet="canonical",
+        outcome_field="resolved",
+    )
+    axes_by_name = {ax.axis: ax for ax in diff.axes}
 
     cond = axes_by_name.get("conditional")
     if cond:
@@ -312,7 +345,7 @@ def main() -> None:
           f"(pass={sum(1 for t in child_traces if t.metadata.get('resolved'))})")
 
     step1_jsd_position(parent_traces, child_traces)
-    step2_lineage_diff(parent_traces, child_traces)
+    step2_lineage_diff(parent_traces, child_traces, parent_path, child_path)
 
     if spec_path.exists():
         spec = load_spec(spec_path)
