@@ -163,10 +163,68 @@ def introspect(
     split: str | None = None,
     timeout: float = 30.0,
 ) -> DatasetSchema:
-    """Fetch columns + sample rows via the datasets-server (no download).
+    """Columns + sample rows for a dataset, cheapest source first.
 
-    Picks the first config/split when unspecified.
+    Tries the datasets-server (no download); on any failure (5xx, unprocessed,
+    no splits) falls back to streaming a few rows via ``datasets`` directly from
+    the Hub. Gated datasets still require ``HF_TOKEN`` and will raise.
     """
+    try:
+        return _introspect_via_server(dataset, config=config, split=split, timeout=timeout)
+    except Exception:
+        return _introspect_via_datasets(dataset, config=config, split=split, timeout=timeout)
+
+
+def _introspect_via_datasets(
+    dataset: str,
+    *,
+    config: str | None = None,
+    split: str | None = None,
+    n: int = 5,
+    timeout: float = 25.0,
+) -> DatasetSchema:
+    """Fallback: stream a few full rows via ``datasets`` to build the schema.
+
+    Bounded by ``timeout`` in a worker thread so an unprocessed/streaming-hostile
+    dataset fails fast instead of hanging the whole sweep (the datasets-server
+    500 path is exactly where streaming can stall indefinitely).
+    """
+    from concurrent.futures import ThreadPoolExecutor
+    from concurrent.futures import TimeoutError as FutureTimeout
+
+    def _work() -> tuple[str, list[dict[str, Any]]]:
+        from procgrep.hf import _import_load_dataset
+
+        load_dataset = _import_load_dataset()
+        ds = load_dataset(dataset, name=config, streaming=True)
+        if isinstance(ds, dict):  # IterableDatasetDict -> pick a split
+            spl = split or next(iter(ds))
+            ds = ds[spl]
+        else:
+            spl = split or "train"
+        return spl, [dict(r) for r in ds.take(n)]
+
+    ex = ThreadPoolExecutor(max_workers=1)
+    try:
+        spl, rows = ex.submit(_work).result(timeout=timeout)
+    except FutureTimeout as exc:
+        raise TimeoutError(f"streaming introspect exceeded {timeout}s for {dataset!r}") from exc
+    finally:
+        ex.shutdown(wait=False)  # never block on a hung stream
+
+    if not rows:
+        raise ValueError(f"no rows streamed for {dataset!r}")
+    return DatasetSchema(dataset, config or "default", spl, tuple(rows[0].keys()), tuple(rows))
+
+
+def _introspect_via_server(
+    dataset: str,
+    *,
+    config: str | None = None,
+    split: str | None = None,
+    timeout: float = 30.0,
+) -> DatasetSchema:
+    """Fetch columns + sample rows via the datasets-server (no download)."""
     splits_url = f"{_DATASETS_SERVER}/splits?dataset={urllib.parse.quote(dataset)}"
     splits = _get_json(splits_url, timeout=timeout).get("splits", [])
     if not splits:
