@@ -17,9 +17,31 @@ from dataclasses import dataclass
 
 DEFAULT_QUERIES = (
     "trajectories",
-    "swe-agent trajectories",
-    "openhands trajectories",
+    "traces",
+    "rollouts",
     "agent trajectories",
+    "agent traces",
+    "agent rollouts",
+    "swe-agent",
+    "openhands",
+    "mini-swe-agent",
+    "swe-bench trajectories",
+    "tool use trajectories",
+    "react agent trajectories",
+    "sft trajectories",
+)
+
+# Orgs known to publish coding-agent trace datasets; crawled in full so we catch
+# datasets whose names don't contain a search keyword.
+DEFAULT_AUTHORS = (
+    "nebius",
+    "nvidia",
+    "SWE-bench",
+    "SWE-Gym",
+    "R2E-Gym",
+    "Kwai-Klear",
+    "all-hands",
+    "princeton-nlp",
 )
 
 
@@ -37,10 +59,15 @@ class DatasetMeta:
 def discover(
     queries: tuple[str, ...] = DEFAULT_QUERIES,
     *,
+    authors: tuple[str, ...] = DEFAULT_AUTHORS,
     limit_per_query: int = 50,
     min_downloads: int = 0,
 ) -> list[DatasetMeta]:
-    """Search the Hub for trajectory datasets, deduped and ranked by downloads.
+    """Find trajectory datasets via keyword search + known-author crawl.
+
+    Deduped by id and ranked by downloads. ``authors`` are crawled in full so
+    datasets whose names lack a search keyword are still caught; relevance is
+    decided downstream by the adapter sniff, not here.
 
     Raises:
         ImportError: ``huggingface_hub`` not installed.
@@ -53,17 +80,26 @@ def discover(
         ) from exc
 
     seen: dict[str, DatasetMeta] = {}
+
+    def _add(d: object) -> None:
+        ident = getattr(d, "id", None)
+        if not ident or ident in seen:
+            return
+        seen[ident] = DatasetMeta(
+            id=str(ident),
+            downloads=int(getattr(d, "downloads", 0) or 0),
+            likes=int(getattr(d, "likes", 0) or 0),
+            last_modified=str(getattr(d, "last_modified", "") or ""),
+            tags=tuple(getattr(d, "tags", []) or []),
+        )
+
     for query in queries:
         for d in list_datasets(search=query, limit=limit_per_query):
-            if d.id in seen:
-                continue
-            seen[d.id] = DatasetMeta(
-                id=d.id,
-                downloads=int(getattr(d, "downloads", 0) or 0),
-                likes=int(getattr(d, "likes", 0) or 0),
-                last_modified=str(getattr(d, "last_modified", "") or ""),
-                tags=tuple(getattr(d, "tags", []) or []),
-            )
+            _add(d)
+    for author in authors:
+        for d in list_datasets(author=author, limit=limit_per_query):
+            _add(d)
+
     metas = [m for m in seen.values() if m.downloads >= min_downloads]
     return sorted(metas, key=lambda m: m.downloads, reverse=True)
 
