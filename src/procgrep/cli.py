@@ -427,6 +427,80 @@ def compare(
         typer.echo(f"report written to {output}")
 
 
+@app.command()
+def curate(
+    dataset: Annotated[str, typer.Argument(help="HF dataset id, or a local canonical JSONL path.")],
+    limit: Annotated[int, typer.Option(help="Max rows to stream from the Hub.")] = 3000,
+    target: Annotated[
+        int | None, typer.Option(help="Diverse-subset size (default: dedup cluster count).")
+    ] = None,
+    vocab_size: Annotated[int, typer.Option("--vocab-size", "-V")] = 128,
+    near_dup_jsd: Annotated[float, typer.Option(help="JSD threshold for near-duplicates.")] = 0.05,
+    export: Annotated[
+        Path | None, typer.Option("--export", help="Write the diverse subset (canonical JSONL).")
+    ] = None,
+    dry_run: Annotated[
+        bool, typer.Option("--dry-run", help="Show the inferred ingestion plan and exit.")
+    ] = False,
+) -> None:
+    """Measure structural redundancy and select a procedurally-diverse subset.
+
+    DATASET may be a Hub id (dynamically sniffed + streamed) or a local
+    canonical-trace JSONL produced by `procgrep canonicalize`.
+    """
+    from procgrep.curate import curate as curate_fn
+    from procgrep.ingest import ingest as ingest_fn
+    from procgrep.ingest import plan as plan_fn
+
+    if Path(dataset).exists():
+        traces = list(records_to_traces(read_jsonl(Path(dataset))))
+    else:
+        if dry_run:
+            typer.echo(plan_fn(dataset).summary())
+            return
+        traces, plan = ingest_fn(dataset, limit=limit)
+        typer.echo(plan.summary())
+        typer.echo("")
+
+    report = curate_fn(traces, vocab_size=vocab_size, near_dup_jsd=near_dup_jsd, target_size=target)
+    typer.echo(report.summary())
+    if export is not None:
+        subset = [traces[i] for i in report.subset_indices]
+        n = write_jsonl(export, traces_to_records(subset))
+        typer.echo(f"\nwrote {n} diverse traces to {export}")
+
+
+@app.command()
+def grep(
+    pattern: Annotated[str, typer.Argument(help="Regex over the space-joined atom sequence.")],
+    dataset: Annotated[str, typer.Argument(help="HF dataset id, or a local canonical JSONL path.")],
+    limit: Annotated[int, typer.Option(help="Max rows to stream from the Hub.")] = 3000,
+    show: Annotated[int, typer.Option(help="Max matching traces to print.")] = 20,
+) -> None:
+    """Find trajectories whose action sequence matches a structural pattern.
+
+    Examples (the pattern is a regex over `" ".join(atoms)`):
+      "(edit ){5,}"                 edit streak of 5+
+      "run_test( \\w+)* submit"      ran a test before submitting
+      "^(?:(?!run_test).)*submit "   submitted, never ran a test
+    """
+    import re
+
+    from procgrep.ingest import ingest as ingest_fn
+
+    if Path(dataset).exists():
+        traces = list(records_to_traces(read_jsonl(Path(dataset))))
+    else:
+        traces, _ = ingest_fn(dataset, limit=limit)
+    rx = re.compile(pattern)
+    hits = [t for t in traces if rx.search(" ".join(t.atoms) + " ")]
+    for t in hits[:show]:
+        preview = " ".join(t.atoms[:28]) + (" …" if len(t.atoms) > 28 else "")
+        typer.echo(f"{t.trace_id}\t{t.agent}\t{preview}")
+    rate = len(hits) / max(len(traces), 1)
+    typer.echo(f"\n{len(hits)}/{len(traces)} traces matched ({rate:.1%})")
+
+
 @app.command(name="list-adapters")
 def list_adapters_cmd() -> None:
     """List registered trace adapters."""
