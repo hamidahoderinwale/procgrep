@@ -17,6 +17,7 @@ from procgrep.adapters import (
     mini_swe_agent,
     moatless,
     openhands,
+    react_text,
     swe_agent,
     swe_smith,
 )
@@ -28,6 +29,7 @@ __all__ = [
     "mini_swe_agent",
     "moatless",
     "openhands",
+    "react_text",
     "swe_agent",
     "swe_smith",
 ]

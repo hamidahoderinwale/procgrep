@@ -198,7 +198,9 @@ def _assistant_messages(schema: DatasetSchema) -> list[Mapping[str, Any]]:
     for row in schema.sample_rows:
         msgs = _normalize_row(row).get("messages")
         if isinstance(msgs, list):
-            out.extend(m for m in msgs if isinstance(m, Mapping) and m.get("role") == "assistant")
+            out.extend(
+                m for m in msgs if isinstance(m, Mapping) and m.get("role") in ("assistant", "ai")
+            )
     return out
 
 
@@ -245,9 +247,23 @@ def _sniff_swe_smith(schema: DatasetSchema) -> float:
     return 0.7 if (has_ids and no_tool_calls) else 0.0
 
 
+def _sniff_react_text(schema: DatasetSchema) -> float:
+    # Assistant/ai turns whose text carries fenced command blocks and no
+    # structured tool_calls (text-based ReAct).
+    has_fence = False
+    for m in _assistant_messages(schema):
+        if isinstance(m.get("tool_calls"), list) and m["tool_calls"]:
+            return 0.0
+        text = m.get("content") or m.get("text") or ""
+        if isinstance(text, str) and "```" in text:
+            has_fence = True
+    return 0.8 if has_fence else 0.0
+
+
 SNIFFERS: tuple[Sniffer, ...] = (
     Sniffer("openhands", _sniff_openhands),
     Sniffer("mini-swe-agent", _sniff_mini_swe),
+    Sniffer("react-text", _sniff_react_text),
     Sniffer("swe-agent", _sniff_swe_agent),
     Sniffer("swe-smith", _sniff_swe_smith),
 )
