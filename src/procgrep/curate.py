@@ -194,6 +194,11 @@ def curate(
     n = len(trace_list)
     if n == 0:
         raise ValueError("curate requires a non-empty corpus")
+    if not any(t.atoms for t in trace_list):
+        raise ValueError(
+            "every trajectory canonicalized to empty atoms — the adapter likely "
+            "does not match this dataset's format (check `procgrep curate --dry-run`)"
+        )
 
     n_exact_unique = len({tuple(t.atoms) for t in trace_list})
     vocab_size_actual, dists, counts = _distributions(trace_list, vocab_size=vocab_size, seed=seed)

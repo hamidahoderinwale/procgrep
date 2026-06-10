@@ -1,0 +1,80 @@
+[
+  {
+    "dataset": "SWE-bench/SWE-smith-trajectories",
+    "adapter": "openhands",
+    "confidence": 0.95,
+    "n": 3000,
+    "nonempty": 3000,
+    "exact_dup_rate": 0.317,
+    "near_dup_rate": 0.323,
+    "coverage_diverse": 1.0,
+    "coverage_shortest": 0.859,
+    "coverage_random": 1.0,
+    "seconds": 37.2
+  },
+  {
+    "dataset": "SWE-Gym/OpenHands-Sampled-Trajectories",
+    "adapter": "openhands",
+    "confidence": 0.95,
+    "n": 3000,
+    "nonempty": 3000,
+    "exact_dup_rate": 0.533,
+    "near_dup_rate": 0.534,
+    "coverage_diverse": 1.0,
+    "coverage_shortest": 0.047,
+    "coverage_random": 1.0,
+    "seconds": 29.8
+  },
+  {
+    "dataset": "nvidia/SWE-Hero-openhands-trajectories",
+    "adapter": "openhands",
+    "confidence": 0.95,
+    "n": 3000,
+    "nonempty": 3000,
+    "exact_dup_rate": 0.0,
+    "near_dup_rate": 0.0,
+    "coverage_diverse": 1.0,
+    "coverage_shortest": 1.0,
+    "coverage_random": 1.0,
+    "seconds": 68.4
+  },
+  {
+    "dataset": "nebius/SWE-rebench-openhands-trajectories",
+    "adapter": "openhands",
+    "confidence": 0.95,
+    "n": 3000,
+    "nonempty": 3000,
+    "exact_dup_rate": 0.0,
+    "near_dup_rate": 0.0,
+    "coverage_diverse": 1.0,
+    "coverage_shortest": 1.0,
+    "coverage_random": 1.0,
+    "seconds": 83.9
+  },
+  {
+    "dataset": "nebius/SWE-agent-trajectories",
+    "adapter": "react-text",
+    "confidence": 0.8,
+    "n": 3000,
+    "nonempty": 3000,
+    "exact_dup_rate": 0.322,
+    "near_dup_rate": 0.325,
+    "coverage_diverse": 0.984,
+    "coverage_shortest": 0.656,
+    "coverage_random": 0.922,
+    "seconds": 22.8
+  },
+  {
+    "dataset": "Kwai-Klear/SWE-smith-mini_swe_agent_plus-trajectories-66k",
+    "adapter": "react-text",
+    "confidence": 0.8,
+    "n": 3000,
+    "nonempty": 3000,
+    "exact_dup_rate": 0.021,
+    "near_dup_rate": 0.022,
+    "coverage_diverse": 0.992,
+    "coverage_shortest": 0.992,
+    "coverage_random": 0.992,
+    "seconds": 30.2
+  }
+]
