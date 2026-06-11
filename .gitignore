@@ -46,3 +46,4 @@ Thumbs.db
 output/
 notebooks/
 *.ipynb_checkpoints/
+case-studies/interface/
