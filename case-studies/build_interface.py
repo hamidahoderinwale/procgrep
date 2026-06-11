@@ -260,28 +260,31 @@ function trace(id,i){const s=PROF[id].samples[i];show('tr');
     <div class="eyebrow">procedural spine</div><div class="spine">${spine}</div><div class="eyebrow">conversation</div>${turns}`;}
 function whyView(){const e=D.experiment;const el=document.getElementById('why');
   if(!e){el.innerHTML='<span class="back" onclick="show(\'eco\')">← ecosystem</span><p class="sub">experiment not loaded.</p>';return;}
-  const ratio=Math.round(e.totals.mean_llm_latency_s*1e6/e.procgrep_us_per_decision);
+  const judges=Object.entries(e.pareto||{}).filter(([k])=>k!=='procgrep');
+  const meanLat=judges.length?judges.reduce((s,[,v])=>s+(v.mean_latency_s||0),0)/judges.length:1;
+  const ratio=Math.round(meanLat*1e6/e.procgrep_us_per_decision);
+  const bestF1=judges.length?Math.max(...judges.map(([,v])=>v.mean_f1||0)):0;
   const struct=Object.entries(e.predicates).filter(([k,v])=>v.kind==='structural');
   const models=Object.keys(struct[0][1].judges);
-  const head=`<th>predicate</th>${models.map(m=>`<th>${m.split('/').pop()}</th>`).join('')}<th>inter-judge κ</th>`;
-  const body=struct.map(([k,v])=>`<tr><td>${k}</td>${models.map(m=>{const a=v.judges[m].accuracy;
-    return `<td>${a==null?'—':a.toFixed(2)}</td>`;}).join('')}<td>${v.kappa==null?'—':v.kappa}</td></tr>`).join('');
+  const head=`<th>predicate</th>${models.map(m=>`<th>${m.split('/').pop()}</th>`).join('')}<th>κ</th>`;
+  const body=struct.map(([k,v])=>`<tr><td>${k}</td>${models.map(m=>{const f=v.judges[m].f1;
+    return `<td>${f==null?'—':f.toFixed(2)}</td>`;}).join('')}<td>${v.pairwise_cohen_kappa==null?'—':v.pairwise_cohen_kappa}</td></tr>`).join('');
   const fz=Object.entries(e.predicates).find(([k,v])=>v.kind==='fuzzy');
   el.innerHTML=
    `<span class="back" onclick="show('eco')">← ecosystem</span>
     <h1>Why not just ask an LLM?</h1>
-    <p class="sub">Every behavioural question here — "did it edit 5× in a row?", "did it submit without testing?" — can be asked two ways: a deterministic structural query over the action spine, or an LLM judge over the trace. We ran both over the same trajectories.</p>
+    <p class="sub">Every behavioural question here — "did it edit 5× in a row?", "did it submit without testing?" — can be asked two ways: a deterministic structural query over the action spine, or an LLM judge over the trace. We ran both over the same trajectories (incl. a strong judge).</p>
     <div class="cards">
       <div class="card"><div class="dim">speed</div><div class="big">${ratio.toLocaleString()}×</div>
-        <div class="dim">procgrep ${e.procgrep_us_per_decision} µs vs LLM ${e.totals.mean_llm_latency_s}s per decision · $0 vs API cost</div></div>
-      <div class="card"><div class="dim">accuracy (chance = .50)</div><div class="big">≈ chance</div>
-        <div class="dim">LLM judges are at chance on counting/order predicates — they can't track structure over a long trace</div></div>
+        <div class="dim">procgrep ${e.procgrep_us_per_decision} µs vs LLM ${meanLat.toFixed(1)}s per decision · $0 vs API cost</div></div>
+      <div class="card"><div class="dim">accuracy — mean F1, procgrep = 1.0</div><div class="big">≤ ${bestF1.toFixed(2)}</div>
+        <div class="dim">best judge ${bestF1.toFixed(2)}; F1 = 0 on both counting predicates for every judge — LLMs can't count action-streaks in a trace</div></div>
       <div class="card"><div class="dim">reliability</div><div class="big">κ ≈ 0</div>
-        <div class="dim">judges barely agree with each other — on structural facts and fuzzy ones alike</div></div>
+        <div class="dim">judges barely agree — on structural facts and fuzzy ones alike</div></div>
     </div>
-    <div class="eyebrow">LLM judge accuracy vs the exact structural answer · balanced samples, chance = 0.50</div>
+    <div class="eyebrow">LLM judge F1 vs the exact structural answer · balanced samples · procgrep = 1.0</div>
     <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-    <p class="note">Fuzzy property (no deterministic ground truth) — <b>${fz?fz[0]:''}</b>: inter-judge κ = ${fz?fz[1].kappa:'—'}. procgrep does ${e.procgrep_ms_full} ms for ${e.corpus} traces × ${struct.length} predicates; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable. ${e.totals.judge_calls} judge calls, ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
+    <p class="note">Fuzzy property — <b>${fz?fz[0]:''}</b>: inter-judge κ = ${fz?fz[1].pairwise_cohen_kappa:'—'}. procgrep does ${e.procgrep_ms_full} ms for ${e.corpus} traces × ${struct.length} predicates; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). ${e.totals.judge_calls} judge calls, ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
 function show(id){['eco','ds','tr','why'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
   if(id==='why')whyView();if(id==='eco')window.scrollTo(0,0);}
 if(location.hash==='#group'){ST.group=true;const cb=document.querySelector('.gb input');if(cb)cb.checked=true;}
