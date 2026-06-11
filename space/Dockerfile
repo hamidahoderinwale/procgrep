@@ -7,6 +7,10 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# git is needed to pip-install procgrep from its repo (slim has none).
+RUN apt-get update && apt-get install -y --no-install-recommends git \
+    && rm -rf /var/lib/apt/lists/*
+
 # HF Spaces run as a non-root user; keep all caches under writable /tmp.
 ENV HF_HOME=/tmp/hf \
     HF_DATASETS_CACHE=/tmp/hf/datasets \

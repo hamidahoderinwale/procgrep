@@ -14,7 +14,6 @@ from dataclasses import dataclass
 import numpy as np
 import numpy.typing as npt
 from sklearn.preprocessing import normalize
-from umap import UMAP
 
 from procgrep.encode import Fingerprint
 
@@ -56,6 +55,15 @@ def umap_project(
         metric: ``"cosine"`` is the standard choice for L1-normalized
             distributions.
     """
+    # umap-learn is an optional dependency (it pulls numba/llvmlite); import it
+    # lazily so `import procgrep` stays light and only this function requires it.
+    try:
+        from umap import UMAP
+    except ImportError as exc:  # pragma: no cover - exercised only without the extra
+        raise ImportError(
+            "umap_project requires the optional 'viz' extra: pip install 'procgrep[viz]'"
+        ) from exc
+
     labels, matrix = _stack(fingerprints, granularity)
     if n_neighbors >= matrix.shape[0]:
         raise ValueError(
