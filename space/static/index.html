@@ -1,0 +1,23 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>procgrep · query agent traces, live</title>
+<link rel="stylesheet" href="static/style.css">
+</head><body><div class="wrap">
+<h1>Grep agent traces, live.</h1>
+<p class="sub">Ask a structural question about how an agent worked and get an exact answer over a
+whole trajectory dataset, not a sample. This runs ProcGrep on the server: it ingests the dataset,
+canonicalizes it into an action vocabulary, and scans every trace. No model call.</p>
+
+<div class="dsbar">dataset:
+  <select id="ds"></select>
+  <span id="dsmeta" class="dim"></span>
+</div>
+<div class="qbar"><span class="mag">⌕</span>
+  <input id="q" placeholder="atom pattern, e.g.  (edit ){5,}   or pick one below" autocomplete="off"></div>
+<div class="tryline">try: <span id="trychips"></span> <span class="chip" id="noisetog">hide think/other</span></div>
+<div id="res"></div>
+
+</div>
+<script src="static/app.js"></script>
+</body></html>
