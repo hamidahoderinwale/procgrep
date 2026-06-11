@@ -14,6 +14,8 @@ from procgrep.bpe import fit_bpe
 from procgrep.encode import encode
 from procgrep.umap_project import umap_project
 
+pytest.importorskip("umap")  # umap-learn is the optional 'viz' extra; skip if absent
+
 
 def test_umap_trace_granularity_shape(structured_corpus: list) -> None:
     sequences = [t.atoms for t in structured_corpus]

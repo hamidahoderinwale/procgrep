@@ -885,7 +885,6 @@ dependencies = [
     { name = "scipy", version = "1.15.3", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
     { name = "scipy", version = "1.17.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version >= '3.11'" },
     { name = "typer" },
-    { name = "umap-learn" },
 ]
 
 [package.optional-dependencies]
@@ -896,9 +895,13 @@ dev = [
     { name = "pytest-cov" },
     { name = "ruff" },
     { name = "types-pyyaml" },
+    { name = "umap-learn" },
 ]
 reward = [
     { name = "pyyaml" },
+]
+viz = [
+    { name = "umap-learn" },
 ]
 
 [package.metadata]
@@ -916,9 +919,10 @@ requires-dist = [
     { name = "scipy", specifier = ">=1.10" },
     { name = "typer", specifier = ">=0.12" },
     { name = "types-pyyaml", marker = "extra == 'dev'" },
-    { name = "umap-learn", specifier = ">=0.5.5" },
+    { name = "umap-learn", marker = "extra == 'dev'", specifier = ">=0.5.5" },
+    { name = "umap-learn", marker = "extra == 'viz'", specifier = ">=0.5.5" },
 ]
-provides-extras = ["reward", "dev"]
+provides-extras = ["reward", "viz", "dev"]
 
 [[package]]
 name = "pygments"
