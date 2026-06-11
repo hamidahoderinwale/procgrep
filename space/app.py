@@ -29,11 +29,13 @@ Design decisions (benefit / price):
 
 from __future__ import annotations
 
+import math
 import re
 import time
 from collections import Counter, OrderedDict
 from dataclasses import dataclass
 from pathlib import Path
+from statistics import median
 
 from fastapi import FastAPI
 from fastapi.responses import FileResponse, JSONResponse
@@ -43,7 +45,7 @@ from pydantic import BaseModel
 from procgrep.ingest import ingest
 
 # ── configuration ────────────────────────────────────────────────────────────
-MAX_TRACES = 4000  # per-dataset ingest cap (design decision 3)
+MAX_TRACES = 20000  # per-dataset ingest cap (design decision 3); raise as memory allows
 MAX_DATASETS = 6  # cached datasets before LRU eviction (design decision 2)
 INGEST_TIMEOUT_S = 60.0
 HIT_SAMPLE = 50  # matched traces returned to the client
@@ -81,6 +83,7 @@ class CachedTrace:
     agent: str
     atoms: tuple[str, ...]
     spine: str  # " ".join(atoms) + " ", so `(edit ){5,}` style regexes match
+    task: str = ""  # the task/instance the trajectory solved (trace.group), if known
 
 
 # dataset id -> traces. OrderedDict gives us LRU order cheaply.
@@ -100,19 +103,48 @@ def _load(dataset: str) -> list[CachedTrace]:
 
     traces, plan = ingest(dataset, limit=MAX_TRACES, timeout=INGEST_TIMEOUT_S)
     cached = [
-        CachedTrace(t.trace_id, t.agent, tuple(t.atoms), " ".join(t.atoms) + " ") for t in traces
+        CachedTrace(
+            t.trace_id, t.agent, tuple(t.atoms), " ".join(t.atoms) + " ", str(t.group or "")
+        )
+        for t in traces
     ]
     _CACHE[dataset] = cached
     _META[dataset] = {
         "adapter": plan.adapter,
         "n_traces": len(cached),
         "truncated": len(cached) >= MAX_TRACES,
-        "n_models": len({t.agent for t in cached}),
+        **_stats(cached),
     }
     while len(_CACHE) > MAX_DATASETS:
         evicted, _ = _CACHE.popitem(last=False)
         _META.pop(evicted, None)
     return cached
+
+
+def _stats(traces: list[CachedTrace]) -> dict[str, float | int]:
+    """Quick dataset stats: behavioral diversity, conciseness, CoT length, dups.
+
+    diversity_bits = mean per-trajectory action entropy (how varied each agent's
+    actions are); median_len = median trace length (conciseness); median_cot =
+    median count of `think` steps per trace (chain-of-thought length).
+    """
+    if not traces:
+        return {"n_models": 0}
+    lens = [len(t.atoms) for t in traces]
+    thinks = [sum(a == "think" for a in t.atoms) for t in traces]
+    ents: list[float] = []
+    for t in traces:
+        counts = Counter(t.atoms)
+        n = len(t.atoms) or 1
+        ents.append(-sum((k / n) * math.log2(k / n) for k in counts.values()))
+    uniq = len({t.spine for t in traces})
+    return {
+        "diversity_bits": round(sum(ents) / len(ents), 2),
+        "median_len": int(median(lens)),
+        "median_cot": int(median(thinks)),
+        "exact_dup_rate": round(1 - uniq / len(traces), 3),
+        "n_models": len({t.agent for t in traces}),
+    }
 
 
 def _action_mix(traces: list[CachedTrace]) -> dict[str, float]:
@@ -181,12 +213,27 @@ def query(req: QueryRequest) -> JSONResponse:
             "n_hits": len(hits),
             "elapsed_ms": round(elapsed_ms, 2),
             "truncated": _META.get(req.dataset, {}).get("truncated", False),
+            "stats": {
+                k: _META.get(req.dataset, {}).get(k)
+                for k in (
+                    "diversity_bits",
+                    "median_len",
+                    "median_cot",
+                    "exact_dup_rate",
+                    "n_models",
+                )
+            },
             "by_model": models,
             "mix_all": _action_mix(traces),
             "mix_hits": _action_mix(hits) if hits else {},
             "atom_color": ATOM_COLOR,
             "hits": [
-                {"trace_id": t.trace_id, "model": t.agent, "atoms": list(t.atoms[:200])}
+                {
+                    "trace_id": t.trace_id,
+                    "model": t.agent,
+                    "task": t.task,
+                    "atoms": list(t.atoms[:200]),
+                }
                 for t in hits[:HIT_SAMPLE]
             ],
         }

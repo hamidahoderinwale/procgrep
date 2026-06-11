@@ -27,6 +27,8 @@ select,input{font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px s
 .mix>span{height:100%}
 .speed{color:var(--copper)}
 .qhit{padding:5px 2px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px}
+.hit-model{min-width:96px}
+.hit-task{min-width:130px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
 .spine{display:inline-flex;gap:1px;flex-wrap:wrap;flex:1}
 .spine i{display:inline-block;width:5px;height:12px;border-radius:1px}
 .spine i.nz{opacity:.26}

@@ -57,16 +57,21 @@ async function run(pattern) {
   $("dsmeta").textContent = `· ${r.n_traces} traces${r.truncated ? " (capped)" : ""}`;
   const col = r.atom_color;
   const top = r.by_model[0];
+  const s = r.stats || {};
+  const statline = s.n_models
+    ? `<div class="dim" style="margin-bottom:14px">diversity ${s.diversity_bits} bits · median ${s.median_len} steps · CoT ${s.median_cot} think-steps · ${(s.exact_dup_rate * 100).toFixed(0)}% exact-duplicate · ${s.n_models} models</div>`
+    : "";
   $("res").innerHTML =
     `<div style="font-size:15px;margin:4px 0"><b>${r.n_hits}</b> / ${r.n_traces} traces match <b>/${r.pattern}/</b></div>
-     <div class="dim" style="margin-bottom:12px"><span class="speed">scanned in ${r.elapsed_ms} ms — no model call</span>${top ? ` · ${top.model.split("-").pop()} most affected (${(top.rate * 100).toFixed(0)}%)` : ""}</div>
+     <div class="dim" style="margin-bottom:6px"><span class="speed">scanned in ${r.elapsed_ms} ms, no model call</span>${top ? ` · ${top.model.split("-").slice(-2).join("-")} most affected at ${(top.rate * 100).toFixed(0)}%` : ""}</div>
+     ${statline}
      <div class="eyebrow">which models</div>
      ${r.by_model.map((m) => `<div class="rrow"><span class="rlab">${m.model.split("-").slice(-2).join("-")}</span><span class="barbg"><span class="fill" style="width:${(m.rate * 160).toFixed(0)}px"></span></span><span>${(m.rate * 100).toFixed(0)}%</span></div>`).join("")}
      <div class="eyebrow">action mix · matched vs. all</div>
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
      <div class="eyebrow">matching traces</div>
-     ${r.hits.map((h) => `<div class="qhit"><span style="min-width:48px">${h.model.split("-").pop()}</span><span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col)}</div>`).join("")}
+     ${r.hits.map((h) => `<div class="qhit"><span class="hit-model">${h.model.split("-").slice(-2).join("-")}</span>${h.task ? `<span class="hit-task dim" title="${h.task}">${h.task}</span>` : ""}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col)}</div>`).join("")}
      ${r.n_hits > r.hits.length ? `<div class="note">showing ${r.hits.length} of ${r.n_hits} matches</div>` : ""}`;
 }
 
