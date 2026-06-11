@@ -11,7 +11,7 @@ Pipeline (each step is cheap until the last):
     introspect(dataset)  -> DatasetSchema   (HF datasets-server, no download)
     sniff(schema)        -> ranked SniffResults
     plan(dataset)        -> IngestionPlan    (adapter + field map + sample atoms)
-    ingest(dataset)      -> list[Trace]      (stream + limit; via procgrep.hf)
+    ingest(dataset)      -> list[Trace]      (stream + limit; via procgrep.ingest.hf)
 
 Introspection uses the public datasets-server REST API
 (``/splits`` + ``/first-rows``), which is parquet-backed and returns column
@@ -196,7 +196,7 @@ def _introspect_via_datasets(
     from concurrent.futures import TimeoutError as FutureTimeout
 
     def _work() -> tuple[str, list[dict[str, Any]]]:
-        from procgrep.hf import _import_load_dataset
+        from procgrep.ingest.hf import _import_load_dataset
 
         load_dataset = _import_load_dataset()
         ds = load_dataset(dataset, name=config, streaming=True)
@@ -349,7 +349,7 @@ def _probe_full_rows(dataset: str, config: str, split: str, *, n: int = 3) -> li
     for those datasets. Returns ``[]`` if ``datasets`` is unavailable.
     """
     try:
-        from procgrep.hf import _import_load_dataset
+        from procgrep.ingest.hf import _import_load_dataset
 
         load_dataset = _import_load_dataset()
         ds = load_dataset(dataset, name=config, split=split, streaming=True)
@@ -473,7 +473,7 @@ def ingest(
         group_field=group_field,
         timeout=timeout,
     )
-    from procgrep.hf import _import_load_dataset
+    from procgrep.ingest.hf import _import_load_dataset
 
     load_dataset = _import_load_dataset()
     ds = load_dataset(dataset, name=p.config, split=p.split, streaming=True, revision=revision)

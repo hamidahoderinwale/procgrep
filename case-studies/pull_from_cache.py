@@ -31,7 +31,7 @@ sys.path.insert(0, str(Path("/Users/hamidaho/learning-from-dev/procgrep/src")))
 from pull_and_fingerprint import fetch_resolve_label
 from pull_and_fingerprint import fingerprint as swe_fingerprint
 
-from procgrep.adapters.swe_smith import classify_swe_smith_action
+from procgrep.ingest.adapters.swe_smith import classify_swe_smith_action
 from procgrep.types import ATOM_THINK
 
 AGENTS = {

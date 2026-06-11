@@ -27,16 +27,17 @@ Public API is re-exported here; see README and METRICS.md for usage.
 
 from __future__ import annotations
 
-from procgrep import adapters as adapters
-from procgrep.adapters.gumtree import (
+from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, save_vocab
+from procgrep.canonicalize import canonicalize, register_adapter
+from procgrep.encode import Fingerprint, encode
+from procgrep.ingest import adapters as adapters
+from procgrep.ingest.adapters.gumtree import (
     gumtree_adapter,
     gumtree_atom,
     parse_gumtree_jsondiff,
     run_jsondiff,
 )
-from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, save_vocab
-from procgrep.canonicalize import canonicalize, register_adapter
-from procgrep.encode import Fingerprint, encode
+from procgrep.ingest.hf import from_hf
 from procgrep.jsd import JsdMatrix, jsd, jsd_matrix
 from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
@@ -81,14 +82,15 @@ __all__ = [
     "encode",
     "entropies_per_group",
     "fit_bpe",
+    "from_hf",
     "gumtree_adapter",
     "gumtree_atom",
     "jsd",
     "jsd_matrix",
     "leave_one_group_out",
     "lineage_diff",
-    "load_spec",
     "load_patterns",
+    "load_spec",
     "load_vocab",
     "match_patterns",
     "parse_gumtree_jsondiff",

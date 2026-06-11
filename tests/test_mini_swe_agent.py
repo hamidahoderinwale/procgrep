@@ -1,13 +1,13 @@
-"""Tests for `procgrep.adapters.mini_swe_agent`."""
+"""Tests for `procgrep.ingest.adapters.mini_swe_agent`."""
 
 from __future__ import annotations
 
-from procgrep.adapters.mini_swe_agent import (
+from procgrep.canonicalize import canonicalize, get_adapter
+from procgrep.ingest.adapters.mini_swe_agent import (
     _classify_command,
     _strip_chain_prefix,
     mini_swe_agent_adapter,
 )
-from procgrep.canonicalize import canonicalize, get_adapter
 from procgrep.types import (
     ATOM_CREATE_FILE,
     ATOM_DELETE_FILE,

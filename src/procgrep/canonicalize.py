@@ -1,7 +1,7 @@
 """Convert scaffold-specific traces into canonical atoms.
 
 Each scaffold ships an adapter (a callable from raw record to
-`AtomSequence`). Built-in adapters live under `procgrep.adapters` and
+`AtomSequence`). Built-in adapters live under `procgrep.ingest.adapters` and
 self-register at import. Public API: `register_adapter`, `get_adapter`,
 `list_adapters`, `canonicalize`, and `make_action_adapter` for the
 common list-of-actions shape.

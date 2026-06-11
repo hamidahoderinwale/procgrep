@@ -1,0 +1,88 @@
+{
+ "agents": [
+  {
+   "agent": "Claude-3",
+   "family": "Claude",
+   "fwd": 0.857,
+   "rev": 0.6,
+   "fwd_iqr": [
+    0.75,
+    1.0
+   ],
+   "rev_iqr": [
+    0.429,
+    0.75
+   ]
+  },
+  {
+   "agent": "Claude-3.5",
+   "family": "Claude",
+   "fwd": 0.833,
+   "rev": 0.714,
+   "fwd_iqr": [
+    0.75,
+    1.0
+   ],
+   "rev_iqr": [
+    0.571,
+    0.778
+   ]
+  },
+  {
+   "agent": "Claude-3.7-thinking",
+   "family": "Claude",
+   "fwd": 0.667,
+   "rev": 0.2,
+   "fwd_iqr": [
+    0.5,
+    1.0
+   ],
+   "rev_iqr": [
+    0.2,
+    0.4
+   ]
+  },
+  {
+   "agent": "Claude-4",
+   "family": "Claude",
+   "fwd": 0.5,
+   "rev": 0.25,
+   "fwd_iqr": [
+    0.333,
+    0.6
+   ],
+   "rev_iqr": [
+    0.2,
+    0.5
+   ]
+  },
+  {
+   "agent": "GPT-4",
+   "family": "GPT",
+   "fwd": 1.0,
+   "rev": 0.5,
+   "fwd_iqr": [
+    0.8,
+    1.0
+   ],
+   "rev_iqr": [
+    0.375,
+    0.625
+   ]
+  },
+  {
+   "agent": "GPT-4o",
+   "family": "GPT",
+   "fwd": 0.833,
+   "rev": 0.5,
+   "fwd_iqr": [
+    0.75,
+    1.0
+   ],
+   "rev_iqr": [
+    0.375,
+    0.667
+   ]
+  }
+ ]
+}

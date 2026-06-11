@@ -21,8 +21,8 @@ import re
 from collections.abc import Mapping
 from typing import Any
 
-from procgrep.adapters.mini_swe_agent import _classify_command
 from procgrep.canonicalize import register_adapter
+from procgrep.ingest.adapters.mini_swe_agent import _classify_command
 from procgrep.types import ATOM_THINK, AtomSequence
 
 ASSISTANT_ROLES = frozenset({"assistant", "ai"})

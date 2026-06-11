@@ -1,8 +1,13 @@
 """Build a self-contained static interface (one index.html, data embedded) over
 the ecosystem catalog + per-dataset profiles. Opens with no server (file://).
 
+Query-first: the structural-query playground is the landing/hero; the ecosystem
+catalog is demoted to a dataset picker + a "browse all" view. Four tabs:
+Query · Curate · Per-model · Why structural. Zero JS dependencies.
+
     python case-studies/build_interface.py --catalog catalog.json \
-        --profiles profile_nebius.json --out interface/index.html
+        --profiles profile_nebius.json --experiment query_vs_llm_full.json \
+        --logos logos.json --out interface/index.html
 """
 
 from __future__ import annotations
@@ -14,7 +19,7 @@ from pathlib import Path
 HTML = r"""<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>procgrep · the agent-trace ecosystem</title>
+<title>procgrep · grep for agent traces</title>
 <style>
 :root{--paper:#F7F5F2;--ink:#14110E;--rule:#d9d4cc;--copper:#CB4D20;--blue:#5692E5;
 --teal:#20A380;--olive:#585E53;--gray:#b7b1a7;--mono:ui-monospace,"SFMono-Regular",Menlo,monospace}
@@ -24,14 +29,16 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);f
 header{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px solid var(--ink);padding-bottom:10px}
 .mark{font-weight:600}.dim{color:var(--olive)}
 nav span{color:var(--olive);margin-left:18px;cursor:pointer}
-h1{font-family:Georgia,serif;font-weight:400;font-size:29px;line-height:1.25;max-width:24ch;margin:26px 0 6px}
-.sub{color:var(--olive);max-width:62ch;margin:0 0 34px}
-.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);border-bottom:1px solid var(--rule);padding-bottom:6px;margin:34px 0 14px}
+nav span.act{color:var(--ink);border-bottom:2px solid var(--copper);padding-bottom:8px}
+h1{font-family:Georgia,serif;font-weight:400;font-size:29px;line-height:1.25;max-width:26ch;margin:26px 0 6px}
+.sub{color:var(--olive);max-width:64ch;margin:0 0 26px}
+.eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);border-bottom:1px solid var(--rule);padding-bottom:6px;margin:30px 0 14px}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
 .card{background:var(--paper);padding:16px 18px}.big{font-size:28px;font-weight:600}
-.chip{display:inline-block;padding:1px 8px;margin:2px 5px 2px 0;border:1px solid var(--rule);border-radius:2px;font-size:11px;cursor:pointer}
+.chip{display:inline-block;padding:2px 9px;margin:3px 6px 3px 0;border:1px solid var(--rule);border-radius:2px;font-size:11px;cursor:pointer}
+.chip:hover{border-color:var(--ink)}
 .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.chip.fmt{border-color:var(--copper);color:var(--copper)}.chip.fmt.on{background:var(--copper);color:#fff;border-color:var(--copper)}
+.chip.fmt{border-color:var(--copper);color:var(--copper)}.chip.fmt.on{background:var(--copper);color:#fff}
 .chip.un{background:#efeae2;border-color:var(--rule);color:var(--olive);cursor:default}
 .chip.gap{border-color:var(--copper);color:var(--copper);background:#fff;cursor:default}
 .bstrip{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 2px}
@@ -41,19 +48,18 @@ h1{font-family:Georgia,serif;font-weight:400;font-size:29px;line-height:1.25;max
 .bmono{display:inline-flex;width:16px;height:16px;align-items:center;justify-content:center;background:var(--olive);color:#fff;font-size:9px;border-radius:2px}
 .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 6px}
 input,select{font-family:var(--mono);font-size:12px;padding:5px 8px;border:1px solid var(--rule);background:#fff;color:var(--ink)}
-input{flex:1;min-width:180px}
 label.gb{color:var(--olive);cursor:pointer;user-select:none}
 table{width:100%;border-collapse:collapse;margin-top:6px}
 th{text-align:left;font-weight:400;color:var(--olive);border-bottom:1px solid var(--ink);padding:6px 8px;cursor:pointer;user-select:none}
 td{border-bottom:1px solid var(--rule);padding:7px 10px;vertical-align:top;font-variant-numeric:tabular-nums}
 tr.clk:hover td{background:#efeae2}
 .idcell{cursor:pointer}.idcell:hover{color:var(--copper)}
-.barbg{display:inline-block;width:96px;height:9px;background:var(--rule);vertical-align:middle;position:relative}
+.barbg{display:inline-block;width:120px;height:9px;background:var(--rule);vertical-align:middle;position:relative}
 .barbg .fill{position:absolute;left:0;top:0;height:9px}
-.rrow{display:flex;align-items:center;gap:7px;margin:2px 0}
-.rlab{width:74px;color:var(--olive);font-size:11px;text-align:right}
-.rval{font-size:11px;width:34px}
-.mix{display:inline-flex;height:10px;width:140px;border:1px solid var(--rule);vertical-align:middle}.mix>span{height:100%}
+.rrow{display:flex;align-items:center;gap:8px;margin:3px 0}
+.rlab{width:120px;color:var(--olive);font-size:11px;text-align:right}
+.rval{font-size:11px;width:40px}
+.mix{display:inline-flex;height:11px;width:160px;border:1px solid var(--rule);vertical-align:middle}.mix>span{height:100%}
 .detail{background:#efeae2;padding:10px 14px;font-size:12px}
 .detail a{color:var(--copper)}
 .grouphdr td{background:#efeae2;font-weight:600;border-bottom:1px solid var(--ink);cursor:pointer}
@@ -62,45 +68,96 @@ tr.clk:hover td{background:#efeae2}
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:10px;color:var(--olive);font-size:11px}
 .hidden{display:none}.spine{display:flex;flex-wrap:wrap;gap:3px;margin:10px 0}
 .atom{font-size:10px;padding:1px 5px;border-radius:2px;color:#fff}
-.qbox{width:100%;margin:4px 0 8px}
-.qhit{padding:3px 2px;border-bottom:1px solid var(--rule);cursor:pointer}
+.atom.nz{opacity:.4}
+body.hide-noise .atom.nz{display:none}
+.gap{font-family:var(--mono);font-size:10px;color:var(--gray);padding:1px 3px;align-self:center}
+body.hide-noise .gap{display:none}
+.qbar{display:flex;gap:0;margin:6px 0 10px;border:2px solid var(--ink);background:#fff}
+.qbar span.mag{padding:9px 4px 9px 12px;color:var(--olive)}
+#q{flex:1;border:none;font-size:16px;padding:10px 12px 10px 4px;background:transparent}
+#q:focus{outline:none}
+.tryline{margin:2px 0 16px;color:var(--olive)}
+.dsbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 18px;color:var(--olive)}
+.qhit{padding:5px 2px;border-bottom:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;gap:8px}
 .qhit:hover{color:var(--copper)}
+.qhmodel{min-width:48px}
+.spinemini{display:inline-flex;gap:1px;flex-wrap:wrap;vertical-align:middle;flex:1}
+.spinemini i{display:inline-block;width:5px;height:12px;border-radius:1px}
+.spinemini i.nz{opacity:.26}
+body.hide-noise .spinemini i.nz{display:none}
+.noisetog{border-color:var(--olive);color:var(--olive)}
+body.hide-noise .noisetog{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .speed{color:var(--copper)}
+.legend{display:flex;flex-wrap:wrap;gap:10px;margin:6px 0;color:var(--olive);font-size:11px}
+.legend span i{display:inline-block;width:9px;height:9px;border-radius:2px;margin-right:4px;vertical-align:baseline}
 .turn{border-left:2px solid var(--rule);padding:4px 10px;margin:6px 0}
 .turn .role{color:var(--olive);text-transform:uppercase;font-size:10px;letter-spacing:.08em}
 .back{color:var(--copper);cursor:pointer;margin-bottom:14px;display:inline-block}
+.note{color:var(--olive);max-width:70ch}
+a.plain{color:var(--copper);cursor:pointer}
 </style></head><body><div class="wrap">
-<header><span class="mark">procgrep</span><nav><span onclick="show('eco')">ecosystem</span><span onclick="show('why')">why structural</span><span class="dim">about</span></nav></header>
+<header><span class="mark">procgrep</span>
+<nav>
+  <span id="nav-query" onclick="show('query')">query</span>
+  <span id="nav-permodel" onclick="show('permodel')">per-model</span>
+  <span id="nav-curate" onclick="show('curate')">curate</span>
+  <span id="nav-why" onclick="show('why')">why structural</span>
+  <span class="dim"><a class="plain" href="https://github.com/hamidahoderinwale/procgrep" target="_blank">github ↗</a></span>
+</nav></header>
 
-<div id="eco">
-<h1>See how agents actually work — not whether they passed.</h1>
-<p class="sub">A live map of public agent-trajectory datasets on Hugging Face. procgrep reads each
-one's raw logs and rewrites them into a single vocabulary of actions (read a file, edit, run a
-test, search…) so datasets in different formats become directly comparable. Click any dataset to
-look inside.</p>
+<!-- QUERY (hero / default) -->
+<div id="query">
+<h1>Grep for agent traces.</h1>
+<p class="sub">Ask a structural question about how an agent worked — "did it edit five times with no test?", "did it submit without testing?" — and get an exact answer instantly, over real trajectory datasets. No model call, deterministic, free. <a class="plain" onclick="show('why')">Why not just ask an LLM? →</a></p>
+<div class="dsbar" id="dsbar"></div>
+<div class="qbar"><span class="mag">⌕</span>
+  <input id="q" placeholder="atom pattern, e.g.  (edit ){5,}   or pick one below" autocomplete="off"></div>
+<div class="tryline">try: <span id="trychips"></span> <span class="chip noisetog" onclick="document.body.classList.toggle('hide-noise')">hide think/other</span></div>
+<div id="qres"></div>
+</div>
 
-<div class="eyebrow">findings</div>
+<!-- CURATE -->
+<div id="curate" class="hidden">
+<h1>Trim to a budget, keep the variety.</h1>
+<p class="sub">When you shrink a trajectory set to a fixed budget, the common move is to keep the shortest runs. But short traces are the least diverse — you throw away procedural variety. procgrep selects for diversity instead, preserving far more of the dataset's distinct procedures at the same budget.</p>
+<div class="dsbar" id="dsbar-c"></div>
+<div id="curbody"></div>
+</div>
+
+<!-- PER-MODEL -->
+<div id="permodel" class="hidden">
+<h1>How each model actually behaves.</h1>
+<p class="sub">The same dataset, broken down by the model that produced each trajectory: how long its runs are, how much it repeats itself, and the mix of actions it favours.</p>
+<div class="dsbar" id="dsbar-p"></div>
+<div id="pmbody"></div>
+</div>
+
+<!-- WHY STRUCTURAL -->
+<div id="why" class="hidden"></div>
+
+<!-- TRACE DETAIL (on demand) -->
+<div id="tr" class="hidden"></div>
+
+<!-- BROWSE (ecosystem catalog, demoted) -->
+<div id="browse" class="hidden">
+<span class="back" onclick="show('query')">← query</span>
+<h1 style="font-size:23px">The agent-trace ecosystem.</h1>
+<p class="sub">Every public trajectory dataset procgrep discovered on Hugging Face, and what it can parse today. Most non-parseable entries aren't failures — they're benchmarks (task definitions, no trajectories), corpora, or out-of-scope domains.</p>
 <div class="cards" id="findings"></div>
-
 <div class="eyebrow">benchmarks (click to filter)</div>
 <div class="bstrip" id="benchstrip"></div>
-
 <div class="eyebrow">the index</div>
 <div class="controls">
-  <input id="q" placeholder="filter datasets…" oninput="ST.q=this.value;ST.page=1;render()">
-  <label class="gb"><input type="checkbox" onchange="ST.group=this.checked;render()" style="flex:none"> group by author</label>
+  <input id="bq" placeholder="filter datasets…" oninput="ST.q=this.value;ST.page=1;renderBrowse()" style="flex:1;min-width:180px">
+  <label class="gb"><input type="checkbox" onchange="ST.group=this.checked;renderBrowse()" style="flex:none"> group by author</label>
   <span id="filters" class="dim"></span>
 </div>
 <table id="index"><thead><tr>
-<th data-k="id">dataset</th><th>format</th><th data-k="downloads">downloads</th>
+<th data-k="id">dataset</th><th>status</th><th data-k="downloads">downloads</th>
 <th data-k="likes">likes</th><th data-k="last_modified">updated</th></tr></thead><tbody></tbody></table>
-<button class="more hidden" id="more" onclick="ST.page++;render()">view more</button>
+<button class="more hidden" id="more" onclick="ST.page++;renderBrowse()">view more</button>
 <div class="foot" id="foot"></div>
 </div>
-
-<div id="ds" class="hidden"></div>
-<div id="tr" class="hidden"></div>
-<div id="why" class="hidden"></div>
 </div>
 
 <script id="data" type="application/json">__DATA__</script>
@@ -111,69 +168,230 @@ const ATOM={search_repo:'#585E53',read_file:'#5692E5',edit:'#CB4D20',create_file
 run_test:'#20A380',submit:'#14110E',think:'#b7b1a7',localize:'#8C1040',delete_file:'#A03D18',error:'#B4184F',other:'#d9d4cc'};
 const pct=x=>x==null?'—':(x*100).toFixed(0)+'%';
 const fmt=n=>n>=1000?(n/1000).toFixed(n>=10000?0:1)+'k':String(n);
-const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,benchFilter:null,open:new Set(),collapsed:new Set()};
 const LOGOS=D.logos||{};
+const PROFIDS=Object.keys(PROF);
+let CURDS=PROFIDS[0]||null;
 function blogo(b){return b?(LOGOS[b]?`<img class="blogo" src="${LOGOS[b]}">`:`<span class="bmono">${b.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()}</span>`):'';}
 
-function statusOf(r){return r.supported?'supported':(r.out_of_scope?'out-of-scope':'unsupported');}
-function dupOf(r){const p=PROF[r.id];return p?p.redundancy.exact_dup_rate:null;}
-function gapOf(r){const p=PROF[r.id];return p?p.redundancy.coverage_diverse-p.redundancy.coverage_shortest:null;}
+// ---- shared dataset picker ----
+function dsPicker(targetView){
+  const opts=PROFIDS.map(id=>`<option value="${id}" ${id===CURDS?'selected':''}>${id}</option>`).join('');
+  const sel=`<select onchange="CURDS=this.value;show('${targetView}')">${opts}</select>`;
+  return `dataset: ${sel} <span class="dim">· ${PROFIDS.length} profiled</span> · <a class="plain" onclick="show('browse')">browse all ${DS.length} on HF →</a>`;
+}
 
+// ---- action-mix helpers ----
+function mixOf(entries){const c={};let n=0;entries.forEach(e=>e.atoms.forEach(a=>{c[a]=(c[a]||0)+1;n++;}));
+  const m={};Object.keys(c).forEach(k=>m[k]=c[k]/n);return {mix:m,n};}
+function mixbar(m){return '<span class="mix">'+Object.entries(m).sort((a,b)=>b[1]-a[1]).map(([a,v])=>
+  `<span style="width:${(v*160).toFixed(1)}px;background:${ATOM[a]||'#ccc'}" title="${a} ${pct(v)}"></span>`).join('')+'</span>';}
+// Signal skeleton: collapse runs of think/other into one gap marker; run-length the signal atoms.
+function skeleton(atoms){const r=[];for(const a of atoms){const noise=(a==='think'||a==='other');const t=r[r.length-1];
+  if(noise){if(t&&t.gap)t.n++;else r.push({gap:true,n:1});}
+  else{if(t&&t.a===a)t.n++;else r.push({a,n:1});}}return r;}
+function spineMini(atoms){const sk=skeleton(atoms);return '<span class="spinemini">'+sk.slice(0,90).map(it=>{
+  if(it.gap)return `<i class="nz" style="width:${Math.min(3+it.n,14)}px;background:#d9d4cc" title="${it.n} think/other"></i>`;
+  const w=Math.min(5+(it.n-1)*2,16);
+  return `<i style="width:${w}px;background:${ATOM[it.a]||'#ccc'}" title="${it.a}${it.n>1?' ×'+it.n:''}"></i>`;}).join('')+
+  (sk.length>90?`<span class="dim" style="font-size:9px;margin-left:3px">+${sk.length-90}</span>`:'')+'</span>';}
+function legend(m){return '<div class="legend">'+Object.entries(m).sort((a,b)=>b[1]-a[1]).filter(([,v])=>v>0.01).map(([a,v])=>
+  `<span><i style="background:${ATOM[a]||'#ccc'}"></i>${a} ${pct(v)}</span>`).join('')+'</div>';}
+
+// ---- sample structural queries ----
+const QUERIES=[
+ {id:'streak',label:'edit-streak ≥5',f:a=>/(?:edit ){5,}/.test(a.join(' ')+' ')},
+ {id:'nosub',label:'submitted without testing',f:a=>a.includes('submit')&&!a.includes('run_test')},
+ {id:'td',label:'test-driven',f:a=>{const r=a.indexOf('run_test'),e=a.indexOf('edit');return r>=0&&(e<0||r<e);}},
+ {id:'stuck',label:'stuck reading',f:a=>/(?:read_file (?:think )?){4,}/.test(a.join(' ')+' ')},
+ {id:'loop',label:'canonical resolve loop',f:a=>/search_repo read_file edit run_test/.test(a.join(' '))},
+ {id:'nosearch',label:'never searched the repo',f:a=>!a.includes('search_repo')},
+ {id:'repro',label:'wrote a repro script',f:a=>{const c=a.indexOf('create_file');return c>=0&&a.lastIndexOf('submit')>c;}},
+ {id:'recover',label:'recovered from an error',f:a=>/error edit/.test(a.join(' '))},
+];
+
+// ---- QUERY view ----
+function queryView(){
+  document.getElementById('dsbar').innerHTML=dsPicker('query');
+  const pool=(PROF[CURDS]||{}).atoms_pool||[];
+  const counts=QUERIES.map(q=>[q,pool.filter(x=>q.f(x.atoms)).length]);
+  document.getElementById('trychips').innerHTML=counts.map(([q,n])=>
+    `<span class="chip ${n===0?'un':''}" onclick="runQ(null,'${q.id}')">${q.label} <span class="dim">${n}</span></span>`).join('');
+  // auto-run the highest-hit sample so the hero always lands on a real result
+  const top=counts.slice().sort((a,b)=>b[1]-a[1])[0];
+  if(top&&top[1]>0&&!document.getElementById('q').value)runQ(null,top[0].id);
+}
+let _qt;
+function onType(v){clearTimeout(_qt);_qt=setTimeout(()=>runQ(v),120);}
+function runQ(custom,id){
+  if(!CURDS||!PROF[CURDS]){document.getElementById('qres').innerHTML='<span class="dim">no profiled dataset loaded</span>';return;}
+  const pool=PROF[CURDS].atoms_pool||[]; let f,label;
+  const box=document.getElementById('q');
+  if(id){const q=QUERIES.find(x=>x.id===id);f=q.f;label=q.label;if(box)box.value=q.id==='streak'?'(edit ){5,}':'';}
+  else if(custom){let rx;try{rx=new RegExp(custom);}catch(e){document.getElementById('qres').innerHTML='<span class="dim">…keep typing — invalid pattern</span>';return;}
+    f=a=>rx.test(a.join(' ')+' ');label='/'+custom+'/';}
+  else{document.getElementById('qres').innerHTML='<span class="dim">type an action pattern, or pick a sample query above</span>';return;}
+  const t=performance.now();const hits=pool.filter(x=>f(x.atoms));const ms=performance.now()-t;
+  // per-model match rates
+  const bym={}; pool.forEach(x=>{(bym[x.model]=bym[x.model]||{n:0,h:0}).n++;});
+  hits.forEach(x=>{bym[x.model].h++;});
+  const top=Object.entries(bym).map(([m,c])=>[m,c.h/c.n]).sort((a,b)=>b[1]-a[1]);
+  const affected=top.length&&top[0][1]>0?`${top[0][0].split('-').pop()} most affected (${pct(top[0][1])})`:'no model affected';
+  const modelBars=top.map(([m,r])=>
+    `<div class="rrow"><span class="rlab">${m.split('-').slice(-2).join('-')}</span>
+      <span class="barbg"><span class="fill" style="width:${(r*120).toFixed(0)}px;background:var(--copper)"></span></span>
+      <span class="rval">${pct(r)}</span></div>`).join('');
+  // matched vs all action mix
+  const allMix=mixOf(pool), hitMix=hits.length?mixOf(hits):{mix:{},n:0};
+  document.getElementById('qres').innerHTML=
+   `<div style="font-size:15px;margin:4px 0"><b>${hits.length}</b> / ${pool.length} traces match <b>${label}</b></div>
+    <div class="dim" style="margin-bottom:12px"><span class="speed">scanned in ${ms.toFixed(1)} ms — no model call, $0</span> · ${affected}</div>
+    <div class="eyebrow">which models</div>${modelBars||'<span class="dim">—</span>'}
+    <div class="eyebrow">action mix · matched vs. all</div>
+    <div class="rrow"><span class="rlab">matched</span>${hits.length?mixbar(hitMix.mix):'<span class="dim">no matches</span>'}</div>
+    <div class="rrow"><span class="rlab">all traces</span>${mixbar(allMix.mix)}</div>
+    ${hits.length?legend(hitMix.mix):''}
+    <div class="eyebrow">matching traces (click to open)</div>
+    ${hits.slice(0,40).map(h=>`<div class="qhit" onclick="poolTrace('${h.trace_id}')"><span class="qhmodel">${h.model.split('-').pop()}</span> <span class="dim">${h.atoms.length} steps</span> ${spineMini(h.atoms)}</div>`).join('')}
+    ${hits.length>40?`<div class="dim" style="margin-top:6px">+ ${hits.length-40} more</div>`:''}`;
+}
+function poolTrace(tid){const p=PROF[CURDS];const s=(p.samples||[]).find(x=>x.trace_id===tid);
+  if(s){trace(CURDS,p.samples.indexOf(s));return;}
+  const h=(p.atoms_pool||[]).find(x=>x.trace_id===tid);if(!h)return;show('tr');
+  const spine=skeleton(h.atoms).map(it=>it.gap?`<span class="gap" title="${it.n} think/other steps">···${it.n}···</span>`:`<span class="atom" style="background:${ATOM[it.a]||'#ccc'}">${it.a}${it.n>1?' ×'+it.n:''}</span>`).join('');
+  document.getElementById('tr').innerHTML=`<span class="back" onclick="show('query')">← query</span>
+    <h1 style="font-size:19px">${h.model} · ${h.atoms.length} steps</h1>
+    <div class="eyebrow">procedural spine</div><div class="spine">${spine}</div>
+    <div class="dim">conversation not sampled for this trace</div>`;}
+
+// ---- CURATE view ----
+function curateView(){
+  document.getElementById('dsbar-c').innerHTML=dsPicker('curate');
+  const p=PROF[CURDS]; const r=p.redundancy;
+  const s=r.coverage_shortest, d=r.coverage_diverse;
+  document.getElementById('curbody').innerHTML=
+   `<div class="eyebrow">${p.dataset.split('/').pop()} · ${p.n_traces} traces</div>
+    <p class="note">Shrink the set to a fixed budget — <b>the same number of traces</b>, chosen two ways.
+    <b>Procedural variety</b> = the share of the dataset's distinct procedures (recurring action
+    sub-sequences) that still appear in the kept subset.</p>
+    <div class="rrow" style="margin:12px 0"><span class="rlab">keep shortest</span>
+      <span class="barbg" style="width:280px"><span class="fill" style="width:${s*280}px;background:var(--olive)"></span></span>
+      <span class="rval" style="width:auto">${pct(s)} of procedures</span></div>
+    <div class="rrow" style="margin:12px 0"><span class="rlab">keep diverse</span>
+      <span class="barbg" style="width:280px"><span class="fill" style="width:${d*280}px;background:var(--copper)"></span></span>
+      <span class="rval" style="width:auto">${pct(d)} ← procgrep</span></div>
+    <p class="note" style="margin-top:18px">Same budget, but diversity-selection keeps <b>${pct(d)}</b> of the
+    distinct procedures against <b>${pct(s)}</b> for keep-shortest — a <b>${Math.round((d-s)*100)}-point</b> gain at no
+    extra cost. Short runs cluster in the redundant core (${pct(r.exact_dup_rate)} of traces are exact duplicates,
+    ${pct(r.near_dup_rate)} near-duplicates), so keeping the shortest over-samples sameness.</p>`;
+}
+
+// ---- PER-MODEL view ----
+function permodelView(){
+  document.getElementById('dsbar-p').innerHTML=dsPicker('permodel');
+  const p=PROF[CURDS];
+  const rows=Object.entries(p.by_model).map(([m,s])=>
+    `<tr><td>${m}</td><td>${s.n}</td><td>${s.median_len}</td><td>${pct(s.exact_dup_rate)}</td><td>${mixbar(s.action_mix)}</td></tr>`).join('');
+  document.getElementById('pmbody').innerHTML=
+   `<div class="eyebrow">${p.dataset.split('/').pop()} · ${p.adapter} · ${p.n_models} models</div>
+    <table><thead><tr><th>model</th><th>n</th><th>median len</th><th>exact-dup</th><th>action mix</th></tr></thead><tbody>${rows}</tbody></table>
+    <div class="eyebrow">sampled traces (click to open the conversation)</div>
+    <div>${(p.samples||[]).map((s,i)=>`<span class="chip" onclick="trace('${CURDS}',${i})">trace ${i+1} · ${s.model.split('-').pop()} · ${s.atoms.length} steps</span>`).join('')}</div>`;
+}
+function trace(id,i){const s=PROF[id].samples[i];show('tr');
+  const spine=skeleton(s.atoms).map(it=>it.gap?`<span class="gap" title="${it.n} think/other steps">···${it.n}···</span>`:`<span class="atom" style="background:${ATOM[it.a]||'#ccc'}">${it.a}${it.n>1?' ×'+it.n:''}</span>`).join('');
+  const turns=(s.turns||[]).map(t=>{const body=t.tools?('⚙ '+t.tools.join(', ')):(t.text||'');
+    return `<div class="turn"><span class="role">${t.role}</span><br>${(body+'').replace(/</g,'&lt;')}</div>`;}).join('');
+  document.getElementById('tr').innerHTML=
+   `<span class="back" onclick="show('permodel')">← per-model</span><h1 style="font-size:19px">${s.model} · ${s.atoms.length} steps</h1>
+    <div class="eyebrow">procedural spine</div><div class="spine">${spine}</div><div class="eyebrow">conversation</div>${turns}`;}
+
+// ---- WHY STRUCTURAL view ----
+function whyView(){const e=D.experiment;const el=document.getElementById('why');
+  if(!e){el.innerHTML='<span class="back" onclick="show(\'query\')">← query</span><p class="sub">experiment not loaded.</p>';return;}
+  const judges=Object.entries(e.pareto||{}).filter(([k])=>k!=='procgrep');
+  const meanLat=judges.length?judges.reduce((s,[,v])=>s+(v.mean_latency_s||0),0)/judges.length:1;
+  const ratio=Math.round(meanLat*1e6/e.procgrep_us_per_decision);
+  const bestF1=judges.length?Math.max(...judges.map(([,v])=>v.mean_f1||0)):0;
+  const struct=Object.entries(e.predicates).filter(([k,v])=>v.kind==='structural');
+  const models=Object.keys(struct[0][1].judges);
+  const head=`<th>predicate</th>${models.map(m=>`<th>${m.split('/').pop()}</th>`).join('')}<th>κ</th>`;
+  const body=struct.map(([k,v])=>`<tr><td>${k}</td>${models.map(m=>{const f=v.judges[m].f1;
+    return `<td>${f==null?'—':f.toFixed(2)}</td>`;}).join('')}<td>${v.pairwise_cohen_kappa==null?'—':v.pairwise_cohen_kappa}</td></tr>`).join('');
+  const fz=Object.entries(e.predicates).find(([k,v])=>v.kind==='fuzzy');
+  el.innerHTML=
+   `<span class="back" onclick="show('query')">← query</span>
+    <h1>Why not just ask an LLM?</h1>
+    <p class="sub">Every behavioural question in the query tab can be asked two ways: a deterministic structural query over the action spine, or an LLM judge reading the trace. We ran both over the same trajectories (incl. a strong judge).</p>
+    <div class="cards">
+      <div class="card"><div class="dim">speed</div><div class="big">${ratio.toLocaleString()}×</div>
+        <div class="dim">procgrep ${e.procgrep_us_per_decision} µs vs LLM ${meanLat.toFixed(1)}s per decision · $0 vs API cost</div></div>
+      <div class="card"><div class="dim">accuracy — mean F1, procgrep = 1.0</div><div class="big">≤ ${bestF1.toFixed(2)}</div>
+        <div class="dim">best judge ${bestF1.toFixed(2)}; F1 = 0 on both counting predicates for every judge — LLMs can't count action-streaks in a trace</div></div>
+      <div class="card"><div class="dim">reliability</div><div class="big">κ ≈ 0</div>
+        <div class="dim">judges barely agree — on structural facts and fuzzy ones alike</div></div>
+    </div>
+    <div class="eyebrow">LLM judge F1 vs the exact structural answer · balanced samples · procgrep = 1.0</div>
+    <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
+    <p class="note">Fuzzy property — <b>${fz?fz[0]:''}</b>: inter-judge κ = ${fz?fz[1].pairwise_cohen_kappa:'—'}. procgrep does ${e.procgrep_ms_full} ms for ${e.corpus} traces × ${struct.length} predicates; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). ${e.totals.judge_calls} judge calls, ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
+
+// ---- BROWSE view (ecosystem catalog, demoted) ----
+const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,benchFilter:null,collapsed:new Set(),open:new Set()};
+// Honest classification — never surface a raw exception to the reader.
+function classify(r){
+  if(r.adapter)return {key:'parseable',label:r.adapter,cls:'fmt',why:`parseable — format <b>${r.adapter}</b> (confidence ${r.confidence})`};
+  if(r.candidate)return {key:'format-gap',label:'format gap',cls:'gap',why:'a trajectory dataset procgrep does not parse yet — on the roadmap'};
+  if(r.out_of_scope)return {key:'out-of-scope',label:'out of scope',cls:'un',why:'a non-tool domain (vision, robotics, math) with no discrete code actions to canonicalize'};
+  const e=(r.error||'');
+  if(/gated/i.test(e))return {key:'gated',label:'gated',cls:'un',why:'a gated dataset on the Hub — needs authentication to introspect'};
+  if(/Config name is missing/i.test(e))return {key:'multi-config',label:'multi-config',cls:'un',why:'a multi-config dataset — a config must be selected before introspection'};
+  if(r.benchmark)return {key:'benchmark',label:'benchmark',cls:'un',why:`task definitions for the ${r.benchmark} benchmark — not agent trajectories`};
+  return {key:'not-a-trace',label:'not a trace',cls:'un',why:'no conversation or trajectory column — a corpus or instruction dataset, not agent traces'};
+}
+function dupOf(r){const p=PROF[r.id];return p?p.redundancy.exact_dup_rate:null;}
 function findings(){
   const cand=DS.filter(r=>r.candidate), sup=DS.filter(r=>r.supported);
-  const notTrace=DS.filter(r=>!r.candidate&&!r.out_of_scope&&!r.supported).length;
-  const oos=DS.filter(r=>r.out_of_scope).length;
+  const notTrace=DS.filter(r=>classify(r).key==='not-a-trace'||classify(r).key==='benchmark').length;
+  const oos=DS.filter(r=>classify(r).key==='out-of-scope').length;
   const byA={}; sup.forEach(r=>byA[r.adapter]=(byA[r.adapter]||0)+1);
   const fmtChips=Object.entries(byA).sort((a,b)=>b[1]-a[1]).map(([a,n])=>
-    `<span class="chip fmt ${ST.fmtFilter===a?'on':''}" onclick="ST.fmtFilter=ST.fmtFilter===\'${a}\'?null:\'${a}\';ST.page=1;render()">${a} ${n}</span>`).join('');
-  const red=Object.values(PROF).map(p=>{const s=p.redundancy.coverage_shortest,d=p.redundancy.coverage_diverse;
-    return `<div style="margin:9px 0 3px"><span class="dim">${p.dataset.split('/').pop()}</span></div>
-      <div class="rrow"><span class="rlab">keep shortest</span><span class="barbg"><span class="fill" style="width:${s*100}%;background:var(--olive)"></span></span><span class="rval">${pct(s)}</span></div>
-      <div class="rrow"><span class="rlab">keep diverse</span><span class="barbg"><span class="fill" style="width:${d*100}%;background:var(--copper)"></span></span><span class="rval">${pct(d)}</span></div>`;}).join('');
+    `<span class="chip fmt ${ST.fmtFilter===a?'on':''}" onclick="ST.fmtFilter=ST.fmtFilter===\'${a}\'?null:\'${a}\';ST.page=1;renderBrowse()">${a} ${n}</span>`).join('');
   document.getElementById('findings').innerHTML=
    `<div class="card"><div class="dim">coverage — parseable trace datasets</div><div class="big">${sup.length}/${cand.length}</div>
       <div class="dim">${notTrace} benchmarks/corpora &amp; ${oos} out-of-scope excluded · ${CAT.n_discovered} discovered</div></div>
     <div class="card"><div class="dim">formats (click to filter)</div><div style="margin-top:8px">${fmtChips}</div></div>
-    <div class="card"><div class="dim">trim a dataset to a fixed budget — how much of its procedural variety survives if you keep the shortest traces (common practice) vs the most diverse (procgrep)</div>${red||'<span class="dim">profiles pending</span>'}</div>`;
+    <div class="card"><div class="dim">what's excluded, honestly</div>
+      <div class="dim" style="margin-top:8px">non-parseable rows are benchmarks (task definitions), corpora, gated, or out-of-scope domains — not parse failures on real traces</div></div>`;
   const benches={}; DS.forEach(r=>{if(r.benchmark)(benches[r.benchmark]=benches[r.benchmark]||[]).push(r);});
   const bs=document.getElementById('benchstrip');
   if(bs)bs.innerHTML=Object.entries(benches).sort((a,b)=>b[1].length-a[1].length).map(([b,rs])=>{
     const s=rs.filter(r=>r.supported).length;
-    return `<span class="bcard ${ST.benchFilter===b?'on':''}" onclick="ST.benchFilter=ST.benchFilter===\'${b}\'?null:\'${b}\';ST.page=1;render()">${blogo(b)} ${b} <span class="dim">${s}/${rs.length}</span></span>`;}).join('');
+    return `<span class="bcard ${ST.benchFilter===b?'on':''}" onclick="ST.benchFilter=ST.benchFilter===\'${b}\'?null:\'${b}\';ST.page=1;renderBrowse()">${blogo(b)} ${b} <span class="dim">${s}/${rs.length}</span></span>`;}).join('');
 }
-
 function rowsFiltered(){
   let rows=DS.filter(r=>r.id.toLowerCase().includes(ST.q.toLowerCase()));
   if(ST.fmtFilter)rows=rows.filter(r=>r.adapter===ST.fmtFilter);
   if(ST.benchFilter)rows=rows.filter(r=>r.benchmark===ST.benchFilter);
-  if(ST.statusFilter)rows=rows.filter(r=>statusOf(r)===ST.statusFilter);
+  if(ST.statusFilter)rows=rows.filter(r=>classify(r).key===ST.statusFilter);
   const key=ST.sort;
   rows.sort((a,b)=>{let va,vb;
     if(key==='dup'){va=dupOf(a)??-1;vb=dupOf(b)??-1;}
-    else if(key==='gap'){va=gapOf(a)??-1;vb=gapOf(b)??-1;}
     else{va=a[key]??'';vb=b[key]??'';}
     return (va<vb?-1:va>vb?1:0)*ST.dir;});
   return rows;
 }
-function tagChips(r){
-  if(r.adapter)return `<span class="chip fmt">${r.adapter}</span>`;
-  if(r.out_of_scope)return `<span class="chip un">out of scope</span>`;
-  if(r.candidate)return `<span class="chip gap" title="trace dataset, no adapter yet — the roadmap">format gap</span>`;
-  return `<span class="chip un">not a trace</span>`;
-}
 function rowHTML(r){
-  const p=PROF[r.id];
-  let h=`<tr class="clk"><td class="idcell" onclick="toggle('${r.id}')">${blogo(r.benchmark)} ${r.id}</td><td>${tagChips(r)}</td>
+  const c=classify(r);const p=PROF[r.id];
+  let h=`<tr class="clk"><td class="idcell" onclick="toggleRow('${r.id}')">${blogo(r.benchmark)} ${r.id}</td>
+    <td><span class="chip ${c.cls}">${c.label}</span></td>
     <td>${fmt(r.downloads)}</td><td>${r.likes||0}</td><td class="dim">${r.last_modified||'—'}</td></tr>`;
   if(ST.open.has(r.id)){
-    const why=r.adapter?`format <b>${r.adapter}</b> (confidence ${r.confidence})`:(r.error?`unsupported — <span class="dim">${r.error}</span>`:'out of scope (no discrete tool actions)');
-    const red=p?` · redundancy: ${pct(p.redundancy.exact_dup_rate)} exact-dup, shortest keeps ${pct(p.redundancy.coverage_shortest)} vs diverse ${pct(p.redundancy.coverage_diverse)}`:'';
-    const prof=p?` · <a onclick="dataset('${r.id}')" style="cursor:pointer">open profile →</a>`:'';
-    h+=`<tr><td colspan="5" class="detail"><a href="https://huggingface.co/datasets/${r.id}" target="_blank">huggingface.co/datasets/${r.id} ↗</a>
-       · ${why}${red}${prof}</td></tr>`;}
+    const prof=p?` · <a class="plain" onclick="CURDS='${r.id}';show('query')">query it →</a>`:'';
+    h+=`<tr><td colspan="5" class="detail"><a href="https://huggingface.co/datasets/${r.id}" target="_blank">huggingface.co/datasets/${r.id} ↗</a> · ${c.why}${prof}</td></tr>`;}
   return h;
 }
-function render(){
+function toggleRow(id){ST.open.has(id)?ST.open.delete(id):ST.open.add(id);renderBrowse();}
+function toggleGroup(au){ST.collapsed.has(au)?ST.collapsed.delete(au):ST.collapsed.add(au);renderBrowse();}
+function renderBrowse(){
   findings();
   const rows=rowsFiltered();
   const tb=document.querySelector('#index tbody');
@@ -193,105 +411,37 @@ function render(){
     document.getElementById('more').classList.toggle('hidden',shown.length>=rows.length);
   }
   document.getElementById('filters').innerHTML=
-    ['supported','unsupported','out-of-scope'].map(s=>`<span class="chip ${ST.statusFilter===s?'on':''}" onclick="ST.statusFilter=ST.statusFilter===\'${s}\'?null:\'${s}\';ST.page=1;render()">${s}</span>`).join('');
+    ['parseable','format-gap','benchmark','not-a-trace','out-of-scope','gated'].map(s=>`<span class="chip ${ST.statusFilter===s?'on':''}" onclick="ST.statusFilter=ST.statusFilter===\'${s}\'?null:\'${s}\';ST.page=1;renderBrowse()">${s}</span>`).join('');
   document.getElementById('foot').textContent=
     `catalog generated ${CAT.generated||'—'} · ${CAT.n_discovered} datasets discovered · ${DS.length} sniffed · showing ${rows.length} after filters`;
 }
-function toggle(id){ST.open.has(id)?ST.open.delete(id):ST.open.add(id);render();}
-function toggleGroup(au){ST.collapsed.has(au)?ST.collapsed.delete(au):ST.collapsed.add(au);render();}
 document.querySelectorAll('#index th[data-k]').forEach(th=>th.onclick=()=>{
-  const k=th.dataset.k;ST.dir=(k===ST.sort)?-ST.dir:-1;ST.sort=k;render();});
+  const k=th.dataset.k;ST.dir=(k===ST.sort)?-ST.dir:-1;ST.sort=k;renderBrowse();});
 
-function mixbar(m){return '<span class="mix">'+Object.entries(m).map(([a,v])=>
-  `<span style="width:${v*140}px;background:${ATOM[a]||'#ccc'}" title="${a} ${pct(v)}"></span>`).join('')+'</span>';}
-
-// behaviour-search sample queries: structural predicates over the atom spine.
-const QUERIES=[
- {id:'streak',label:'edit-streak ≥5',f:a=>/(?:edit ){5,}/.test(a.join(' ')+' ')},
- {id:'nosub',label:'submitted without testing',f:a=>a.includes('submit')&&!a.includes('run_test')},
- {id:'td',label:'test-driven (test before first edit)',f:a=>{const r=a.indexOf('run_test'),e=a.indexOf('edit');return r>=0&&(e<0||r<e);}},
- {id:'stuck',label:'stuck reading',f:a=>/(?:read_file (?:think )?){4,}/.test(a.join(' ')+' ')},
- {id:'loop',label:'canonical resolve loop',f:a=>/search_repo read_file edit run_test/.test(a.join(' '))},
- {id:'nosearch',label:'never searched the repo',f:a=>!a.includes('search_repo')},
- {id:'repro',label:'wrote a repro script',f:a=>{const c=a.indexOf('create_file');return c>=0&&a.lastIndexOf('submit')>c;}},
- {id:'recover',label:'recovered from an error',f:a=>/error edit/.test(a.join(' '))},
-];
-let CURDS=null;
-function runQ(custom,id){
-  const pool=PROF[CURDS].atoms_pool||[]; let f,label;
-  if(id){const q=QUERIES.find(x=>x.id===id);f=q.f;label=q.label;document.getElementById('qbox').value='';}
-  else if(custom){let rx;try{rx=new RegExp(custom);}catch(e){document.getElementById('qres').innerHTML='<span class="dim">invalid pattern</span>';return;}
-    f=a=>rx.test(a.join(' ')+' ');label='/'+custom+'/';}
-  else{document.getElementById('qres').innerHTML='';return;}
-  const t=performance.now();const hits=pool.filter(x=>f(x.atoms));const ms=performance.now()-t;
-  document.getElementById('qres').innerHTML=
-   `<b>${hits.length}</b> / ${pool.length} traces match <b>${label}</b> · `+
-   `<span class="speed">scanned in ${ms.toFixed(1)} ms — no model call</span><br>`+
-   hits.slice(0,25).map(h=>`<div class="qhit" onclick="poolTrace('${h.trace_id}')">${h.model.split('-').pop()} · ${h.atoms.length} steps · <span class="dim">${h.atoms.slice(0,20).join(' ')}${h.atoms.length>20?' …':''}</span></div>`).join('');
+// ---- view router ----
+const VIEWS=['query','curate','permodel','why','tr','browse'];
+const NAVOF={query:'nav-query',curate:'nav-curate',permodel:'nav-permodel',why:'nav-why'};
+function show(id){
+  VIEWS.forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
+  ['nav-query','nav-curate','nav-permodel','nav-why'].forEach(n=>document.getElementById(n).classList.remove('act'));
+  if(NAVOF[id])document.getElementById(NAVOF[id]).classList.add('act');
+  else if(id==='tr'||id==='browse')document.getElementById('nav-query').classList.add('act');
+  if(id==='query')queryView();
+  if(id==='curate')curateView();
+  if(id==='permodel')permodelView();
+  if(id==='why')whyView();
+  if(id==='browse')renderBrowse();
+  window.scrollTo(0,0);
 }
-function poolTrace(tid){const p=PROF[CURDS];const s=p.samples.find(x=>x.trace_id===tid);
-  if(s){const i=p.samples.indexOf(s);trace(CURDS,i);return;}
-  const h=(p.atoms_pool||[]).find(x=>x.trace_id===tid);if(!h)return;show('tr');
-  const spine=h.atoms.map(a=>`<span class="atom" style="background:${ATOM[a]||'#ccc'}">${a}</span>`).join('');
-  document.getElementById('tr').innerHTML=`<span class="back" onclick="dataset('${CURDS}')">← ${CURDS.split('/').pop()}</span>
-    <h1 style="font-size:19px">${h.model} · ${h.atoms.length} steps</h1>
-    <div class="eyebrow">procedural spine</div><div class="spine">${spine}</div>
-    <div class="dim">conversation not sampled for this trace</div>`;}
+document.getElementById('q').addEventListener('input',e=>onType(e.target.value));
 
-function dataset(id){const p=PROF[id];CURDS=id;show('ds');
-  const models=Object.entries(p.by_model).map(([m,s])=>
-    `<tr><td>${m}</td><td>${s.n}</td><td>${s.median_len}</td><td>${pct(s.exact_dup_rate)}</td><td>${mixbar(s.action_mix)}</td></tr>`).join('');
-  const samples=p.samples.map((s,i)=>`<span class="chip" onclick="trace('${id}',${i})">trace ${i+1} · ${s.model.split('-').pop()} · ${s.atoms.length} steps</span>`).join('');
-  document.getElementById('ds').innerHTML=
-   `<span class="back" onclick="show('eco')">← ecosystem</span><h1 style="font-size:21px">${id}</h1>
-    <p class="sub">${p.adapter} · ${p.n_traces} traces · ${p.n_models} models · exact-dup ${pct(p.redundancy.exact_dup_rate)} · shortest keeps ${pct(p.redundancy.coverage_shortest)} vs diverse ${pct(p.redundancy.coverage_diverse)}</p>
-    <div class="eyebrow">by model</div><table><thead><tr><th>model</th><th>n</th><th>median len</th><th>exact-dup</th><th>action mix</th></tr></thead><tbody>${models}</tbody></table>
-    <div class="eyebrow">search by behaviour <span class="dim" style="text-transform:none;letter-spacing:0">— structural predicates over the action spine; instant, no model call</span></div>
-    <input class="qbox" id="qbox" placeholder="atom pattern, e.g.  (edit ){5,}" oninput="runQ(this.value)">
-    <div>${QUERIES.map(q=>`<span class="chip" onclick="runQ(null,'${q.id}')">${q.label}</span>`).join('')}</div>
-    <div id="qres" style="margin-top:10px"></div>
-    <div class="eyebrow">sampled traces (click to open the conversation)</div><div>${samples}</div>`;}
-function trace(id,i){const s=PROF[id].samples[i];show('tr');
-  const spine=s.atoms.map(a=>`<span class="atom" style="background:${ATOM[a]||'#ccc'}">${a}</span>`).join('');
-  const turns=s.turns.map(t=>{const body=t.tools?('⚙ '+t.tools.join(', ')):(t.text||'');
-    return `<div class="turn"><span class="role">${t.role}</span><br>${(body+'').replace(/</g,'&lt;')}</div>`;}).join('');
-  document.getElementById('tr').innerHTML=
-   `<span class="back" onclick="dataset('${id}')">← ${id.split('/').pop()}</span><h1 style="font-size:19px">${s.model} · ${s.atoms.length} steps</h1>
-    <div class="eyebrow">procedural spine</div><div class="spine">${spine}</div><div class="eyebrow">conversation</div>${turns}`;}
-function whyView(){const e=D.experiment;const el=document.getElementById('why');
-  if(!e){el.innerHTML='<span class="back" onclick="show(\'eco\')">← ecosystem</span><p class="sub">experiment not loaded.</p>';return;}
-  const judges=Object.entries(e.pareto||{}).filter(([k])=>k!=='procgrep');
-  const meanLat=judges.length?judges.reduce((s,[,v])=>s+(v.mean_latency_s||0),0)/judges.length:1;
-  const ratio=Math.round(meanLat*1e6/e.procgrep_us_per_decision);
-  const bestF1=judges.length?Math.max(...judges.map(([,v])=>v.mean_f1||0)):0;
-  const struct=Object.entries(e.predicates).filter(([k,v])=>v.kind==='structural');
-  const models=Object.keys(struct[0][1].judges);
-  const head=`<th>predicate</th>${models.map(m=>`<th>${m.split('/').pop()}</th>`).join('')}<th>κ</th>`;
-  const body=struct.map(([k,v])=>`<tr><td>${k}</td>${models.map(m=>{const f=v.judges[m].f1;
-    return `<td>${f==null?'—':f.toFixed(2)}</td>`;}).join('')}<td>${v.pairwise_cohen_kappa==null?'—':v.pairwise_cohen_kappa}</td></tr>`).join('');
-  const fz=Object.entries(e.predicates).find(([k,v])=>v.kind==='fuzzy');
-  el.innerHTML=
-   `<span class="back" onclick="show('eco')">← ecosystem</span>
-    <h1>Why not just ask an LLM?</h1>
-    <p class="sub">Every behavioural question here — "did it edit 5× in a row?", "did it submit without testing?" — can be asked two ways: a deterministic structural query over the action spine, or an LLM judge over the trace. We ran both over the same trajectories (incl. a strong judge).</p>
-    <div class="cards">
-      <div class="card"><div class="dim">speed</div><div class="big">${ratio.toLocaleString()}×</div>
-        <div class="dim">procgrep ${e.procgrep_us_per_decision} µs vs LLM ${meanLat.toFixed(1)}s per decision · $0 vs API cost</div></div>
-      <div class="card"><div class="dim">accuracy — mean F1, procgrep = 1.0</div><div class="big">≤ ${bestF1.toFixed(2)}</div>
-        <div class="dim">best judge ${bestF1.toFixed(2)}; F1 = 0 on both counting predicates for every judge — LLMs can't count action-streaks in a trace</div></div>
-      <div class="card"><div class="dim">reliability</div><div class="big">κ ≈ 0</div>
-        <div class="dim">judges barely agree — on structural facts and fuzzy ones alike</div></div>
-    </div>
-    <div class="eyebrow">LLM judge F1 vs the exact structural answer · balanced samples · procgrep = 1.0</div>
-    <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-    <p class="note">Fuzzy property — <b>${fz?fz[0]:''}</b>: inter-judge κ = ${fz?fz[1].pairwise_cohen_kappa:'—'}. procgrep does ${e.procgrep_ms_full} ms for ${e.corpus} traces × ${struct.length} predicates; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). ${e.totals.judge_calls} judge calls, ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
-function show(id){['eco','ds','tr','why'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
-  if(id==='why')whyView();if(id==='eco')window.scrollTo(0,0);}
-if(location.hash==='#group'){ST.group=true;const cb=document.querySelector('.gb input');if(cb)cb.checked=true;}
-render();
-if(location.hash==='#why')show('why');
+// boot: query-first; queryView() auto-runs the highest-hit sample
+show('query');
+// deep links
+const _h=location.hash.replace('#','');
+if(['why','browse','curate','permodel','query'].includes(_h))show(_h);
 else if(location.hash.startsWith('#ds=')){const [id,q]=location.hash.slice(4).split('&q=');
-  dataset(decodeURIComponent(id));if(q)runQ(null,q);}
+  const did=decodeURIComponent(id);if(PROF[did]){CURDS=did;show('query');if(q)runQ(null,q);}}
 </script></body></html>
 """
 

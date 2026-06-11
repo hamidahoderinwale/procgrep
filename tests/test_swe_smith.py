@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 
-from procgrep.adapters.swe_smith import swe_smith_adapter
+from procgrep.ingest.adapters.swe_smith import swe_smith_adapter
 from procgrep.types import (
     ATOM_EDIT,
     ATOM_OTHER,
