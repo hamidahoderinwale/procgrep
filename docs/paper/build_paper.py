@@ -99,7 +99,7 @@ def fix_figures(body: str) -> str:
 SHOWCASE = """
 <aside class="showcase" id="showcase">
   <div class="sc-head"><span class="sc-eyebrow">procgrep demo · try it live</span>
-    <a class="sc-open" href="explorer/" target="_blank" rel="noopener">open in a new tab ↗</a></div>
+    <a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">open in a new tab ↗</a></div>
   <div class="sc-frame">
     <iframe id="scframe" src="explorer/index.html#query" title="ProcGrep query playground" loading="lazy"></iframe>
   </div>
