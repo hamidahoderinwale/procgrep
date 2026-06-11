@@ -128,6 +128,9 @@ class IngestionPlan:
     sample_atoms: tuple[tuple[str, ...], ...] = ()
     candidates: tuple[SniffResult, ...] = ()
     notes: tuple[str, ...] = ()
+    candidate: bool = False
+    """True if the dataset has a conversation/turn column — i.e. it is plausibly
+    an agent-trace dataset at all (vs a benchmark or pretraining corpus)."""
 
     def summary(self) -> str:
         lines = [
@@ -407,7 +410,11 @@ def plan(
         notes.append("no agent column matched; agent will default to the dataset name")
 
     sample_atoms = _sample_atoms(schema, chosen_adapter)
+    is_candidate = any(c in schema.columns for c in _CONV_COLUMNS) or any(
+        bool(a) for a in sample_atoms
+    )
     return IngestionPlan(
+        candidate=is_candidate,
         dataset=dataset,
         config=schema.config,
         split=schema.split,

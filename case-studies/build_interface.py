@@ -33,6 +33,12 @@ h1{font-family:Georgia,serif;font-weight:400;font-size:29px;line-height:1.25;max
 .chip.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
 .chip.fmt{border-color:var(--copper);color:var(--copper)}.chip.fmt.on{background:var(--copper);color:#fff;border-color:var(--copper)}
 .chip.un{background:#efeae2;border-color:var(--rule);color:var(--olive);cursor:default}
+.chip.gap{border-color:var(--copper);color:var(--copper);background:#fff;cursor:default}
+.bstrip{display:flex;flex-wrap:wrap;gap:8px;margin:4px 0 2px}
+.bcard{display:inline-flex;align-items:center;gap:7px;padding:6px 11px;border:1px solid var(--rule);border-radius:3px;cursor:pointer;background:#fff}
+.bcard.on{border-color:var(--ink);background:#efeae2}
+.blogo{width:16px;height:16px;object-fit:contain;vertical-align:middle;border-radius:2px}
+.bmono{display:inline-flex;width:16px;height:16px;align-items:center;justify-content:center;background:var(--olive);color:#fff;font-size:9px;border-radius:2px}
 .controls{display:flex;gap:10px;align-items:center;flex-wrap:wrap;margin:8px 0 6px}
 input,select{font-family:var(--mono);font-size:12px;padding:5px 8px;border:1px solid var(--rule);background:#fff;color:var(--ink)}
 input{flex:1;min-width:180px}
@@ -50,7 +56,7 @@ tr.clk:hover td{background:#efeae2}
 .mix{display:inline-flex;height:10px;width:140px;border:1px solid var(--rule);vertical-align:middle}.mix>span{height:100%}
 .detail{background:#efeae2;padding:10px 14px;font-size:12px}
 .detail a{color:var(--copper)}
-.grouphdr td{background:#efeae2;font-weight:600;border-bottom:1px solid var(--ink)}
+.grouphdr td{background:#efeae2;font-weight:600;border-bottom:1px solid var(--ink);cursor:pointer}
 .more{margin:14px 0;padding:7px 14px;border:1px solid var(--ink);background:none;cursor:pointer;font-family:var(--mono);font-size:12px}
 .more:hover{background:var(--ink);color:var(--paper)}
 .foot{margin-top:40px;border-top:1px solid var(--rule);padding-top:10px;color:var(--olive);font-size:11px}
@@ -75,6 +81,9 @@ look inside.</p>
 
 <div class="eyebrow">findings</div>
 <div class="cards" id="findings"></div>
+
+<div class="eyebrow">benchmarks (click to filter)</div>
+<div class="bstrip" id="benchstrip"></div>
 
 <div class="eyebrow">the index</div>
 <div class="controls">
@@ -102,15 +111,19 @@ const ATOM={search_repo:'#585E53',read_file:'#5692E5',edit:'#CB4D20',create_file
 run_test:'#20A380',submit:'#14110E',think:'#b7b1a7',localize:'#8C1040',delete_file:'#A03D18',error:'#B4184F',other:'#d9d4cc'};
 const pct=x=>x==null?'—':(x*100).toFixed(0)+'%';
 const fmt=n=>n>=1000?(n/1000).toFixed(n>=10000?0:1)+'k':String(n);
-const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,open:new Set()};
+const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,benchFilter:null,open:new Set(),collapsed:new Set()};
+const LOGOS=D.logos||{};
+function blogo(b){return b?(LOGOS[b]?`<img class="blogo" src="${LOGOS[b]}">`:`<span class="bmono">${b.replace(/[^A-Za-z0-9]/g,'').slice(0,2).toUpperCase()}</span>`):'';}
 
 function statusOf(r){return r.supported?'supported':(r.out_of_scope?'out-of-scope':'unsupported');}
 function dupOf(r){const p=PROF[r.id];return p?p.redundancy.exact_dup_rate:null;}
 function gapOf(r){const p=PROF[r.id];return p?p.redundancy.coverage_diverse-p.redundancy.coverage_shortest:null;}
 
 function findings(){
-  const sniffed=DS.length, sup=DS.filter(r=>r.supported).length;
-  const byA={}; DS.forEach(r=>{if(r.supported)byA[r.adapter]=(byA[r.adapter]||0)+1;});
+  const cand=DS.filter(r=>r.candidate), sup=DS.filter(r=>r.supported);
+  const notTrace=DS.filter(r=>!r.candidate&&!r.out_of_scope&&!r.supported).length;
+  const oos=DS.filter(r=>r.out_of_scope).length;
+  const byA={}; sup.forEach(r=>byA[r.adapter]=(byA[r.adapter]||0)+1);
   const fmtChips=Object.entries(byA).sort((a,b)=>b[1]-a[1]).map(([a,n])=>
     `<span class="chip fmt ${ST.fmtFilter===a?'on':''}" onclick="ST.fmtFilter=ST.fmtFilter===\'${a}\'?null:\'${a}\';ST.page=1;render()">${a} ${n}</span>`).join('');
   const red=Object.values(PROF).map(p=>{const s=p.redundancy.coverage_shortest,d=p.redundancy.coverage_diverse;
@@ -118,15 +131,21 @@ function findings(){
       <div class="rrow"><span class="rlab">keep shortest</span><span class="barbg"><span class="fill" style="width:${s*100}%;background:var(--olive)"></span></span><span class="rval">${pct(s)}</span></div>
       <div class="rrow"><span class="rlab">keep diverse</span><span class="barbg"><span class="fill" style="width:${d*100}%;background:var(--copper)"></span></span><span class="rval">${pct(d)}</span></div>`;}).join('');
   document.getElementById('findings').innerHTML=
-   `<div class="card"><div class="dim">coverage</div><div class="big">${sup}/${sniffed}</div>
-      <div class="dim">parseable, of ${CAT.n_discovered} discovered</div></div>
+   `<div class="card"><div class="dim">coverage — parseable trace datasets</div><div class="big">${sup.length}/${cand.length}</div>
+      <div class="dim">${notTrace} benchmarks/corpora &amp; ${oos} out-of-scope excluded · ${CAT.n_discovered} discovered</div></div>
     <div class="card"><div class="dim">formats (click to filter)</div><div style="margin-top:8px">${fmtChips}</div></div>
     <div class="card"><div class="dim">trim a dataset to a fixed budget — how much of its procedural variety survives if you keep the shortest traces (common practice) vs the most diverse (procgrep)</div>${red||'<span class="dim">profiles pending</span>'}</div>`;
+  const benches={}; DS.forEach(r=>{if(r.benchmark)(benches[r.benchmark]=benches[r.benchmark]||[]).push(r);});
+  const bs=document.getElementById('benchstrip');
+  if(bs)bs.innerHTML=Object.entries(benches).sort((a,b)=>b[1].length-a[1].length).map(([b,rs])=>{
+    const s=rs.filter(r=>r.supported).length;
+    return `<span class="bcard ${ST.benchFilter===b?'on':''}" onclick="ST.benchFilter=ST.benchFilter===\'${b}\'?null:\'${b}\';ST.page=1;render()">${blogo(b)} ${b} <span class="dim">${s}/${rs.length}</span></span>`;}).join('');
 }
 
 function rowsFiltered(){
   let rows=DS.filter(r=>r.id.toLowerCase().includes(ST.q.toLowerCase()));
   if(ST.fmtFilter)rows=rows.filter(r=>r.adapter===ST.fmtFilter);
+  if(ST.benchFilter)rows=rows.filter(r=>r.benchmark===ST.benchFilter);
   if(ST.statusFilter)rows=rows.filter(r=>statusOf(r)===ST.statusFilter);
   const key=ST.sort;
   rows.sort((a,b)=>{let va,vb;
@@ -137,12 +156,14 @@ function rowsFiltered(){
   return rows;
 }
 function tagChips(r){
-  return r.adapter?`<span class="chip fmt">${r.adapter}</span>`
-    :`<span class="chip un">${r.out_of_scope?'out of scope':'unsupported'}</span>`;
+  if(r.adapter)return `<span class="chip fmt">${r.adapter}</span>`;
+  if(r.out_of_scope)return `<span class="chip un">out of scope</span>`;
+  if(r.candidate)return `<span class="chip gap" title="trace dataset, no adapter yet — the roadmap">format gap</span>`;
+  return `<span class="chip un">not a trace</span>`;
 }
 function rowHTML(r){
   const p=PROF[r.id];
-  let h=`<tr class="clk"><td class="idcell" onclick="toggle('${r.id}')">${r.id}</td><td>${tagChips(r)}</td>
+  let h=`<tr class="clk"><td class="idcell" onclick="toggle('${r.id}')">${blogo(r.benchmark)} ${r.id}</td><td>${tagChips(r)}</td>
     <td>${fmt(r.downloads)}</td><td>${r.likes||0}</td><td class="dim">${r.last_modified||'—'}</td></tr>`;
   if(ST.open.has(r.id)){
     const why=r.adapter?`format <b>${r.adapter}</b> (confidence ${r.confidence})`:(r.error?`unsupported — <span class="dim">${r.error}</span>`:'out of scope (no discrete tool actions)');
@@ -158,8 +179,13 @@ function render(){
   const tb=document.querySelector('#index tbody');
   if(ST.group){
     const g={}; rows.forEach(r=>(g[r.author]=g[r.author]||[]).push(r));
-    tb.innerHTML=Object.entries(g).sort((a,b)=>b[1].length-a[1].length).map(([au,rs])=>
-      `<tr class="grouphdr"><td colspan="5">${au} · ${rs.length}</td></tr>`+rs.map(rowHTML).join('')).join('');
+    tb.innerHTML=Object.entries(g).sort((a,b)=>b[1].length-a[1].length).map(([au,rs])=>{
+      const open=!ST.collapsed.has(au);
+      const sup=rs.filter(r=>r.supported).length;
+      const hdr=`<tr class="grouphdr" onclick="toggleGroup('${au}')"><td colspan="5">${open?'▾':'▸'} ${au} `+
+                `<span class="dim">· ${rs.length} datasets · ${sup} parseable</span></td></tr>`;
+      return hdr + (open ? rs.map(rowHTML).join('') : '');
+    }).join('');
     document.getElementById('more').classList.add('hidden');
   }else{
     const shown=rows.slice(0,ST.page*ST.size);
@@ -172,6 +198,7 @@ function render(){
     `catalog generated ${CAT.generated||'—'} · ${CAT.n_discovered} datasets discovered · ${DS.length} sniffed · showing ${rows.length} after filters`;
 }
 function toggle(id){ST.open.has(id)?ST.open.delete(id):ST.open.add(id);render();}
+function toggleGroup(au){ST.collapsed.has(au)?ST.collapsed.delete(au):ST.collapsed.add(au);render();}
 document.querySelectorAll('#index th[data-k]').forEach(th=>th.onclick=()=>{
   const k=th.dataset.k;ST.dir=(k===ST.sort)?-ST.dir:-1;ST.sort=k;render();});
 
@@ -257,6 +284,7 @@ function whyView(){const e=D.experiment;const el=document.getElementById('why');
     <p class="note">Fuzzy property (no deterministic ground truth) — <b>${fz?fz[0]:''}</b>: inter-judge κ = ${fz?fz[1].kappa:'—'}. procgrep does ${e.procgrep_ms_full} ms for ${e.corpus} traces × ${struct.length} predicates; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable. ${e.totals.judge_calls} judge calls, ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
 function show(id){['eco','ds','tr','why'].forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
   if(id==='why')whyView();if(id==='eco')window.scrollTo(0,0);}
+if(location.hash==='#group'){ST.group=true;const cb=document.querySelector('.gb input');if(cb)cb.checked=true;}
 render();
 if(location.hash==='#why')show('why');
 else if(location.hash.startsWith('#ds=')){const [id,q]=location.hash.slice(4).split('&q=');
@@ -270,6 +298,7 @@ def main() -> None:
     ap.add_argument("--catalog", required=True)
     ap.add_argument("--profiles", nargs="*", default=[])
     ap.add_argument("--experiment", default=None, help="query_vs_llm_full.json for the 'why structural' page")
+    ap.add_argument("--logos", default=None, help="benchmark->dataURI logo map JSON")
     ap.add_argument("--out", default="interface/index.html")
     args = ap.parse_args()
 
@@ -281,8 +310,9 @@ def main() -> None:
         p = json.loads(Path(path).read_text())
         profiles[p["dataset"]] = p
     experiment = json.loads(Path(args.experiment).read_text()) if args.experiment else None
+    logos = json.loads(Path(args.logos).read_text()) if args.logos else {}
 
-    data = json.dumps({"catalog": catalog, "profiles": profiles, "experiment": experiment})
+    data = json.dumps({"catalog": catalog, "profiles": profiles, "experiment": experiment, "logos": logos})
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(HTML.replace("__DATA__", data))
