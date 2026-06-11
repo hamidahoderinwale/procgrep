@@ -15,7 +15,7 @@ import json
 import re
 from collections import Counter
 
-from procgrep.discover import discover
+from procgrep.ingest.discover import discover
 from procgrep.ingest import plan
 
 # Coarse out-of-scope domains (no discrete tool/code actions to canonicalize).

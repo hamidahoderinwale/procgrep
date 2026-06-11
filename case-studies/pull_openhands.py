@@ -24,7 +24,7 @@ _PROCGREP_SRC = Path(__file__).resolve().parent.parent / "procgrep" / "src"
 if _PROCGREP_SRC.exists() and str(_PROCGREP_SRC) not in sys.path:
     sys.path.insert(0, str(_PROCGREP_SRC))
 
-from procgrep.adapters.swe_smith import classify_swe_smith_action
+from procgrep.ingest.adapters.swe_smith import classify_swe_smith_action
 from procgrep.types import ATOM_THINK
 
 BUCKET = "swe-bench-submissions"

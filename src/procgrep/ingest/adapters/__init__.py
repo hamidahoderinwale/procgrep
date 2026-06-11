@@ -10,7 +10,7 @@ map), ``mini-swe-agent``, ``openhands``, ``agentless``, ``dars``,
 
 from __future__ import annotations
 
-from procgrep.adapters import (
+from procgrep.ingest.adapters import (
     agentless,
     dars,
     gumtree,

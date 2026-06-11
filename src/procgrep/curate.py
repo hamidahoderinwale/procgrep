@@ -15,7 +15,7 @@ This module does it structurally and reproducibly on procgrep fingerprints:
   random-K baselines so the coverage it buys is explicit.
 
 Nothing here runs agents or calls a model. It reads canonical ``Trace`` objects
-(see :func:`procgrep.canonicalize` / :func:`procgrep.hf.from_hf`) and emits a
+(see :func:`procgrep.canonicalize` / :func:`procgrep.from_hf`) and emits a
 :class:`CurationReport`.
 """
 

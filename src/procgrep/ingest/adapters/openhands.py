@@ -29,10 +29,11 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from procgrep.canonicalize import register_adapter
+
 # Reuse the well-tested bash-command classifier from the mini-swe-agent adapter
 # rather than duplicate the command->atom table.
-from procgrep.adapters.mini_swe_agent import _classify_command as _classify_bash
-from procgrep.canonicalize import register_adapter
+from procgrep.ingest.adapters.mini_swe_agent import _classify_command as _classify_bash
 from procgrep.types import (
     ATOM_CREATE_FILE,
     ATOM_EDIT,

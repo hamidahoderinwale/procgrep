@@ -28,8 +28,8 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from procgrep.adapters.swe_agent import ATOM_MAP as _BARE_ACTION_MAP
 from procgrep.canonicalize import register_adapter
+from procgrep.ingest.adapters.swe_agent import ATOM_MAP as _BARE_ACTION_MAP
 from procgrep.types import (
     ATOM_CREATE_FILE,
     ATOM_DELETE_FILE,

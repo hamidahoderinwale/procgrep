@@ -14,7 +14,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from procgrep.hf import from_hf
+from procgrep.ingest.hf import from_hf
 from procgrep.types import ATOM_EDIT, ATOM_RUN_TEST, ATOM_THINK
 
 

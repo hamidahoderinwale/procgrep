@@ -9,7 +9,7 @@ from __future__ import annotations
 
 import pytest
 
-from procgrep.adapters.swe_smith import (
+from procgrep.ingest.adapters.swe_smith import (
     classify_swe_smith_action,
     swe_smith_canonical_projection,
 )

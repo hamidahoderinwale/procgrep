@@ -228,10 +228,10 @@ def compare(
 
     rows_a = _load(agent_a)
     rows_b = _load(agent_b)
-    typer.echo(f"\n{'='*64}")
+    typer.echo(f"\n{'=' * 64}")
     typer.echo(f"  {label_a}  ({len(rows_a)} trajectories)")
     typer.echo(f"  {label_b}  ({len(rows_b)} trajectories)")
-    typer.echo(f"{'='*64}")
+    typer.echo(f"{'=' * 64}")
 
     canon_atoms = [
         "edit",
@@ -266,7 +266,7 @@ def compare(
         return (kl(p, m) + kl(q, m)) / 2
 
     # ── 1. Unigram JSD ────────────────────────────────────────────────────────
-    pa, canon_v = _dist(rows_a, "atoms_canonical")
+    pa, _canon_v = _dist(rows_a, "atoms_canonical")
     pb, _ = _dist(rows_b, "atoms_canonical")
     canon_jsd = _jsd_val(pa, pb)
 
@@ -294,9 +294,7 @@ def compare(
         labeled = [r for r in rows if r.get("resolved") is not None]
         if not labeled:
             return "—"
-        return (
-            f"{sum(bool(r['resolved']) for r in labeled)/len(labeled):.1%} ({len(labeled)} labeled)"
-        )
+        return f"{sum(bool(r['resolved']) for r in labeled) / len(labeled):.1%} ({len(labeled)} labeled)"
 
     typer.echo(f"\n  Pass rate  {label_a}: {_pass_rate(rows_a)}")
     typer.echo(f"  Pass rate  {label_b}: {_pass_rate(rows_b)}")
@@ -315,7 +313,7 @@ def compare(
         for r in rows:
             seq = r.get("atoms_canonical", [])
             for i in range(len(seq) - 1):
-                cnt[f"{seq[i]}|{seq[i+1]}"] += 1
+                cnt[f"{seq[i]}|{seq[i + 1]}"] += 1
         vocab = sorted(cnt)
         v = _np.array([cnt.get(b, 0) + eps for b in vocab], dtype=float)
         return v / v.sum(), vocab
@@ -326,11 +324,11 @@ def compare(
     for r in rows_a:
         seq = r.get("atoms_canonical", [])
         for i in range(len(seq) - 1):
-            bg_cnt_a[f"{seq[i]}|{seq[i+1]}"] += 1
+            bg_cnt_a[f"{seq[i]}|{seq[i + 1]}"] += 1
     for r in rows_b:
         seq = r.get("atoms_canonical", [])
         for i in range(len(seq) - 1):
-            bg_cnt_b[f"{seq[i]}|{seq[i+1]}"] += 1
+            bg_cnt_b[f"{seq[i]}|{seq[i + 1]}"] += 1
     bg_vocab = sorted(set(bg_cnt_a) | set(bg_cnt_b))
     bpa = _np.array([bg_cnt_a.get(b, 0) + eps for b in bg_vocab], dtype=float)
     bpa /= bpa.sum()
@@ -400,10 +398,10 @@ def compare(
                 if peak_k < len(seq):
                     cnt[seq[peak_k]] += 1
                     n += 1
-            dist_str = "  ".join(f"{cnt.get(a,0)/max(1,n):>6.2f}" for a in canon_atoms)
+            dist_str = "  ".join(f"{cnt.get(a, 0) / max(1, n):>6.2f}" for a in canon_atoms)
             typer.echo(f"  {label[:18]:>18s}  {dist_str}")
 
-    typer.echo(f"\n{'='*64}\n")
+    typer.echo(f"\n{'=' * 64}\n")
 
     # ── 6. Optional JSON output ───────────────────────────────────────────────
     if output:
