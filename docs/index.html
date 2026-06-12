@@ -400,8 +400,208 @@ font-family:var(--mono);font-size:12px;color:var(--olive)}
     labelToggle(mount, setLabels, opts.showLabels !== false);
   }
 
+  /* Linear horizontal bar chart. Each row is either a point value (a bar from
+     zero) or a range band (lo to hi, drawn translucent). Hover shows the tip,
+     and a checkbox toggles the value labels, matching the other charts. */
+  function barChart(mount, rows, opts) {
+    opts = opts || {};
+    var m = { t: 18, r: 64, b: 52, l: opts.labelWidth || 210 };
+    var rh = opts.rowHeight || 34;
+    var W = opts.width || 660;
+    var ph = rows.length * rh;
+    var H = m.t + ph + m.b;
+    var pw = W - m.l - m.r;
+    var xmax = opts.xMax || d3.max(rows, function (d) {
+      return d.hi != null ? d.hi : d.value;
+    });
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "bar chart")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var x = d3.scaleLinear().domain([0, xmax]).range([m.l, m.l + pw]);
+
+    (opts.xTicks || x.ticks(5)).forEach(function (tk) {
+      var v = typeof tk === "object" ? tk.v : tk;
+      var lab = typeof tk === "object" ? tk.label : String(tk);
+      var xx = x(v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(lab);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 34).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+
+    var bh = (ph / rows.length) * 0.55;
+    var g = svg.append("g").selectAll("g").data(rows).join("g")
+      .attr("transform", function (d, i) {
+        return "translate(0," + (m.t + (i + 0.5) / rows.length * ph) + ")";
+      });
+    g.append("text")
+      .attr("x", m.l - 10).attr("y", 3).attr("text-anchor", "end")
+      .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.ink)
+      .text(function (d) { return d.label; });
+    g.append("rect")
+      .attr("x", function (d) { return d.hi != null ? x(d.lo) : m.l; })
+      .attr("y", -bh / 2)
+      .attr("width", function (d) {
+        return d.hi != null ? x(d.hi) - x(d.lo) : x(d.value) - m.l;
+      })
+      .attr("height", bh)
+      .attr("fill", function (d) { return d.color; })
+      .attr("opacity", function (d) { return d.hi != null ? 0.45 : 1; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, d) { showTip(d.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip)
+      .append("title").text(function (d) { return d.title || d.label; });
+
+    var vlabels = g.append("text").attr("class", "vlabel")
+      .attr("x", function (d) {
+        return (d.hi != null ? x(d.hi) : x(d.value)) + 8;
+      })
+      .attr("y", 3)
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (d) { return d.hi != null ? PAL.olive : d.color; })
+      .text(function (d) { return d.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+
+    (opts.legend || []).forEach(function (lg, i) {
+      var lx = m.l + i * 150;
+      svg.append("rect").attr("x", lx).attr("y", H - 12).attr("width", 10)
+        .attr("height", 10).attr("fill", lg.color);
+      svg.append("text").attr("x", lx + 15).attr("y", H - 3)
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(lg.label);
+    });
+  }
+
+  /* Grouped box-and-whisker plot, faceted into panels. Each box carries its
+     own summary stats (q1, med, q3, mean, lo, hi); nothing is recomputed here.
+     Boxes are an IQR rect with a median line, 5 to 95 percent whiskers, and a
+     mean label that the value-label toggle shows or hides. Hover shows the tip. */
+  function boxPlot(mount, boxes, opts) {
+    opts = opts || {};
+    var uniq = function (key) {
+      var seen = [];
+      boxes.forEach(function (b) { if (seen.indexOf(b[key]) < 0) seen.push(b[key]); });
+      return seen;
+    };
+    var panels = opts.panels || uniq("panel");
+    var groups = opts.groups || uniq("group");
+    var m = { t: 26, r: 14, b: 42, l: 48 };
+    var W = opts.width || 520;
+    var H = opts.height || 270;
+    var gap = opts.panelGap || 30;
+    var ph = H - m.t - m.b;
+    var avail = W - m.l - m.r - gap * (panels.length - 1);
+    var panelW = avail / panels.length;
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "box plot")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var y = d3.scaleLinear().domain(opts.yDomain || [0, 1]).range([m.t + ph, m.t]);
+
+    (opts.yTicks || y.ticks(5)).forEach(function (tk) {
+      var yy = y(tk);
+      svg.append("line")
+        .attr("x1", m.l).attr("y1", yy).attr("x2", W - m.r).attr("y2", yy)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", m.l - 8).attr("y", yy + 3).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk);
+    });
+    if (opts.yLabel)
+      svg.append("text")
+        .attr("transform", "translate(12," + (m.t + ph / 2) + ") rotate(-90)")
+        .attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.yLabel);
+
+    var vlabelSel = [];
+    panels.forEach(function (panel, pi) {
+      var x0 = m.l + pi * (panelW + gap);
+      svg.append("text")
+        .attr("x", x0 + panelW / 2).attr("y", m.t - 12).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 11).attr("fill", PAL.ink)
+        .text(panel);
+      var band = d3.scaleBand().domain(groups).range([x0, x0 + panelW]).padding(0.4);
+      var bw = Math.min(band.bandwidth(), 36);
+
+      groups.forEach(function (group) {
+        var b = boxes.filter(function (d) {
+          return d.panel === panel && d.group === group;
+        })[0];
+        if (!b) return;
+        var cx = band(group) + band.bandwidth() / 2;
+        var g = svg.append("g").style("cursor", "pointer")
+          .on("mouseenter", function (ev) { showTip(b.tipHTML, ev); })
+          .on("mousemove", moveTip)
+          .on("mouseleave", hideTip);
+        // whiskers
+        g.append("line").attr("x1", cx).attr("x2", cx)
+          .attr("y1", y(b.hi)).attr("y2", y(b.q3)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        g.append("line").attr("x1", cx).attr("x2", cx)
+          .attr("y1", y(b.q1)).attr("y2", y(b.lo)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        g.append("line").attr("x1", cx - bw / 4).attr("x2", cx + bw / 4)
+          .attr("y1", y(b.hi)).attr("y2", y(b.hi)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        g.append("line").attr("x1", cx - bw / 4).attr("x2", cx + bw / 4)
+          .attr("y1", y(b.lo)).attr("y2", y(b.lo)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        // IQR box
+        g.append("rect").attr("x", cx - bw / 2).attr("y", y(b.q3))
+          .attr("width", bw).attr("height", Math.max(1, y(b.q1) - y(b.q3)))
+          .attr("fill", b.color).attr("opacity", 0.82);
+        // median
+        g.append("line").attr("x1", cx - bw / 2).attr("x2", cx + bw / 2)
+          .attr("y1", y(b.med)).attr("y2", y(b.med)).attr("stroke", PAL.paper).attr("stroke-width", 1.6);
+        // group label under axis
+        g.append("text").attr("x", cx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+          .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+          .text(b.group);
+        // mean label
+        vlabelSel.push(g.append("text").attr("class", "vlabel")
+          .attr("x", cx).attr("y", y(b.q3) - 7).attr("text-anchor", "middle")
+          .attr("font-family", MONO).attr("font-size", 9).attr("font-weight", "bold")
+          .attr("fill", PAL.ink).text(b.mean.toFixed(2)).node());
+      });
+    });
+
+    function setLabels(on) {
+      vlabelSel.forEach(function (n) { n.style.display = on ? null : "none"; });
+    }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+  }
+
   global.ProcgrepCharts = {
-    logScatter: logScatter, logDotPlot: logDotPlot, palette: PAL,
+    logScatter: logScatter, logDotPlot: logDotPlot, barChart: barChart,
+    boxPlot: boxPlot, palette: PAL,
     labelToggle: labelToggle, showTip: showTip, moveTip: moveTip, hideTip: hideTip,
   };
 })(window);
@@ -1331,7 +1531,7 @@ font-family:var(--mono);font-size:12px;color:var(--olive)}
 <p>We consider a distilled model pair consisting of a teacher and a student model, where the student model is trained on trajectories generated by the teacher through supervised fine-tuning. While distillation is typically employed because it can produce performant models at a fraction of the cost, do students actually learn to problem solve like their parents and what value does this confer if they do <span class="citation" data-cites="hinton2015distillingknowledgeneuralnetwork zhang2026embarrassinglysimpleselfdistillationimproves">(<a href="#ref-hinton2015distillingknowledgeneuralnetwork" role="doc-biblioref">Hinton et al. 2015</a>; <a href="#ref-zhang2026embarrassinglysimpleselfdistillationimproves" role="doc-biblioref">Zhang et al. 2026</a>)</span><span class="sidenote"><span class="sn-ref">Hinton, Geoffrey, Oriol Vinyals, and Jeff Dean. 2015. <em>Distilling the Knowledge in a Neural Network</em>. <a href="https://arxiv.org/abs/1503.02531">https://arxiv.org/abs/1503.02531</a>.</span><span class="sn-ref">Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert, and Yizhe Zhang. 2026. <em>Embarrassingly Simple Self-Distillation Improves Code Generation</em>. <a href="https://arxiv.org/abs/2604.01193">https://arxiv.org/abs/2604.01193</a>.</span></span>? We find that the student inherits the teacher’s full action vocabulary and shows concentrated entropy, which means that when the distilled model succeeds it has lower entropy and is more procedurally similar than when it fails, showing that procedural mimicry could be a means to improve success rates for distilled models. We analyze 284 parent and 498 child trajectories using <code>lineage_diff</code> across three axes: vocabulary preservation, entropy shifts, and outcome divergence. Stratifying by outcome at the native level, passing child trajectories share 0.204 of the parent’s tool signatures, whereas failing trajectories share only 0.193 (<span class="math inline">\Delta = 0.01</span>).</p>
 <figure id="fig:distillation" data-latex-placement="H">
 <figure id="fig:dist_entropy">
-<img loading="lazy" src="figures/fig_distillation_A_entropy.png" />
+<div id="fig-dist" class="interactive"></div>
 <figcaption>Action entropy student and teacher model pair where the student’s action distribution is more concentrated (<span class="math inline">-0.41</span> bits).</figcaption>
 </figure>
 <figcaption>Comparing the trajectories of distilled student-teacher pairs, comparing Claude-3.7 Sonnet (teacher) <span class="math inline">\to</span> SWE-agent-LM-32B (child) on SWE-bench Verified.</figcaption>
@@ -1927,6 +2127,56 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   }
  ]
 }
+</script><script id="dist-data" type="application/json">[
+  {
+    "panel": "canonical",
+    "group": "Parent",
+    "color": "#5692E5",
+    "n": 284,
+    "mean": 2.314,
+    "med": 2.321,
+    "q1": 2.272,
+    "q3": 2.368,
+    "lo": 2.132,
+    "hi": 2.473
+  },
+  {
+    "panel": "canonical",
+    "group": "Child",
+    "color": "#20A380",
+    "n": 498,
+    "mean": 1.986,
+    "med": 2.098,
+    "q1": 1.877,
+    "q3": 2.191,
+    "lo": 1.319,
+    "hi": 2.273
+  },
+  {
+    "panel": "native",
+    "group": "Parent",
+    "color": "#5692E5",
+    "n": 284,
+    "mean": 2.418,
+    "med": 2.42,
+    "q1": 2.329,
+    "q3": 2.502,
+    "lo": 2.216,
+    "hi": 2.654
+  },
+  {
+    "panel": "native",
+    "group": "Child",
+    "color": "#20A380",
+    "n": 498,
+    "mean": 2.047,
+    "med": 2.138,
+    "q1": 1.939,
+    "q3": 2.255,
+    "lo": 1.36,
+    "hi": 2.427
+  }
+]
 </script>
 <script>
 (function(){
@@ -2085,6 +2335,23 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
     const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!playing&&!timer)play();else if(!e.isIntersecting&&playing)pause();});},{threshold:0.3});
     io.observe(mount);
   } else play();
+})();
+</script>
+<script>
+(function(){
+  const el=document.getElementById('dist-data'); if(!el)return;
+  const mount=document.getElementById('fig-dist'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const boxes=JSON.parse(el.textContent).map(function(b){
+    b.tipHTML='<b>'+b.group+', '+b.panel+'</b><br>mean <b>'+b.mean.toFixed(2)+'</b> bits'+
+      '<br>median '+b.med.toFixed(2)+', IQR '+b.q1.toFixed(2)+' to '+b.q3.toFixed(2)+
+      '<br>5 to 95 pct '+b.lo.toFixed(2)+' to '+b.hi.toFixed(2)+'<br>n = '+b.n;
+    return b;
+  });
+  ProcgrepCharts.boxPlot(mount,boxes,{
+    width:520,height:280,panels:['canonical','native'],groups:['Parent','Child'],
+    yDomain:[1.0,2.8],yTicks:[1.0,1.4,1.8,2.2,2.6],
+    yLabel:'per-trajectory entropy, bits',
+    ariaLabel:'action entropy distributions, parent versus child, canonical and native'});
 })();
 </script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>

@@ -1,4 +1,14 @@
-/* Shared D3 v7 chart module for the procgrep explorer and essay.
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>distillation: action entropy, parent vs child</title>
+<style>body{margin:0;background:#F7F5F2;color:#14110E;
+font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.wrap{max-width:560px;margin:0 auto;padding:24px}</style>
+</head><body><div class="wrap"><div id="distillation-entropy"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};</script>
+<script>/* Shared D3 v7 chart module for the procgrep explorer and essay.
    Two reusable charts in the editorial palette: a log-x scatter and a log-x
    dot plot. Each is a pure function that mounts into a container element and
    returns nothing; data and options are passed in. Tufte-minimal: thin rules,
@@ -447,3 +457,23 @@
     labelToggle: labelToggle, showTip: showTip, moveTip: moveTip, hideTip: hideTip,
   };
 })(window);
+</script>
+<script id="distillation-entropy-data" type="application/json">[{"panel": "canonical", "group": "Parent", "color": "#5692E5", "n": 284, "mean": 2.314, "med": 2.321, "q1": 2.272, "q3": 2.368, "lo": 2.132, "hi": 2.473}, {"panel": "canonical", "group": "Child", "color": "#20A380", "n": 498, "mean": 1.986, "med": 2.098, "q1": 1.877, "q3": 2.191, "lo": 1.319, "hi": 2.273}, {"panel": "native", "group": "Parent", "color": "#5692E5", "n": 284, "mean": 2.418, "med": 2.42, "q1": 2.329, "q3": 2.502, "lo": 2.216, "hi": 2.654}, {"panel": "native", "group": "Child", "color": "#20A380", "n": 498, "mean": 2.047, "med": 2.138, "q1": 1.939, "q3": 2.255, "lo": 1.36, "hi": 2.427}]</script>
+<script>
+(function(){
+  var el=document.getElementById('distillation-entropy-data'); if(!el)return;
+  var mount=document.getElementById('distillation-entropy'); if(!mount||!window.ProcgrepCharts)return;
+  var boxes=JSON.parse(el.textContent).map(function(b){
+    b.tipHTML='<b>'+b.group+', '+b.panel+'</b><br>mean <b>'+b.mean.toFixed(2)+'</b> bits'+
+      '<br>median '+b.med.toFixed(2)+', IQR '+b.q1.toFixed(2)+' to '+b.q3.toFixed(2)+
+      '<br>5 to 95 pct '+b.lo.toFixed(2)+' to '+b.hi.toFixed(2)+'<br>n = '+b.n;
+    return b;
+  });
+  ProcgrepCharts.boxPlot(mount,boxes,{
+    width:520,height:280,panels:['canonical','native'],groups:['Parent','Child'],
+    yDomain:[1.0,2.8],yTicks:[1.0,1.4,1.8,2.2,2.6],
+    yLabel:'per-trajectory entropy, bits',
+    ariaLabel:'action entropy distributions, parent versus child, canonical and native'});
+})();
+</script>
+</body></html>

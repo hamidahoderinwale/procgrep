@@ -278,6 +278,24 @@ PIPE_JS = r"""
 })();
 """
 
+DIST_JS = r"""
+(function(){
+  const el=document.getElementById('dist-data'); if(!el)return;
+  const mount=document.getElementById('fig-dist'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const boxes=JSON.parse(el.textContent).map(function(b){
+    b.tipHTML='<b>'+b.group+', '+b.panel+'</b><br>mean <b>'+b.mean.toFixed(2)+'</b> bits'+
+      '<br>median '+b.med.toFixed(2)+', IQR '+b.q1.toFixed(2)+' to '+b.q3.toFixed(2)+
+      '<br>5 to 95 pct '+b.lo.toFixed(2)+' to '+b.hi.toFixed(2)+'<br>n = '+b.n;
+    return b;
+  });
+  ProcgrepCharts.boxPlot(mount,boxes,{
+    width:520,height:280,panels:['canonical','native'],groups:['Parent','Child'],
+    yDomain:[1.0,2.8],yTicks:[1.0,1.4,1.8,2.2,2.6],
+    yLabel:'per-trajectory entropy, bits',
+    ariaLabel:'action entropy distributions, parent versus child, canonical and native'});
+})();
+"""
+
 STYLE = """
 :root{--paper:#F7F5F2;--ink:#14110E;--rule:#d9d4cc;--copper:#CB4D20;--blue:#5692E5;
 --teal:#20A380;--olive:#585E53;--gray:#b7b1a7;
@@ -435,9 +453,15 @@ def inject_interactive(body: str) -> tuple[str, str]:
     """Swap the static JSD figure for an interactive mount; return embedded data."""
     jsd = (ROOT / "data" / "jsd.json").read_text()
     ft = (ROOT / "data" / "followthrough.json").read_text()
+    dist = (ROOT / "data" / "distillation_entropy.json").read_text()
     body = re.sub(
         r"<img[^>]*fig_jsd_matrix_full_canonical\.png[^>]*>",
         '<div id="fig-jsd" class="interactive"></div>',
+        body,
+    )
+    body = re.sub(
+        r"<img[^>]*fig_distillation_A_entropy\.png[^>]*>",
+        '<div id="fig-dist" class="interactive"></div>',
         body,
     )
     body = re.sub(
@@ -453,6 +477,7 @@ def inject_interactive(body: str) -> tuple[str, str]:
     data_script = (
         f'<script id="jsd-data" type="application/json">{jsd}</script>'
         f'<script id="ft-data" type="application/json">{ft}</script>'
+        f'<script id="dist-data" type="application/json">{dist}</script>'
     )
     return body, data_script
 
@@ -767,6 +792,7 @@ def main() -> None:
 <script>{JSD_JS}</script>
 <script>{FT_JS}</script>
 <script>{PIPE_JS}</script>
+<script>{DIST_JS}</script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>window.addEventListener('load',function(){{
   if(!window.katex)return;
