@@ -33,6 +33,7 @@ select,input{font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px s
 .spine i{display:inline-block;width:5px;height:12px;border-radius:1px}
 .spine i.nz{opacity:.26}
 body.hide-noise .spine i.nz{display:none}
+.spine i.hit{outline:1.5px solid var(--ink);outline-offset:1px;border-radius:1px}
 .dim{color:var(--olive)}
 .err{color:var(--copper)}
 .note{color:var(--olive);font-size:11px;margin-top:6px}

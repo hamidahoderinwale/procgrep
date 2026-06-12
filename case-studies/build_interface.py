@@ -34,6 +34,10 @@ h1{font-family:Georgia,serif;font-weight:400;font-size:29px;line-height:1.25;max
 .sub{color:var(--olive);max-width:64ch;margin:0 0 26px}
 .eyebrow{text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);border-bottom:1px solid var(--rule);padding-bottom:6px;margin:30px 0 14px}
 .cards{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--rule);border:1px solid var(--rule)}
+.lqplot{width:100%;max-width:620px;height:auto;display:block;margin:8px 0 4px}
+.lqplot .ax{font-family:var(--mono);font-size:10px;fill:var(--olive)}
+.lqplot .lab{font-family:var(--mono);font-size:11px}
+.lqplot circle{cursor:default}
 .card{background:var(--paper);padding:16px 18px}.big{font-size:28px;font-weight:600}
 .chip{display:inline-block;padding:2px 9px;margin:3px 6px 3px 0;border:1px solid var(--rule);border-radius:2px;font-size:11px;cursor:pointer}
 .chip:hover{border-color:var(--ink)}
@@ -339,6 +343,33 @@ function prettyModel(a){let m=String(a);
   return (m.replace(/-/g,' ').trim())||String(a);}
 function f1col(v){if(v==null)return '#efeae2';const t=Math.max(0,Math.min(1,v)),a=[247,238,232],b=[32,163,128];
   return 'rgb('+a.map((x,k)=>Math.round(x+(b[k]-x)*t)).join(',')+')';}  // pale -> teal as F1 rises
+// Quality vs latency: procgrep at microseconds and F1 1.0, the LLM judges a
+// million times slower and well below. Log x so both regimes fit one frame.
+function latQualPlot(e){
+  const W=620,H=300,L=58,Rm=18,T=16,Bm=46,pw=W-L-Rm,ph=H-T-Bm;
+  const pts=[{name:'procgrep',lat:e.procgrep_us_per_decision*1e-6,f1:1.0,pg:true}];
+  for(const [k,v] of Object.entries(e.pareto)){ if(k==='procgrep'||v.mean_latency_s==null)continue;
+    pts.push({name:prettyModel(k),lat:v.mean_latency_s,f1:v.mean_f1||0}); }
+  const xmin=Math.log10(5e-7),xmax=Math.log10(2);
+  const X=l=>L+(Math.log10(l)-xmin)/(xmax-xmin)*pw, Y=f=>T+(1-f)*ph;
+  let s=`<svg viewBox="0 0 ${W} ${H}" class="lqplot" role="img" aria-label="F1 versus latency">`;
+  for(const [f,lab] of [[0,'0'],[0.5,'0.5'],[1,'1.0']]){ const y=Y(f);
+    s+=`<line x1="${L}" y1="${y}" x2="${L+pw}" y2="${y}" stroke="${f===0.5?'#d8b8b0':'#ece7df'}"${f===0.5?' stroke-dasharray="3 3"':''}/>`;
+    s+=`<text x="${L-8}" y="${y+3}" text-anchor="end" class="ax">${lab}</text>`; }
+  s+=`<text x="${X(0.5)+4}" y="${Y(0.5)-4}" class="ax" fill="#9c3a5a">chance</text>`;
+  for(const [l,lab] of [[1e-6,'1 µs'],[1e-3,'1 ms'],[1,'1 s']]){ const x=X(l);
+    s+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" stroke="#ece7df"/>`;
+    s+=`<text x="${x}" y="${T+ph+16}" text-anchor="middle" class="ax">${lab}</text>`; }
+  s+=`<text x="${L+pw}" y="${T+ph+33}" text-anchor="end" class="ax">slower per decision</text>`;
+  s+=`<text x="14" y="${T+ph/2}" transform="rotate(-90 14 ${T+ph/2})" text-anchor="middle" class="ax">F1 vs exact answer</text>`;
+  for(const p of pts){ const x=X(p.lat),y=Y(p.f1);
+    s+=`<circle cx="${x}" cy="${y}" r="${p.pg?6:4}" fill="${p.pg?'#CB4D20':'#20A380'}"><title>${p.name}: F1 ${p.f1.toFixed(2)}, ${p.pg?e.procgrep_us_per_decision+' µs':p.lat.toFixed(2)+' s'}</title></circle>`; }
+  s+=`<text x="${X(pts[0].lat)}" y="${Y(1)-10}" class="lab" fill="#CB4D20">procgrep · 1.00</text>`;
+  const jy=Math.min(...pts.filter(p=>!p.pg).map(p=>Y(p.f1)));
+  s+=`<text x="${L+pw}" y="${jy-9}" text-anchor="end" class="lab" fill="#585E53">LLM judges</text>`;
+  return s+`</svg>`;
+}
+
 function whyView(){const e=D.experiment;const el=document.getElementById('why');
   if(!e){el.innerHTML='<span class="back" onclick="show(\'query\')">← query</span><p class="sub">experiment not loaded.</p>';return;}
   const judges=Object.entries(e.pareto||{}).filter(([k])=>k!=='procgrep');
@@ -363,6 +394,9 @@ function whyView(){const e=D.experiment;const el=document.getElementById('why');
       <div class="card"><div class="dim">reliability</div><div class="big">κ ≈ 0</div>
         <div class="dim">judges barely agree with each other, on structural facts and fuzzy ones alike</div></div>
     </div>
+    <div class="eyebrow">accuracy at the latency an agent can afford</div>
+    ${latQualPlot(e)}
+    <p class="note" style="margin:6px 0 18px">Each method sits at its latency on a log axis and its mean F1. procgrep answers in microseconds at F1 1.00 by construction; every LLM judge is about a million times slower and sits well below, and they barely agree with one another. At the latency an agent actually needs, no judge is in the regime.</p>
     <div class="eyebrow">how often each LLM judge matches the exact structural answer</div>
     <p class="note" style="margin:0 0 10px">Each cell is a judge's F1 against the exact answer: 1.00 is perfect, 0 is useless, chance is about 0.5. Greener is higher. procgrep is 1.00 by construction. κ in the last column is how much the judges agree with one another (near 0 means barely).</p>
     <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>

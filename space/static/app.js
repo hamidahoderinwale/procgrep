@@ -20,6 +20,7 @@ function prettyTask(t){if(!t)return '';const m=String(t).match(/^(.+?)__(.+?)-(\
 let HIDE_NOISE = false;
 let DSETS = [];                 // store-backed dataset ids (shared by query + compare)
 let OUTCOME_DS = [];            // datasets that carry a genuine resolution label
+let QTIMER;                     // debounce handle for live-as-you-type
 const CMP = { axis: "agent", ds: null, left: null, right: null, data: null };
 
 // Brief provenance: link the selected dataset to its Hugging Face source page.
@@ -41,18 +42,35 @@ async function loadDatasets() {
 }
 
 // Collapse runs of think/other into a gap marker; run-length the signal atoms.
-function spine(atoms, color) {
+// hi (optional) is an [startAtom, endAtom] index range to outline as the match.
+function spine(atoms, color, hi) {
   const runs = [];
+  let idx = 0;
   for (const a of atoms) {
     const noise = a === "think" || a === "other";
     const t = runs[runs.length - 1];
-    if (noise) { if (t && t.gap) t.n++; else runs.push({ gap: true, n: 1 }); }
-    else { if (t && t.a === a) t.n++; else runs.push({ a, n: 1 }); }
+    if (noise) { if (t && t.gap) { t.n++; t.end = idx; } else runs.push({ gap: true, n: 1, start: idx, end: idx }); }
+    else { if (t && t.a === a) { t.n++; t.end = idx; } else runs.push({ a, n: 1, start: idx, end: idx }); }
+    idx++;
   }
+  const lit = (it) => (hi && it.end >= hi[0] && it.start <= hi[1]) ? " hit" : "";
   return '<span class="spine">' + runs.slice(0, 90).map((it) => it.gap
-    ? `<i class="nz" title="${it.n} think/other" style="width:${Math.min(3 + it.n, 14)}px;background:#d9d4cc"></i>`
-    : `<i title="${it.a}${it.n > 1 ? " ×" + it.n : ""}" style="width:${Math.min(5 + (it.n - 1) * 2, 16)}px;background:${color[it.a] || "#ccc"}"></i>`
+    ? `<i class="nz${lit(it)}" title="${it.n} think/other" style="width:${Math.min(3 + it.n, 14)}px;background:#d9d4cc"></i>`
+    : `<i class="${lit(it).trim()}" title="${it.a}${it.n > 1 ? " ×" + it.n : ""}" style="width:${Math.min(5 + (it.n - 1) * 2, 16)}px;background:${color[it.a] || "#ccc"}"></i>`
   ).join("") + "</span>";
+}
+
+// Locate the matched atom span in a hit, for highlighting. Returns [start,end]
+// atom indices or null. Best-effort over the rendered (capped) atom list.
+function matchSpan(atoms, pattern) {
+  try {
+    const sp = atoms.join(" ") + " ";
+    const m = new RegExp(pattern).exec(sp);
+    if (!m || !m[0].trim()) return null;
+    const start = sp.slice(0, m.index).split(" ").length - 1;
+    const len = m[0].trim().split(/\s+/).length;
+    return [start, start + len - 1];
+  } catch { return null; }
 }
 
 function mixbar(mix, color) {
@@ -93,8 +111,8 @@ async function run(pattern) {
      <div class="eyebrow">action mix · matched vs. all</div>
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
-     <div class="eyebrow">matching traces</div>
-     ${r.hits.map((h) => `<div class="qhit"><span class="hit-model">${prettyModel(h.model)}</span>${h.task ? `<span class="hit-task dim" title="${prettyTask(h.task)}">${prettyTask(h.task)}</span>` : ""}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col)}</div>`).join("")}
+     <div class="eyebrow">matching traces · matched span outlined</div>
+     ${r.hits.map((h) => `<div class="qhit"><span class="hit-model">${prettyModel(h.model)}</span>${h.task ? `<span class="hit-task dim" title="${prettyTask(h.task)}">${prettyTask(h.task)}</span>` : ""}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col, matchSpan(h.atoms, r.pattern))}</div>`).join("")}
      ${r.n_hits > r.hits.length ? `<div class="note">showing ${r.hits.length} of ${r.n_hits} matches</div>` : ""}`;
 }
 
@@ -106,7 +124,16 @@ document.addEventListener("click", (e) => {
     document.body.classList.toggle("hide-noise", HIDE_NOISE);
   }
 });
-$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") run($("q").value); });
+$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") { clearTimeout(QTIMER); run($("q").value); } });
+// Live-as-you-type: debounce, and only fire on a valid regex so partial patterns
+// (e.g. an open paren mid-type) never clobber the last results with an error.
+$("q").addEventListener("input", () => {
+  clearTimeout(QTIMER);
+  const v = $("q").value.trim();
+  if (!v) return;
+  try { new RegExp(v); } catch { return; }
+  QTIMER = setTimeout(() => run(v), 250);
+});
 $("ds").addEventListener("change", () => { setSource($("ds").value); run($("q").value || SAMPLES[0].pat); });
 
 // Comparator.
