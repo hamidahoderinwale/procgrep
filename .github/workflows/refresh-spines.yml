@@ -1,0 +1,35 @@
+name: refresh-spines
+
+# Weekly precompute + publish of the procgrep spine store to the HF dataset
+# repo midah/procgrep-spines.
+#
+# REQUIRED REPO SECRET: add an `HF_TOKEN` secret (a Hugging Face write token for
+# the midah org) under Settings -> Secrets and variables -> Actions. Without it
+# the --push step cannot upload.
+
+on:
+  schedule:
+    # Mondays at 06:00 UTC.
+    - cron: "0 6 * * 1"
+  workflow_dispatch:
+
+jobs:
+  refresh:
+    name: build and push spines
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: set up python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - name: install
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e . pandas pyarrow datasets huggingface_hub
+      - name: build and push spines
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: python scripts/build_spines.py --push
