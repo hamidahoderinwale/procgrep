@@ -110,7 +110,10 @@ SHOWCASE = """
   <figcaption class="caption">The compare view, here splitting one dataset's runs into resolved and unresolved. Each row is one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid. The diff strip shows the unresolved runs are longer and reason more, the shape of getting stuck. Toggle also by agent or by eval. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
 </figure>
 <figure class="exfig" id="replay-fig">
-  <img src="figures/replay.gif" alt="Replaying one trajectory step by step with a live structural query firing" loading="lazy">
+  <video autoplay loop muted playsinline poster="figures/replay_poster.png" aria-label="Replaying one trajectory step by step with a live structural query firing">
+    <source src="figures/replay.webm" type="video/webm">
+    <source src="figures/replay.mp4" type="video/mp4">
+  </video>
   <figcaption class="caption">One trajectory, replayed step by step. Reasoning folds, actions print in order, and a structural query fires the instant it matches, here at the first test right after an edit. Fed by procgrep watch, the same view follows a running agent live.</figcaption>
 </figure>
 """
@@ -278,7 +281,7 @@ background:#fff;border-radius:4px}
 .sc-open{font-family:var(--mono);font-size:12px;color:var(--copper);text-decoration:none}
 .sc-open:hover{text-decoration:underline}
 .exfig{max-width:1020px;margin:26px auto;padding:0}
-.exfig img{width:100%;height:auto;display:block;border:1px solid var(--rule)}
+.exfig img,.exfig video{width:100%;height:auto;display:block;border:1px solid var(--rule)}
 .exfig figcaption{margin-top:8px}
 .sc-title{font-size:26px;font-weight:600;margin:6px 0 6px}
 .sc-sub{font-size:16px;color:var(--olive);max-width:64ch;margin:0 0 14px}

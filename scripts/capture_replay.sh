@@ -1,12 +1,13 @@
 #!/usr/bin/env bash
-# Regenerate the replay GIF used in the essay. Renders the demo trajectory at
-# each step as a deterministic frame, then assembles them into a looping GIF
-# that shows the trail building and the live query firing mid-run.
+# Regenerate the replay animation used in the essay (and README). Renders the
+# demo trajectory at each step as a deterministic frame, then encodes a crisp
+# full-color looping video (mp4 + webm) for the essay and a higher-resolution
+# GIF for the README, both showing the trail building and the live query firing.
 # Usage: bash scripts/capture_replay.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
 BIN="$HOME/Library/Caches/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-mac-arm64/chrome-headless-shell"
-FFMPEG="$(command -v ffmpeg || echo /opt/homebrew/bin/ffmpeg)"
+FF="$(command -v ffmpeg || echo /opt/homebrew/bin/ffmpeg)"
 FR=/tmp/procgrep_replay_frames
 rm -rf "$FR"; mkdir -p "$FR"
 
@@ -52,16 +53,26 @@ el.innerHTML=m?`<span class="fire">● fired at step ${sp.slice(0,m.index).split
 </script></body></html>
 EOF
 
+# Crisp frames: native pixels at 2x, no downscale-blur in capture.
 for n in $(seq 1 19); do
   printf -v idx "%02d" "$n"
   "$BIN" --headless --disable-gpu --no-sandbox --hide-scrollbars --force-device-scale-factor=2 \
-    --window-size=780,520 --virtual-time-budget=1500 \
+    --window-size=820,540 --virtual-time-budget=1500 \
     --screenshot="$FR/f$idx.png" "file://$FR/frame.html?n=$n" >/dev/null 2>&1
 done
-# hold the final frame
-for h in 20 21 22 23; do cp "$FR/f19.png" "$FR/f$h.png"; done
+for h in 20 21 22 23 24 25; do cp "$FR/f19.png" "$FR/f$h.png"; done  # hold the final state
 
-"$FFMPEG" -y -framerate 1.8 -i "$FR/f%02d.png" \
-  -vf "scale=760:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=full[p];[s1][p]paletteuse=dither=none" \
+mkdir -p docs/figures
+# Essay: crisp full-color looping video. mp4 (h264) + webm (vp9).
+"$FF" -y -framerate 1.8 -i "$FR/f%02d.png" -vf "scale=1000:-2:flags=lanczos" \
+  -c:v libx264 -pix_fmt yuv420p -crf 20 -movflags +faststart docs/figures/replay.mp4 >/dev/null 2>&1
+"$FF" -y -framerate 1.8 -i "$FR/f%02d.png" -vf "scale=1000:-2:flags=lanczos" \
+  -c:v libvpx-vp9 -crf 30 -b:v 0 docs/figures/replay.webm >/dev/null 2>&1
+# Poster (final frame) for the video.
+"$FF" -y -i "$FR/f23.png" -vf "scale=1000:-2:flags=lanczos" docs/figures/replay_poster.png >/dev/null 2>&1
+# README: higher-resolution GIF (GitHub does not autoplay video).
+"$FF" -y -framerate 1.8 -i "$FR/f%02d.png" \
+  -vf "scale=900:-1:flags=lanczos,split[s0][s1];[s0]palettegen=stats_mode=full[p];[s1][p]paletteuse=dither=none" \
   -loop 0 docs/figures/replay.gif >/dev/null 2>&1
-echo "wrote docs/figures/replay.gif ($(du -h docs/figures/replay.gif | cut -f1))"
+
+echo "wrote replay.mp4 ($(du -h docs/figures/replay.mp4|cut -f1)) webm ($(du -h docs/figures/replay.webm|cut -f1)) gif ($(du -h docs/figures/replay.gif|cut -f1))"
