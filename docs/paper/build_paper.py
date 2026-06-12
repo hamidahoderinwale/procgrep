@@ -106,7 +106,7 @@ SHOWCASE = """
   <div class="sc-frame">
     <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
   </div>
-  <p class="caption">The live explorer, embedded. Ask a structural question over the whole store, set two agents, evals, or resolved versus unresolved runs side by side, and replay any trajectory step by step. No model call. If it is cold it takes a moment to wake; the snapshots below show the same tool.</p>
+  <p class="caption">The live explorer: query the whole store, set two groups side by side, and replay any trajectory. No model call.</p>
 </aside>
 <figure class="exfig" id="compare-fig">
   <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
