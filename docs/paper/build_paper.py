@@ -105,6 +105,10 @@ SHOWCASE = """
   </div>
   <p class="caption">Embedded above: ask a structural question over a whole dataset, answered in milliseconds with no model call. The live tool also sets two agents side by side, and compares two evals or resolved versus unresolved runs, with a diff strip that names the procedures separating them.</p>
 </aside>
+<figure class="exfig" id="compare-fig">
+  <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two agents side by side" loading="lazy">
+  <figcaption class="caption">The compare view. Two groups side by side, each row one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid, with a diff strip that names the procedures most separating them and the gaps in length and reasoning. Toggle by agent, by eval, or by resolved versus unresolved runs. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
+</figure>
 """
 
 JSD_JS = r"""
@@ -267,6 +271,9 @@ background:#fff;border-radius:4px}
 .sc-eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--copper)}
 .sc-open{font-family:var(--mono);font-size:12px;color:var(--copper);text-decoration:none}
 .sc-open:hover{text-decoration:underline}
+.exfig{max-width:1020px;margin:26px auto;padding:0}
+.exfig img{width:100%;height:auto;display:block;border:1px solid var(--rule)}
+.exfig figcaption{margin-top:8px}
 .sc-title{font-size:26px;font-weight:600;margin:6px 0 6px}
 .sc-sub{font-size:16px;color:var(--olive);max-width:64ch;margin:0 0 14px}
 .sc-frame{border:1px solid var(--rule);border-radius:3px;overflow:hidden;background:var(--paper)}

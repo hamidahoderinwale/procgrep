@@ -49,6 +49,7 @@ Design decisions (benefit / price):
 
 from __future__ import annotations
 
+import contextlib
 import math
 import re
 import threading
@@ -253,6 +254,7 @@ app = FastAPI(title="ProcGrep explorer", docs_url="/api")
 class QueryRequest(BaseModel):
     dataset: str = SUGGESTED[0]
     pattern: str  # regex over the space-joined atom spine
+    offset: int = 0  # paginate the matched-trace sample for "show more"
 
 
 @app.get("/datasets")
@@ -335,15 +337,17 @@ def query(req: QueryRequest) -> JSONResponse:
             "mix_all": _action_mix(traces),
             "mix_hits": _action_mix(hits) if hits else {},
             "atom_color": ATOM_COLOR,
+            "n_shown_from": req.offset,
             "hits": [
                 {
                     "trace_id": t.trace_id,
                     "model": t.agent,
                     "task": t.task,
                     "outcome": t.outcome,
+                    "steps": len(t.atoms),
                     "atoms": list(t.atoms[:200]),
                 }
-                for t in hits[:HIT_SAMPLE]
+                for t in hits[req.offset : req.offset + HIT_SAMPLE]
             ],
         }
     )
@@ -366,7 +370,11 @@ class CompareRequest(BaseModel):
 def _side_traces(axis: str, dataset: str, value: str) -> tuple[list[CachedTrace], str]:
     """Resolve one side of a comparison to its traces and a display label."""
     if axis == "eval":
-        return _load(value), value.split("/")[-1]
+        # org/short label so same-basename datasets stay distinct, e.g.
+        # nebius/SWE-agent vs ElenaFu/SWE-agent.
+        org, _, name = value.partition("/")
+        short = name.replace("-trajectories", "") or name
+        return _load(value), f"{org}/{short}" if org else name
     if axis == "agent":
         return [t for t in _load(dataset) if t.agent == value], value
     if axis == "outcome":
@@ -496,20 +504,38 @@ def compare(req: CompareRequest) -> JSONResponse:
 
 
 def _warm_default_compare() -> None:
-    """Cache the comparator's default landing pair: first store dataset, its two
-    most common agents. Runs in a background thread so it never blocks startup.
+    """Cache the comparator's default landing pair for every axis (agent, eval,
+    outcome), mirroring the frontend defaults so each axis lands instantly.
+    Runs in a background thread so it never blocks startup.
     """
     try:
         store = _load_store()
         datasets = list(store.keys()) or list(SUGGESTED)
-        dataset = datasets[0]
-        agents = [a for a, _ in Counter(t.agent for t in _load(dataset)).most_common()]
+    except Exception:
+        return
+
+    def warm(axis: str, dataset: str, left: str, right: str) -> None:
+        key = (axis, dataset, left, right)
+        if key not in _COMPARE_CACHE:
+            with contextlib.suppress(Exception):
+                _COMPARE_CACHE[key] = _compute_compare(axis, dataset, left, right)
+
+    # agent: first dataset, its two most common agents (frontend default).
+    try:
+        agents = [a for a, _ in Counter(t.agent for t in _load(datasets[0])).most_common()]
         if len(agents) >= 2:
-            _COMPARE_CACHE[("agent", dataset, agents[0], agents[1])] = _compute_compare(
-                "agent", dataset, agents[0], agents[1]
-            )
+            warm("agent", datasets[0], agents[0], agents[1])
     except Exception:
         pass
+    # eval: first two store datasets.
+    if len(datasets) >= 2:
+        warm("eval", datasets[0], datasets[0], datasets[1])
+    # outcome: first dataset that carries a resolved label, resolved vs unresolved.
+    outcome_ds = [
+        d for d, ts in store.items() if any(t.outcome in ("resolved", "unresolved") for t in ts)
+    ]
+    if outcome_ds:
+        warm("outcome", outcome_ds[0], "resolved", "unresolved")
 
 
 @app.on_event("startup")

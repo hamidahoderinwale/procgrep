@@ -21,6 +21,7 @@ let HIDE_NOISE = false;
 let DSETS = [];                 // store-backed dataset ids (shared by query + compare)
 let OUTCOME_DS = [];            // datasets that carry a genuine resolution label
 let QTIMER;                     // debounce handle for live-as-you-type
+let QHITS = [], QCOLOR = {}, QNH = 0, QPAT = "";  // current query hits, for click + paginate
 const CMP = { axis: "agent", ds: null, left: null, right: null, data: null };
 
 // Brief provenance: link the selected dataset to its Hugging Face source page.
@@ -96,6 +97,7 @@ async function run(pattern) {
   }
   if (r.error) { $("res").innerHTML = `<span class="err">${r.error}</span>`; return; }
   $("dsmeta").textContent = `· ${r.n_traces} traces${r.truncated ? " (capped)" : ""}`;
+  QHITS = r.hits; QCOLOR = r.atom_color; QNH = r.n_hits; QPAT = r.pattern;
   const col = r.atom_color;
   const top = r.by_model[0];
   const s = r.stats || {};
@@ -111,13 +113,10 @@ async function run(pattern) {
      <div class="eyebrow">action mix · matched vs. all</div>
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
-     <div class="eyebrow">matching traces · matched span outlined</div>
-     ${r.hits.map((h) => {
-        const prob = h.task || h.trace_id || "";
-        const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
-        return `<div class="qhit"><span class="hit-model">${prettyModel(h.model)}</span><span class="hit-task dim" title="${prob}">${prettyTask(prob)}</span>${oc}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col, matchSpan(h.atoms, r.pattern))}</div>`;
-      }).join("")}
-     ${r.n_hits > r.hits.length ? `<div class="note">showing ${r.hits.length} of ${r.n_hits} matches</div>` : ""}`;
+     <div class="eyebrow">matching traces · click to open · matched span outlined</div>
+     <div id="qhits"></div>
+     <div id="qmore"></div>`;
+  renderHits();
 }
 
 document.addEventListener("click", (e) => {
@@ -174,23 +173,54 @@ function barcode(atoms, color) {
   }).join("") + "</span>";
 }
 
-function openTrace(side, i) {
-  const r = CMP.data; if (!r) return;
-  const t = r[side].trails[i];
-  const ds = CMP.axis === "eval" ? (side === "left" ? CMP.left : CMP.right) : CMP.ds;
+// Open any trace as a thread sheet. Shared by the comparator trails and the
+// query hits, so "select a trace to inspect" works the same everywhere.
+function openTraceData(t, ds, color) {
   const src = `https://huggingface.co/datasets/${ds}`;
+  const prob = t.task || t.trace_id || "";
+  const oc = t.outcome ? ` <span class="oc ${t.outcome}">${t.outcome}</span>` : "";
   const sheet = document.createElement("div");
   sheet.className = "sheet";
   sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
   sheet.innerHTML =
     `<div class="card"><span class="x" onclick="this.closest('.sheet').remove()">close ✕</span>
-     <div style="font-size:15px"><b>${prettyModel(t.model)}</b>${t.task ? ` · ${prettyTask(t.task)}` : ""}</div>
-     <div class="dim" style="margin:2px 0 4px">${t.steps} steps · structural trail, no raw text stored</div>
-     <div style="margin:6px 0 12px">${barcode(t.atoms, r.atom_color)}</div>
-     <div class="thread">${threadHTML(t.atoms, r.atom_color)}</div>
+     <div style="font-size:15px"><b>${prettyModel(t.model)}</b>${prob ? ` · ${prettyTask(prob)}` : ""}${oc}</div>
+     <div class="dim" style="margin:2px 0 4px">${t.steps ?? t.atoms.length} steps · structural trail, no raw text stored</div>
+     <div style="margin:6px 0 12px">${barcode(t.atoms, color)}</div>
+     <div class="thread">${threadHTML(t.atoms, color)}</div>
      <div class="note" style="margin-top:12px"><a href="${src}" target="_blank" rel="noopener">view full trace at source ↗</a> · ${ds}</div>
      </div>`;
   document.body.appendChild(sheet);
+}
+function openTrace(side, i) {
+  const r = CMP.data; if (!r) return;
+  const ds = CMP.axis === "eval" ? (side === "left" ? CMP.left : CMP.right) : CMP.ds;
+  openTraceData(r[side].trails[i], ds, r.atom_color);
+}
+function openQHit(i) { openTraceData(QHITS[i], $("ds").value, QCOLOR); }
+
+// Render the matched-trace list with a "show more" control so the full match
+// set is browsable, not just the first server page.
+function renderHits() {
+  $("qhits").innerHTML = QHITS.map((h, i) => {
+    const prob = h.task || h.trace_id || "";
+    const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
+    return `<div class="qhit" onclick="openQHit(${i})"><span class="hit-model">${prettyModel(h.model)}</span><span class="hit-task dim" title="${prob}">${prettyTask(prob)}</span>${oc}<span class="dim">${h.steps ?? h.atoms.length} steps</span>${spine(h.atoms, QCOLOR, matchSpan(h.atoms, QPAT))}</div>`;
+  }).join("");
+  const left = QNH - QHITS.length;
+  $("qmore").innerHTML = left > 0
+    ? `<span class="chip" onclick="moreHits()">show more · ${QHITS.length} of ${QNH}</span>`
+    : (QNH ? `<div class="note">showing all ${QNH}</div>` : "");
+}
+async function moreHits() {
+  let r;
+  try {
+    r = await (await fetch("query", {
+      method: "POST", headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ dataset: $("ds").value, pattern: QPAT, offset: QHITS.length }),
+    })).json();
+  } catch { return; }
+  if (r.hits && r.hits.length) { QHITS = QHITS.concat(r.hits); renderHits(); }
 }
 
 function trailStack(side) {
