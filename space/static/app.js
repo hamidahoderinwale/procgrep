@@ -9,6 +9,12 @@ const SAMPLES = [
   { label: "recovered from an error", pat: "error edit" },
 ];
 const $ = (id) => document.getElementById(id);
+function prettyModel(a){let m=String(a).replace(/^(swe-agent|agentless|moatless|dars|mini-swe-agent)[-+]/i,'');
+  m=m.replace(/llama-?(\d+)b/i,(_,n)=>'Llama '+n+'B').replace(/\bgpt-?4o\b/i,'GPT-4o').replace(/\bgpt-?4\b/i,'GPT-4')
+     .replace(/claude-?([\d.]+)([a-z-]*)/i,(_,v,sfx)=>'Claude '+v+(sfx?' '+sfx.replace(/-/g,' ').trim():''))
+     .replace(/deepseek-?(v?\d+|r\d+)/i,(_,v)=>'DeepSeek '+v.toUpperCase());
+  return (m.replace(/-/g,' ').trim())||String(a);}
+function prettyTask(t){if(!t)return '';const m=String(t).match(/^(.+?)__(.+?)-(\d+)$/);return m?`${m[1]}/${m[2]} #${m[3]}`:String(t);}
 let HIDE_NOISE = false;
 
 async function loadDatasets() {
@@ -63,15 +69,15 @@ async function run(pattern) {
     : "";
   $("res").innerHTML =
     `<div style="font-size:15px;margin:4px 0"><b>${r.n_hits}</b> / ${r.n_traces} traces match <b>/${r.pattern}/</b></div>
-     <div class="dim" style="margin-bottom:6px"><span class="speed">scanned in ${r.elapsed_ms} ms, no model call</span>${top ? ` · ${top.model.split("-").slice(-2).join("-")} most affected at ${(top.rate * 100).toFixed(0)}%` : ""}</div>
+     <div class="dim" style="margin-bottom:6px"><span class="speed">scanned in ${r.elapsed_ms} ms, no model call</span>${top ? ` · ${prettyModel(top.model)} most affected at ${(top.rate * 100).toFixed(0)}%` : ""}</div>
      ${statline}
      <div class="eyebrow">which models</div>
-     ${r.by_model.map((m) => `<div class="rrow"><span class="rlab">${m.model.split("-").slice(-2).join("-")}</span><span class="barbg"><span class="fill" style="width:${(m.rate * 160).toFixed(0)}px"></span></span><span>${(m.rate * 100).toFixed(0)}%</span></div>`).join("")}
+     ${r.by_model.map((m) => `<div class="rrow"><span class="rlab">${prettyModel(m.model)}</span><span class="barbg"><span class="fill" style="width:${(m.rate * 160).toFixed(0)}px"></span></span><span>${(m.rate * 100).toFixed(0)}%</span></div>`).join("")}
      <div class="eyebrow">action mix · matched vs. all</div>
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
      <div class="eyebrow">matching traces</div>
-     ${r.hits.map((h) => `<div class="qhit"><span class="hit-model">${h.model.split("-").slice(-2).join("-")}</span>${h.task ? `<span class="hit-task dim" title="${h.task}">${h.task}</span>` : ""}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col)}</div>`).join("")}
+     ${r.hits.map((h) => `<div class="qhit"><span class="hit-model">${prettyModel(h.model)}</span>${h.task ? `<span class="hit-task dim" title="${prettyTask(h.task)}">${prettyTask(h.task)}</span>` : ""}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col)}</div>`).join("")}
      ${r.n_hits > r.hits.length ? `<div class="note">showing ${r.hits.length} of ${r.n_hits} matches</div>` : ""}`;
 }
 

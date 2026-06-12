@@ -80,7 +80,7 @@ body.hide-noise .gap{display:none}
 .dsbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 18px;color:var(--olive)}
 .qhit{padding:5px 2px;border-bottom:1px solid var(--rule);cursor:pointer;display:flex;align-items:center;gap:8px}
 .qhit:hover{color:var(--copper)}
-.qhmodel{min-width:48px}
+.qhmodel{min-width:96px}
 .spinemini{display:inline-flex;gap:1px;flex-wrap:wrap;vertical-align:middle;flex:1}
 .spinemini i{display:inline-block;width:5px;height:12px;border-radius:1px}
 .spinemini i.nz{opacity:.26}
@@ -235,9 +235,9 @@ function runQ(custom,id){
   const bym={}; pool.forEach(x=>{(bym[x.model]=bym[x.model]||{n:0,h:0}).n++;});
   hits.forEach(x=>{bym[x.model].h++;});
   const top=Object.entries(bym).map(([m,c])=>[m,c.h/c.n]).sort((a,b)=>b[1]-a[1]);
-  const affected=top.length&&top[0][1]>0?`${top[0][0].split('-').pop()} most affected (${pct(top[0][1])})`:'no model affected';
+  const affected=top.length&&top[0][1]>0?`${prettyModel(top[0][0])} most affected (${pct(top[0][1])})`:'no model affected';
   const modelBars=top.map(([m,r])=>
-    `<div class="rrow"><span class="rlab">${m.split('-').slice(-2).join('-')}</span>
+    `<div class="rrow"><span class="rlab">${prettyModel(m)}</span>
       <span class="barbg"><span class="fill" style="width:${(r*120).toFixed(0)}px;background:var(--copper)"></span></span>
       <span class="rval">${pct(r)}</span></div>`).join('');
   // matched vs all action mix
@@ -251,7 +251,7 @@ function runQ(custom,id){
     <div class="rrow"><span class="rlab">all traces</span>${mixbar(allMix.mix)}</div>
     ${hits.length?legend(hitMix.mix):''}
     <div class="eyebrow">matching traces (click to open)</div>
-    ${hits.slice(0,40).map(h=>`<div class="qhit" onclick="poolTrace('${h.trace_id}')"><span class="qhmodel">${h.model.split('-').pop()}</span> <span class="dim">${h.atoms.length} steps</span> ${spineMini(h.atoms)}</div>`).join('')}
+    ${hits.slice(0,40).map(h=>`<div class="qhit" onclick="poolTrace('${h.trace_id}')"><span class="qhmodel">${prettyModel(h.model)}</span> <span class="dim">${h.atoms.length} steps</span> ${spineMini(h.atoms)}</div>`).join('')}
     ${hits.length>40?`<div class="dim" style="margin-top:6px">+ ${hits.length-40} more</div>`:''}`;
 }
 function poolTrace(tid){const p=PROF[CURDS];const s=(p.samples||[]).find(x=>x.trace_id===tid);
@@ -290,12 +290,12 @@ function permodelView(){
   document.getElementById('dsbar-p').innerHTML=dsPicker('permodel');
   const p=PROF[CURDS];
   const rows=Object.entries(p.by_model).map(([m,s])=>
-    `<tr><td>${m}</td><td>${s.n}</td><td>${s.median_len}</td><td>${pct(s.exact_dup_rate)}</td><td>${mixbar(s.action_mix)}</td></tr>`).join('');
+    `<tr><td>${prettyModel(m)}</td><td>${s.n}</td><td>${s.median_len}</td><td>${pct(s.exact_dup_rate)}</td><td>${mixbar(s.action_mix)}</td></tr>`).join('');
   document.getElementById('pmbody').innerHTML=
    `<div class="eyebrow">${p.dataset.split('/').pop()} · ${p.adapter} · ${p.n_models} models</div>
     <table><thead><tr><th>model</th><th>n</th><th>median len</th><th>exact-dup</th><th>action mix</th></tr></thead><tbody>${rows}</tbody></table>
     <div class="eyebrow">sampled traces (click to open the conversation)</div>
-    <div>${(p.samples||[]).map((s,i)=>`<span class="chip" onclick="trace('${CURDS}',${i})">trace ${i+1} · ${s.model.split('-').pop()} · ${s.atoms.length} steps</span>`).join('')}</div>`;
+    <div>${(p.samples||[]).map((s,i)=>`<span class="chip" onclick="trace('${CURDS}',${i})">trace ${i+1} · ${prettyModel(s.model)} · ${s.atoms.length} steps</span>`).join('')}</div>`;
 }
 function trace(id,i){const s=PROF[id].samples[i];show('tr');
   const spine=skeleton(s.atoms).map(it=>it.gap?`<span class="gap" title="${it.n} think/other steps">···${it.n}···</span>`:`<span class="atom" style="background:${ATOM[it.a]||'#ccc'}">${it.a}${it.n>1?' ×'+it.n:''}</span>`).join('');
@@ -306,6 +306,17 @@ function trace(id,i){const s=PROF[id].samples[i];show('tr');
     <div class="eyebrow">procedural spine</div><div class="spine">${spine}</div><div class="eyebrow">conversation</div>${turns}`;}
 
 // ---- WHY STRUCTURAL view ----
+// Plain-language names for the structural predicates + the model/task prettifiers.
+const PRED_LABEL={edit_streak_5:'edited 5+ times in a row',submitted_without_test:'submitted without testing',
+  tested_before_first_edit:'tested before its first edit',read_streak_4:'read 4+ files in a row',
+  never_searched:'never searched the repo'};
+function prettyModel(a){let m=String(a).replace(/^(swe-agent|agentless|moatless|dars|mini-swe-agent)[-+]/i,'');
+  m=m.replace(/llama-?(\d+)b/i,(_,n)=>'Llama '+n+'B').replace(/\bgpt-?4o\b/i,'GPT-4o').replace(/\bgpt-?4\b/i,'GPT-4')
+     .replace(/claude-?([\d.]+)([a-z-]*)/i,(_,v,s)=>'Claude '+v+(s?' '+s.replace(/-/g,' ').trim():''))
+     .replace(/deepseek-?(v?\d+|r\d+)/i,(_,v)=>'DeepSeek '+v.toUpperCase());
+  return (m.replace(/-/g,' ').trim())||String(a);}
+function f1col(v){if(v==null)return '#efeae2';const t=Math.max(0,Math.min(1,v)),a=[247,238,232],b=[32,163,128];
+  return 'rgb('+a.map((x,k)=>Math.round(x+(b[k]-x)*t)).join(',')+')';}  // pale -> teal as F1 rises
 function whyView(){const e=D.experiment;const el=document.getElementById('why');
   if(!e){el.innerHTML='<span class="back" onclick="show(\'query\')">← query</span><p class="sub">experiment not loaded.</p>';return;}
   const judges=Object.entries(e.pareto||{}).filter(([k])=>k!=='procgrep');
@@ -314,25 +325,26 @@ function whyView(){const e=D.experiment;const el=document.getElementById('why');
   const bestF1=judges.length?Math.max(...judges.map(([,v])=>v.mean_f1||0)):0;
   const struct=Object.entries(e.predicates).filter(([k,v])=>v.kind==='structural');
   const models=Object.keys(struct[0][1].judges);
-  const head=`<th>predicate</th>${models.map(m=>`<th>${m.split('/').pop()}</th>`).join('')}<th>κ</th>`;
-  const body=struct.map(([k,v])=>`<tr><td>${k}</td>${models.map(m=>{const f=v.judges[m].f1;
-    return `<td>${f==null?'—':f.toFixed(2)}</td>`;}).join('')}<td>${v.pairwise_cohen_kappa==null?'—':v.pairwise_cohen_kappa}</td></tr>`).join('');
+  const head=`<th>behavioural question</th>${models.map(m=>`<th>${prettyModel(m)}</th>`).join('')}<th>judge agreement κ</th>`;
+  const body=struct.map(([k,v])=>`<tr><td>${PRED_LABEL[k]||k}</td>${models.map(m=>{const f=v.judges[m].f1;
+    return `<td style="background:${f1col(f)};text-align:center">${f==null?'—':f.toFixed(2)}</td>`;}).join('')}<td style="text-align:center">${v.pairwise_cohen_kappa==null?'—':v.pairwise_cohen_kappa}</td></tr>`).join('');
   const fz=Object.entries(e.predicates).find(([k,v])=>v.kind==='fuzzy');
   el.innerHTML=
    `<span class="back" onclick="show('query')">← query</span>
     <h1>Why not just ask an LLM?</h1>
-    <p class="sub">Every behavioural question in the query tab can be asked two ways: a deterministic structural query over the action spine, or an LLM judge reading the trace. We ran both over the same trajectories (incl. a strong judge).</p>
+    <p class="sub">Every behavioural question in the query tab can be asked two ways: a deterministic structural query over the action spine, or an LLM judge reading the trace. We ran both over the same trajectories, including a strong judge.</p>
     <div class="cards">
       <div class="card"><div class="dim">speed</div><div class="big">${ratio.toLocaleString()}×</div>
-        <div class="dim">procgrep ${e.procgrep_us_per_decision} µs vs LLM ${meanLat.toFixed(1)}s per decision · $0 vs API cost</div></div>
-      <div class="card"><div class="dim">accuracy — mean F1, procgrep = 1.0</div><div class="big">≤ ${bestF1.toFixed(2)}</div>
-        <div class="dim">best judge ${bestF1.toFixed(2)}; F1 = 0 on both counting predicates for every judge — LLMs can't count action-streaks in a trace</div></div>
+        <div class="dim">procgrep ${e.procgrep_us_per_decision} µs vs LLM ${meanLat.toFixed(1)}s per decision, and $0 vs API cost</div></div>
+      <div class="card"><div class="dim">accuracy, mean F1 where procgrep = 1.0</div><div class="big">≤ ${bestF1.toFixed(2)}</div>
+        <div class="dim">best judge ${bestF1.toFixed(2)}; F1 = 0 on both counting questions for every judge, because LLMs cannot count action streaks in a trace</div></div>
       <div class="card"><div class="dim">reliability</div><div class="big">κ ≈ 0</div>
-        <div class="dim">judges barely agree — on structural facts and fuzzy ones alike</div></div>
+        <div class="dim">judges barely agree with each other, on structural facts and fuzzy ones alike</div></div>
     </div>
-    <div class="eyebrow">LLM judge F1 vs the exact structural answer · balanced samples · procgrep = 1.0</div>
+    <div class="eyebrow">how often each LLM judge matches the exact structural answer</div>
+    <p class="note" style="margin:0 0 10px">Each cell is a judge's F1 against the exact answer: 1.00 is perfect, 0 is useless, chance is about 0.5. Greener is higher. procgrep is 1.00 by construction. κ in the last column is how much the judges agree with one another (near 0 means barely).</p>
     <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-    <p class="note">Fuzzy property — <b>${fz?fz[0]:''}</b>: inter-judge κ = ${fz?fz[1].pairwise_cohen_kappa:'—'}. procgrep does ${e.procgrep_ms_full} ms for ${e.corpus} traces × ${struct.length} predicates; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). ${e.totals.judge_calls} judge calls, ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
+    <p class="note">On the one fuzzy question, <b>${fz?(PRED_LABEL[fz[0]]||fz[0]):''}</b>, the judges agree at κ = ${fz?fz[1].pairwise_cohen_kappa:'—'}. procgrep answers all ${struct.length} questions over ${e.corpus} traces in ${e.procgrep_ms_full} ms; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). It took ${e.totals.judge_calls} judge calls and ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
 
 // ---- BROWSE view (ecosystem catalog, demoted) ----
 const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,benchFilter:null,collapsed:new Set(),open:new Set()};
