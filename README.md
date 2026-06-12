@@ -6,7 +6,7 @@
 
 ![Replaying one agent trajectory step by step; a structural query fires the instant it matches](docs/figures/replay.gif)
 
-It does not run agents. It does not call any model. It reads files and produces numbers and comparisons.
+No model is in the loop: procgrep reads agent traces and returns exact, reproducible measurements.
 
 ---
 
@@ -52,7 +52,7 @@ for row in matrix.to_records():
 
 ## Core concepts
 
-**Atoms.** Every agent action maps to one of nine canonical types: `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `think`, `submit`, `other`. This shared alphabet makes agents running on different scaffolds comparable.
+**Atoms.** Each agent action is normalized to a canonical type — `localize`, `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `submit`, `think`, with `error` and `other` as catch-alls. This shared alphabet makes agents on different scaffolds comparable. It is a base, not a ceiling: an adapter can emit finer-grained atoms where they help (for example, node-typed AST edits for GumTree traces), and the recurring *procedures* layered on top are learned per corpus, not fixed.
 
 **Trajectory.** One agent attempting one task, represented as an ordered list of atoms. This is what `procgrep` ingests.
 
