@@ -125,37 +125,53 @@ JSD_JS = r"""
   const order=["Claude-3","Claude-3.5","Claude-3.7-thinking","Claude-4","GPT-4","GPT-4o","Agentless+Claude-3.5","DARS+R1","Moatless+V3"];
   const A=JSD.agents,M=JSD.matrix,ME=JSD.meta,S=JSD.axis_stats;
   const oi=order.map(a=>A.indexOf(a)).filter(i=>i>=0), N=oi.length, lab=oi.map(i=>A[i]);
-  const mount=document.getElementById('fig-jsd'); if(!mount)return;
-  const col=v=>{const t=Math.max(0,Math.min(1,v)),a=[230,240,236],b=[13,92,70];
-    return 'rgb('+a.map((x,k)=>Math.round(x+(b[k]-x)*t)).join(',')+')';};
+  const mount=document.getElementById('fig-jsd'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const PC=ProcgrepCharts, col=d3.scaleLinear().domain([0,1]).range(['rgb(230,240,236)','rgb(13,92,70)']).clamp(true);
   const CELL=44,L=158,B=118,W=L+N*CELL+18,H=N*CELL+B;
-  let axis=null;
-  mount.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;margin:0 auto"></svg>`+
-    `<div class="jtip" id="jsd-tip"><span class="dim">Pairwise procedural divergence across nine agents. Hover any cell; toggle an axis below to see what predicts similarity.</span></div>`+
+  let axis=null, showVals=false;
+  mount.innerHTML=`<div class="jtip" id="jsd-tip"><span class="dim">Pairwise procedural divergence across nine agents. Hover any cell; toggle an axis below to see what predicts similarity.</span></div>`+
     `<div class="jctl"><span class="jlab">highlight axis:</span><span id="jsd-btns"></span></div>`;
-  const svg=mount.querySelector('svg'),tip=document.getElementById('jsd-tip'),btns=document.getElementById('jsd-btns');
+  const svg=d3.select(mount).insert('svg',':first-child')
+    .attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%')
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('role','img').attr('aria-label','pairwise procedural divergence heatmap across nine agents')
+    .style('max-width',W+'px').style('display','block').style('margin','0 auto');
+  const tip=document.getElementById('jsd-tip'),btns=document.getElementById('jsd-btns');
+  PC.labelToggle(mount,v=>{showVals=v;draw();},showVals);
   function draw(){
-    let s='';
-    for(let r=0;r<N;r++)for(let c=0;c<N;c++){
-      const ri=oi[r],ci=oi[c],v=M[ri][ci],x=L+c*CELL,y=8+r*CELL;
-      const same=axis&&r!==c&&ME[ri][axis]===ME[ci][axis];
-      s+=`<rect class="jc" x="${x}" y="${y}" width="${CELL-1.5}" height="${CELL-1.5}" fill="${col(v)}" `+
-         `stroke="${same?'#CB4D20':'#fff'}" stroke-width="${same?2.5:1}" data-r="${ri}" data-c="${ci}"/>`;
-      if(r===c)s+=`<text x="${x+CELL/2}" y="${y+CELL/2+3}" text-anchor="middle" font-size="9" fill="#aaa">0</text>`;
-    }
-    for(let r=0;r<N;r++)s+=`<text x="${L-8}" y="${8+r*CELL+CELL/2+3}" text-anchor="end" font-size="11">${lab[r]}</text>`;
+    svg.selectAll('*').remove();
+    const cells=[];
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++)cells.push({r,c,ri:oi[r],ci:oi[c],v:M[oi[r]][oi[c]]});
+    const g=svg.append('g');
+    g.selectAll('rect').data(cells).join('rect').attr('class','jc')
+      .attr('x',d=>L+d.c*CELL).attr('y',d=>8+d.r*CELL)
+      .attr('width',CELL-1.5).attr('height',CELL-1.5)
+      .attr('fill',d=>col(d.v))
+      .attr('stroke',d=>(axis&&d.r!==d.c&&ME[d.ri][axis]===ME[d.ci][axis])?'#CB4D20':'#fff')
+      .attr('stroke-width',d=>(axis&&d.r!==d.c&&ME[d.ri][axis]===ME[d.ci][axis])?2.5:1)
+      .on('mouseenter',(e,d)=>hover(e,d)).on('mousemove',(e,d)=>hover(e,d));
+    // value labels: the JSD number in every off-diagonal cell, the 0 on the diagonal
+    g.selectAll('text.cv').data(cells).join('text').attr('class','cv')
+      .attr('x',d=>L+d.c*CELL+CELL/2).attr('y',d=>8+d.r*CELL+CELL/2+3)
+      .attr('text-anchor','middle').attr('font-size',d=>d.r===d.c?9:8.5)
+      .attr('fill',d=>d.r===d.c?'#aaa':(d.v>0.55?'#F7F5F2':'#14110E'))
+      .style('display',d=>(d.r===d.c||showVals)?null:'none')
+      .text(d=>d.r===d.c?'0':d.v.toFixed(2));
+    for(let r=0;r<N;r++)svg.append('text').attr('x',L-8).attr('y',8+r*CELL+CELL/2+3)
+      .attr('text-anchor','end').attr('font-size',11).text(lab[r]);
     for(let c=0;c<N;c++){const cx=L+c*CELL+CELL/2,cy=8+N*CELL+10;
-      s+=`<text x="${cx}" y="${cy}" text-anchor="end" font-size="11" transform="rotate(-45 ${cx} ${cy})">${lab[c]}</text>`;}
-    svg.innerHTML=s;
+      svg.append('text').attr('x',cx).attr('y',cy).attr('text-anchor','end').attr('font-size',11)
+        .attr('transform',`rotate(-45 ${cx} ${cy})`).text(lab[c]);}
     btns.innerHTML=['scaffold','era','family'].map(k=>`<button class="jbtn ${axis===k?'on':''}" data-k="${k}">${k}</button>`).join(' ')+
       (axis?`<span class="jstat">same <b>${axis}</b> ${S[axis].within} · different ${S[axis].across} <span class="dim">(${S[axis].scope})</span></span>`:'');
   }
+  function hover(e,d){
+    const a=ME[d.ri],b=ME[d.ci];
+    if(d.ri===d.ci){tip.innerHTML='<span class="dim">an agent vs itself — JSD 0 by definition</span>';return;}
+    tip.innerHTML=`<b>${a.agent}</b> vs <b>${b.agent}</b> &nbsp; JSD <b>${d.v.toFixed(2)}</b><br>`+
+      ['family','era','scaffold'].map(k=>`${k}: `+(a[k]===b[k]?`<span style="color:#20A380">same</span>`:`<span style="color:#CB4D20">differ</span>`)).join(' &nbsp;·&nbsp; ');
+  }
   btns.addEventListener('click',e=>{const k=e.target.dataset.k;if(k){axis=axis===k?null:k;draw();}});
-  svg.addEventListener('mousemove',e=>{const t=e.target;if(t.tagName!=='rect'){return;}
-    const ri=+t.dataset.r,ci=+t.dataset.c,v=M[ri][ci],a=ME[ri],b=ME[ci];
-    if(ri===ci){tip.innerHTML='<span class="dim">an agent vs itself — JSD 0 by definition</span>';return;}
-    tip.innerHTML=`<b>${a.agent}</b> vs <b>${b.agent}</b> &nbsp; JSD <b>${v.toFixed(2)}</b><br>`+
-      ['family','era','scaffold'].map(k=>`${k}: `+(a[k]===b[k]?`<span style="color:#20A380">same</span>`:`<span style="color:#CB4D20">differ</span>`)).join(' &nbsp;·&nbsp; ');});
   draw();
 })();
 """
@@ -164,31 +180,48 @@ FT_JS = r"""
 (function(){
   const el=document.getElementById('ft-data'); if(!el)return;
   const D=JSON.parse(el.textContent).agents;
-  const mount=document.getElementById('fig-ft'); if(!mount)return;
-  const FCOL={Claude:'#CB4D20',GPT:'#5692E5',Other:'#585E53'};
+  const mount=document.getElementById('fig-ft'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const PC=ProcgrepCharts, FCOL={Claude:'#CB4D20',GPT:'#5692E5',Other:'#585E53'};
   const W=560,RH=34,PADL=160,PADR=20,PADT=18,PADB=46,H=PADT+D.length*RH+PADB;
-  const x=v=>PADL+v*(W-PADL-PADR);
-  mount.innerHTML=`<svg viewBox="0 0 ${W} ${H}" width="100%" style="max-width:${W}px;display:block;margin:0 auto"></svg>`+
+  const x=d3.scaleLinear().domain([0,1]).range([PADL,W-PADR]);
+  mount.innerHTML=
     `<div class="jtip" id="ft-tip"><span class="dim">Forward = the agent does what it said (says→does). Reverse = it said what it did (did→says). Hover a marker.</span></div>`+
     `<div class="ftleg"><span><svg width=14 height=14><circle cx=7 cy=7 r=5 fill="#585E53"/></svg> forward</span>`+
     `<span><svg width=14 height=14><polygon points="7,2 12,12 2,12" fill="#585E53"/></svg> reverse</span>`+
     `<span><i style="background:#CB4D20"></i>Claude</span><span><i style="background:#5692E5"></i>GPT</span></div>`;
-  const svg=mount.querySelector('svg'),tip=document.getElementById('ft-tip');
-  let s='';
-  [0,0.5,1].forEach(t=>{s+=`<line x1="${x(t)}" y1="${PADT}" x2="${x(t)}" y2="${H-PADB+4}" stroke="#e6e1d8"/>`+
-    `<text x="${x(t)}" y="${H-PADB+18}" text-anchor="middle" font-size="11" fill="#585E53">${t}</text>`;});
-  s+=`<text x="${(PADL+W-PADR)/2}" y="${H-6}" text-anchor="middle" font-size="11" fill="#585E53">action-account coverage</text>`;
-  D.forEach((d,i)=>{const cy=PADT+i*RH+RH/2,c=FCOL[d.family];
-    s+=`<text x="${PADL-10}" y="${cy+3}" text-anchor="end" font-size="11">${d.agent}</text>`;
-    s+=`<line x1="${x(d.fwd_iqr[0])}" y1="${cy-6}" x2="${x(d.fwd_iqr[1])}" y2="${cy-6}" stroke="${c}" stroke-opacity=".4"/>`;
-    s+=`<circle class="fc" cx="${x(d.fwd)}" cy="${cy-6}" r="5.5" fill="${c}" data-i="${i}"/>`;
-    s+=`<line x1="${x(d.rev_iqr[0])}" y1="${cy+7}" x2="${x(d.rev_iqr[1])}" y2="${cy+7}" stroke="${c}" stroke-opacity=".4"/>`;
-    const tx=x(d.rev);s+=`<polygon class="fc" points="${tx},${cy+2} ${tx+5.5},${cy+12} ${tx-5.5},${cy+12}" fill="${c}" data-i="${i}"/>`;
-  });
-  svg.innerHTML=s;
-  svg.addEventListener('mousemove',e=>{const t=e.target;if(!t.classList||!t.classList.contains('fc'))return;
-    const d=D[+t.dataset.i];
-    tip.innerHTML=`<b>${d.agent}</b> &nbsp; forward <b>${d.fwd.toFixed(2)}</b> <span class="dim">[${d.fwd_iqr[0]}–${d.fwd_iqr[1]}]</span> &nbsp;·&nbsp; reverse <b>${d.rev.toFixed(2)}</b> <span class="dim">[${d.rev_iqr[0]}–${d.rev_iqr[1]}]</span>`;});
+  const svg=d3.select(mount).insert('svg',':first-child')
+    .attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%')
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('role','img').attr('aria-label','forward and reverse action-account coverage by agent')
+    .style('max-width',W+'px').style('display','block').style('margin','0 auto');
+  const tip=document.getElementById('ft-tip');
+  [0,0.5,1].forEach(t=>{svg.append('line').attr('x1',x(t)).attr('y1',PADT).attr('x2',x(t)).attr('y2',H-PADB+4).attr('stroke','#e6e1d8');
+    svg.append('text').attr('x',x(t)).attr('y',H-PADB+18).attr('text-anchor','middle').attr('font-size',11).attr('fill','#585E53').text(t);});
+  svg.append('text').attr('x',(PADL+W-PADR)/2).attr('y',H-6).attr('text-anchor','middle').attr('font-size',11).attr('fill','#585E53').text('action-account coverage');
+  const rows=svg.append('g').selectAll('g').data(D).join('g')
+    .attr('transform',(d,i)=>`translate(0,${PADT+i*RH+RH/2})`);
+  rows.append('text').attr('x',PADL-10).attr('y',3).attr('text-anchor','end').attr('font-size',11).text(d=>d.agent);
+  rows.append('line').attr('x1',d=>x(d.fwd_iqr[0])).attr('y1',-6).attr('x2',d=>x(d.fwd_iqr[1])).attr('y2',-6)
+    .attr('stroke',d=>FCOL[d.family]).attr('stroke-opacity',.4);
+  rows.append('circle').attr('class','fc').attr('cx',d=>x(d.fwd)).attr('cy',-6).attr('r',5.5).attr('fill',d=>FCOL[d.family])
+    .on('mouseenter',(e,d)=>hover(d)).on('mousemove',(e,d)=>hover(d));
+  rows.append('line').attr('x1',d=>x(d.rev_iqr[0])).attr('y1',7).attr('x2',d=>x(d.rev_iqr[1])).attr('y2',7)
+    .attr('stroke',d=>FCOL[d.family]).attr('stroke-opacity',.4);
+  rows.append('polygon').attr('class','fc')
+    .attr('points',d=>{const tx=x(d.rev);return `${tx},${2} ${tx+5.5},${12} ${tx-5.5},${12}`;})
+    .attr('fill',d=>FCOL[d.family])
+    .on('mouseenter',(e,d)=>hover(d)).on('mousemove',(e,d)=>hover(d));
+  // value labels: forward and reverse numbers beside each marker, toggled as a group
+  const fwdLab=rows.append('text').attr('class','ftv').attr('x',d=>x(d.fwd)+9).attr('y',-3)
+    .attr('font-size',9.5).attr('fill',d=>FCOL[d.family]).text(d=>d.fwd.toFixed(2));
+  const revLab=rows.append('text').attr('class','ftv').attr('x',d=>x(d.rev)+9).attr('y',14)
+    .attr('font-size',9.5).attr('fill',d=>FCOL[d.family]).text(d=>d.rev.toFixed(2));
+  function setLabels(on){fwdLab.style('display',on?null:'none');revLab.style('display',on?null:'none');}
+  setLabels(false);
+  PC.labelToggle(mount,setLabels,false);
+  function hover(d){
+    tip.innerHTML=`<b>${d.agent}</b> &nbsp; forward <b>${d.fwd.toFixed(2)}</b> <span class="dim">[${d.fwd_iqr[0]}–${d.fwd_iqr[1]}]</span> &nbsp;·&nbsp; reverse <b>${d.rev.toFixed(2)}</b> <span class="dim">[${d.rev_iqr[0]}–${d.rev_iqr[1]}]</span>`;
+  }
 })();
 """
 
@@ -696,6 +729,8 @@ def main() -> None:
     body = glossary(body)
     toc = build_toc(body)
     abstract = extract_abstract()
+    # Inline the shared D3 chart module (one source of truth with the explorer).
+    d3charts_js = (ROOT.parent / "explorer" / "d3charts.js").read_text()
 
     page = f"""<!doctype html>
 <html lang="en"><head>
@@ -703,6 +738,9 @@ def main() -> None:
 <title>{html.escape(TITLE)} · ProcGrep</title>
 <style>{STYLE}</style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={{paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"}};</script>
+<script>{d3charts_js}</script>
 </head><body>
 <div class="progress" id="progress"></div>
 <div class="topbar"><div class="in"><span class="mark">procgrep</span>

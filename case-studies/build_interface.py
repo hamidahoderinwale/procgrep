@@ -165,6 +165,9 @@ a.plain{color:var(--copper);cursor:pointer}
 </div>
 
 <script id="data" type="application/json">__DATA__</script>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};</script>
+<script>__D3CHARTS__</script>
 <script>
 const D=JSON.parse(document.getElementById('data').textContent);
 const CAT=D.catalog, DS=CAT.datasets, PROF=D.profiles;
@@ -345,29 +348,36 @@ function f1col(v){if(v==null)return '#efeae2';const t=Math.max(0,Math.min(1,v)),
   return 'rgb('+a.map((x,k)=>Math.round(x+(b[k]-x)*t)).join(',')+')';}  // pale -> teal as F1 rises
 // Quality vs latency: procgrep at microseconds and F1 1.0, the LLM judges a
 // million times slower and well below. Log x so both regimes fit one frame.
+// Returns an empty mount; drawLatQual fills it with an interactive D3 scatter
+// once the surrounding innerHTML is in the DOM.
 function latQualPlot(e){
+  return `<div id="lqplot-mount" class="lqplot"></div>`;
+}
+function drawLatQual(e){
+  const mount=document.getElementById('lqplot-mount'); if(!mount||!window.ProcgrepCharts)return;
   const W=620,H=300,L=58,Rm=18,T=16,Bm=46,pw=W-L-Rm,ph=H-T-Bm;
-  const pts=[{name:'procgrep',lat:e.procgrep_us_per_decision*1e-6,f1:1.0,pg:true}];
-  for(const [k,v] of Object.entries(e.pareto)){ if(k==='procgrep'||v.mean_latency_s==null)continue;
-    pts.push({name:prettyModel(k),lat:v.mean_latency_s,f1:v.mean_f1||0}); }
   const xmin=Math.log10(5e-7),xmax=Math.log10(2);
   const X=l=>L+(Math.log10(l)-xmin)/(xmax-xmin)*pw, Y=f=>T+(1-f)*ph;
-  let s=`<svg viewBox="0 0 ${W} ${H}" class="lqplot" role="img" aria-label="F1 versus latency">`;
-  for(const [f,lab] of [[0,'0'],[0.5,'0.5'],[1,'1.0']]){ const y=Y(f);
-    s+=`<line x1="${L}" y1="${y}" x2="${L+pw}" y2="${y}" stroke="${f===0.5?'#d8b8b0':'#ece7df'}"${f===0.5?' stroke-dasharray="3 3"':''}/>`;
-    s+=`<text x="${L-8}" y="${y+3}" text-anchor="end" class="ax">${lab}</text>`; }
-  s+=`<text x="${X(0.5)+4}" y="${Y(0.5)-4}" class="ax" fill="#9c3a5a">chance</text>`;
-  for(const [l,lab] of [[1e-6,'1 µs'],[1e-3,'1 ms'],[1,'1 s']]){ const x=X(l);
-    s+=`<line x1="${x}" y1="${T}" x2="${x}" y2="${T+ph}" stroke="#ece7df"/>`;
-    s+=`<text x="${x}" y="${T+ph+16}" text-anchor="middle" class="ax">${lab}</text>`; }
-  s+=`<text x="${L+pw}" y="${T+ph+33}" text-anchor="end" class="ax">slower per decision</text>`;
-  s+=`<text x="14" y="${T+ph/2}" transform="rotate(-90 14 ${T+ph/2})" text-anchor="middle" class="ax">F1 vs exact answer</text>`;
-  for(const p of pts){ const x=X(p.lat),y=Y(p.f1);
-    s+=`<circle cx="${x}" cy="${y}" r="${p.pg?6:4}" fill="${p.pg?'#CB4D20':'#20A380'}"><title>${p.name}: F1 ${p.f1.toFixed(2)}, ${p.pg?e.procgrep_us_per_decision+' µs':p.lat.toFixed(2)+' s'}</title></circle>`; }
-  s+=`<text x="${X(pts[0].lat)}" y="${Y(1)-10}" class="lab" fill="#CB4D20">procgrep · 1.00</text>`;
-  const jy=Math.min(...pts.filter(p=>!p.pg).map(p=>Y(p.f1)));
-  s+=`<text x="${L+pw}" y="${jy-9}" text-anchor="end" class="lab" fill="#585E53">LLM judges</text>`;
-  return s+`</svg>`;
+  const pts=[{name:'procgrep',x:e.procgrep_us_per_decision*1e-6,y:1.0,color:'#CB4D20',r:6,
+    valueLabel:'1.00',title:`procgrep: F1 1.00, ${e.procgrep_us_per_decision} µs`,
+    tipHTML:`<b>procgrep</b><br>F1 1.00 &middot; ${e.procgrep_us_per_decision} µs per decision`}];
+  for(const [k,v] of Object.entries(e.pareto)){ if(k==='procgrep'||v.mean_latency_s==null)continue;
+    const nm=prettyModel(k),f1=v.mean_f1||0;
+    pts.push({name:nm,x:v.mean_latency_s,y:f1,color:'#20A380',r:4,valueLabel:f1.toFixed(2),
+      title:`${nm}: F1 ${f1.toFixed(2)}, ${v.mean_latency_s.toFixed(2)} s`,
+      tipHTML:`<b>${nm}</b><br>F1 ${f1.toFixed(2)} &middot; ${v.mean_latency_s.toFixed(2)} s per decision`}); }
+  const judgeY=Math.min(...pts.filter(p=>p.color!=='#CB4D20').map(p=>Y(p.y)));
+  ProcgrepCharts.logScatter(mount,pts,{
+    width:W,height:H,xDomain:[5e-7,2],yDomain:[0,1],
+    ariaLabel:'F1 versus latency, log x',
+    xLabel:'slower per decision',yLabel:'F1 vs exact answer',
+    xTicks:[{v:1e-6,label:'1 µs'},{v:1e-3,label:'1 ms'},{v:1,label:'1 s'}],
+    yTicks:[{v:0,label:'0'},{v:0.5,label:'0.5',emphasize:true},{v:1,label:'1.0'}],
+    seriesLabels:[
+      {text:'chance',x:X(0.5)+4,y:Y(0.5)-4,color:'#9c3a5a'},
+      {text:'procgrep · 1.00',x:X(pts[0].x),y:Y(1)-10,color:'#CB4D20'},
+      {text:'LLM judges',x:L+pw,y:judgeY-9,anchor:'end',color:'#585E53'}],
+  });
 }
 
 function whyView(){const e=D.experiment;const el=document.getElementById('why');
@@ -400,7 +410,8 @@ function whyView(){const e=D.experiment;const el=document.getElementById('why');
     <div class="eyebrow">how often each LLM judge matches the exact structural answer</div>
     <p class="note" style="margin:0 0 10px">Each cell is a judge's F1 against the exact answer: 1.00 is perfect, 0 is useless, chance is about 0.5. Greener is higher. procgrep is 1.00 by construction. κ in the last column is how much the judges agree with one another (near 0 means barely).</p>
     <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-    <p class="note">On the one fuzzy question, <b>${fz?(PRED_LABEL[fz[0]]||fz[0]):''}</b>, the judges agree at κ = ${fz?fz[1].pairwise_cohen_kappa:'n/a'}. procgrep answers all ${struct.length} questions over ${e.corpus} traces in ${e.procgrep_ms_full} ms; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). It took ${e.totals.judge_calls} judge calls and ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
+    <p class="note">On the one fuzzy question, <b>${fz?(PRED_LABEL[fz[0]]||fz[0]):''}</b>, the judges agree at κ = ${fz?fz[1].pairwise_cohen_kappa:'n/a'}. procgrep answers all ${struct.length} questions over ${e.corpus} traces in ${e.procgrep_ms_full} ms; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). It took ${e.totals.judge_calls} judge calls and ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;
+  drawLatQual(e);}
 
 // ---- BROWSE view (ecosystem catalog, demoted) ----
 const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,benchFilter:null,collapsed:new Set(),open:new Set()};
@@ -534,9 +545,12 @@ def main() -> None:
     logos = json.loads(Path(args.logos).read_text()) if args.logos else {}
 
     data = json.dumps({"catalog": catalog, "profiles": profiles, "experiment": experiment, "logos": logos})
+    # Inline the shared D3 chart module so the explorer stays openable from
+    # file:// with only D3 itself loaded from the CDN.
+    d3charts = (Path(__file__).resolve().parents[1] / "docs" / "explorer" / "d3charts.js").read_text()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
-    out.write_text(HTML.replace("__DATA__", data))
+    out.write_text(HTML.replace("__DATA__", data).replace("__D3CHARTS__", d3charts))
     print(f"wrote {out}  ({len(catalog['datasets'])} datasets, {len(profiles)} profiles)")
 
 
