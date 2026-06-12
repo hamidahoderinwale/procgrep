@@ -32,6 +32,13 @@ Design decisions (benefit / price):
     canonicalization, and coverage can grow on CI rather than at request time.
     Price: store-backed datasets are only as fresh as the last refresh build;
     the weekly action keeps them current.
+ 6. The comparator (/compare) reuses the library's lineage primitives
+    (fit_bpe, encode, discriminative_procedures, jsd) rather than reinventing
+    them, and bounds each side to CMP_SAMPLE traces for the BPE/diff pass.
+    Benefit: the side-by-side diff means exactly what the paper's lineage_diff
+    means, and the heavy step stays bounded for interactive latency.
+    Price: the discriminative-procedure ranking sees a sample, not all traces,
+    on very large groups; the rendered trail stack is a further CMP_STACK cap.
 """
 
 from __future__ import annotations
@@ -49,7 +56,15 @@ from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
+from procgrep import (
+    Trace,
+    discriminative_procedures,
+    encode,
+    fit_bpe,
+    jsd,
+)
 from procgrep.ingest import ingest
+from procgrep.types import PROCEDURE_SEPARATOR
 
 # ── configuration ────────────────────────────────────────────────────────────
 MAX_TRACES = 20000  # per-dataset ingest cap (design decision 3); raise as memory allows
@@ -59,6 +74,10 @@ HIT_SAMPLE = 50  # matched traces returned to the client
 STATIC = Path(__file__).parent / "static"
 SPINE_REPO = "midah/procgrep-spines"  # precomputed store (design decision 5)
 SPINE_FILE = "procgrep_spines.parquet"
+CMP_SAMPLE = 1500  # traces per side fed to BPE + discriminative_procedures (design decision 6)
+CMP_STACK = 30  # trails rendered per side in the comparator
+CMP_VOCAB = 200  # BPE procedure-vocabulary size for the diff
+CMP_TRAIL_CAP = 140  # atoms per rendered trail (fits the column at 3px/cell)
 
 # A short, curated starting set; the client may query any dataset id.
 SUGGESTED = (
@@ -301,6 +320,146 @@ def query(req: QueryRequest) -> JSONResponse:
             ],
         }
     )
+
+
+class CompareRequest(BaseModel):
+    """A side-by-side comparison along one axis.
+
+    axis="agent": ``dataset`` is one store dataset; ``left``/``right`` are agent
+    names within it. axis="eval": ``left``/``right`` are dataset ids (``dataset``
+    is ignored). axis="outcome" is reserved for the outcome-column build.
+    """
+
+    axis: str = "agent"
+    dataset: str = SUGGESTED[0]
+    left: str
+    right: str
+
+
+def _side_traces(axis: str, dataset: str, value: str) -> tuple[list[CachedTrace], str]:
+    """Resolve one side of a comparison to its traces and a display label."""
+    if axis == "eval":
+        return _load(value), value.split("/")[-1]
+    if axis == "agent":
+        return [t for t in _load(dataset) if t.agent == value], value
+    raise ValueError(f"unsupported axis: {axis}")
+
+
+def _mix_vector(
+    mix_a: dict[str, float], mix_b: dict[str, float]
+) -> tuple[list[float], list[float]]:
+    """Align two action-mix dicts onto a shared atom alphabet for JSD."""
+    keys = sorted(set(mix_a) | set(mix_b))
+    return [mix_a.get(k, 0.0) for k in keys], [mix_b.get(k, 0.0) for k in keys]
+
+
+def _side_summary(traces: list[CachedTrace], label: str) -> dict:
+    """Trail stack plus the same quick stats the query view reports.
+
+    The stack is an even spread across the length distribution (short to long),
+    not the longest N, so it reads as a fingerprint of the whole group rather
+    than its tail.
+    """
+    ordered = sorted((t for t in traces if t.atoms), key=lambda t: len(t.atoms))
+    if len(ordered) > CMP_STACK:
+        stride = len(ordered) / CMP_STACK
+        picked = [ordered[int(i * stride)] for i in range(CMP_STACK)]
+    else:
+        picked = ordered
+    return {
+        "label": label,
+        "n": len(traces),
+        "stats": _stats(traces),
+        "mix": _action_mix(traces),
+        "trails": [
+            {
+                "trace_id": t.trace_id,
+                "model": t.agent,
+                "task": t.task,
+                "steps": len(t.atoms),  # true length; atoms below are capped for rendering
+                "atoms": list(t.atoms[:CMP_TRAIL_CAP]),
+            }
+            for t in picked
+        ],
+    }
+
+
+@app.post("/compare")
+def compare(req: CompareRequest) -> JSONResponse:
+    """Side-by-side procedural diff of two trace groups.
+
+    Returns a trail stack and quick stats for each side, plus a diff strip: the
+    top procedures that distinguish them (signed log-odds, positive favors the
+    left side), the action-mix JSD, and median length/CoT deltas. Reuses the
+    library's BPE + discriminative_procedures (design decision 6).
+    """
+    try:
+        left, left_label = _side_traces(req.axis, req.dataset, req.left)
+        right, right_label = _side_traces(req.axis, req.dataset, req.right)
+    except Exception as exc:
+        return JSONResponse({"error": f"{type(exc).__name__}: {exc}"}, status_code=200)
+    if left_label == right_label:
+        return JSONResponse({"error": "pick two different groups"}, status_code=200)
+    if not left or not right:
+        empty = left_label if not left else right_label
+        return JSONResponse({"error": f"no traces for {empty!r}"}, status_code=200)
+
+    t0 = time.perf_counter()
+    # Build labeled Traces (group = side) for a sampled BPE + discriminative pass.
+    sample = [
+        *(Trace(t.trace_id, t.agent, t.atoms, group=left_label) for t in left[:CMP_SAMPLE]),
+        *(Trace(t.trace_id, t.agent, t.atoms, group=right_label) for t in right[:CMP_SAMPLE]),
+    ]
+    procedures: list[dict] = []
+    try:
+        vocab = fit_bpe((t.atoms for t in sample), vocab_size=CMP_VOCAB)
+        fingerprints = encode(sample, vocab=vocab)
+        for d in discriminative_procedures(
+            fingerprints, vocab, group_a=left_label, group_b=right_label, k=10
+        ):
+            procedures.append(
+                {
+                    "atoms": d.procedure.split(PROCEDURE_SEPARATOR),
+                    "log_odds": round(d.log_odds, 3),
+                    "p_left": round(d.p_a, 4),
+                    "p_right": round(d.p_b, 4),
+                }
+            )
+    except Exception:  # diff is best-effort; the stacks still render without it
+        procedures = []
+
+    lsum, rsum = _side_summary(left, left_label), _side_summary(right, right_label)
+    pl, pr = _mix_vector(lsum["mix"], rsum["mix"])
+    elapsed_ms = (time.perf_counter() - t0) * 1e3
+    return JSONResponse(
+        {
+            "axis": req.axis,
+            "left": lsum,
+            "right": rsum,
+            "diff": {
+                "procedures": procedures,
+                "jsd": round(jsd(pl, pr), 4) if pl else None,
+                "len_delta": lsum["stats"].get("median_len", 0)
+                - rsum["stats"].get("median_len", 0),
+                "cot_delta": lsum["stats"].get("median_cot", 0)
+                - rsum["stats"].get("median_cot", 0),
+            },
+            "atom_color": ATOM_COLOR,
+            "elapsed_ms": round(elapsed_ms, 2),
+        }
+    )
+
+
+@app.get("/groups")
+def groups(dataset: str = SUGGESTED[0]) -> JSONResponse:
+    """Agents present in a dataset (for the comparator's agent picker)."""
+    try:
+        traces = _load(dataset)
+    except Exception as exc:
+        return JSONResponse({"error": f"{type(exc).__name__}: {exc}"}, status_code=200)
+    counts = Counter(t.agent for t in traces)
+    agents = [{"agent": a, "n": n} for a, n in counts.most_common()]
+    return JSONResponse({"dataset": dataset, "agents": agents})
 
 
 @app.get("/")

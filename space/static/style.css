@@ -37,3 +37,44 @@ body.hide-noise .spine i.nz{display:none}
 .err{color:var(--copper)}
 .note{color:var(--olive);font-size:11px;margin-top:6px}
 a{color:var(--copper)}
+
+/* tabs + view switching */
+.tabs{display:flex;gap:18px;align-items:baseline;border-bottom:1px solid var(--rule);margin:0 0 26px;padding-bottom:8px}
+.tab{cursor:pointer;color:var(--olive);font-size:12px;text-transform:uppercase;letter-spacing:.1em}
+.tab:hover{color:var(--ink)}
+.tab.act{color:var(--ink);border-bottom:2px solid var(--copper);padding-bottom:8px;margin-bottom:-9px}
+.tab.plain{margin-left:auto;text-decoration:none}
+.hidden{display:none}
+
+/* comparator */
+.cmpbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:2px 0 18px}
+.seg{cursor:pointer;border:1px solid var(--rule);border-radius:2px;padding:4px 10px;font-size:11px;color:var(--olive)}
+.seg:hover{border-color:var(--ink)}
+.seg.act{border-color:var(--ink);color:var(--ink);background:#fff}
+.cmp{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:14px}
+.cmpcol .cmphead{font-size:15px;margin:0 0 2px}
+.cmpcol .cmpstat{color:var(--olive);font-size:11px;margin-bottom:10px}
+.trow{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;border-bottom:1px solid #efeae2}
+.trow:hover{background:#fff}
+.trow .tlen{width:54px;color:var(--olive);font-size:10px;text-align:right;flex:none}
+.bc{display:inline-flex;gap:0;flex-wrap:nowrap;overflow:hidden}
+.bc i{width:3px;height:13px;flex:none}
+.diffstrip{border:1px solid var(--rule);background:#fff;padding:14px 16px;margin-bottom:18px}
+.diffstrip .dnums{display:flex;gap:26px;flex-wrap:wrap;margin-bottom:12px}
+.diffstrip .dnum .big{font-size:21px}
+.diffstrip .dnum .lab{color:var(--olive);font-size:11px}
+.proc{display:flex;align-items:center;gap:8px;padding:3px 0}
+.proc .lean{width:64px;font-size:10px;flex:none;text-align:right}
+.proc .lean.l{color:var(--copper)}
+.proc .lean.r{color:var(--teal)}
+.lead-l{color:var(--copper)} .lead-r{color:var(--teal)}
+
+/* trail-as-thread detail sheet */
+.sheet{position:fixed;inset:0;background:rgba(20,17,14,.34);display:flex;justify-content:center;align-items:flex-start;padding:48px 16px;z-index:9;overflow:auto}
+.sheet .card{background:var(--paper);max-width:760px;width:100%;padding:24px 28px;border:1px solid var(--rule)}
+.sheet .x{float:right;cursor:pointer;color:var(--olive)}
+.thread{display:flex;flex-direction:column;gap:3px;margin-top:10px}
+.tstep{display:flex;gap:8px;align-items:baseline;font-size:12px}
+.tstep .ti{width:14px;color:var(--gray);text-align:right;flex:none}
+.tstep .dot{width:8px;height:8px;border-radius:2px;flex:none;align-self:center}
+.tstep.fold{color:var(--olive);font-style:italic}
