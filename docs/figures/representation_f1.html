@@ -1,0 +1,386 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>retrieval F1 by representation</title>
+<style>body{margin:0;background:#F7F5F2;color:#14110E;
+font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.wrap{max-width:700px;margin:0 auto;padding:24px}</style>
+</head><body><div class="wrap"><div id="representation-f1"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};</script>
+<script>/* Shared D3 v7 chart module for the procgrep explorer and essay.
+   Two reusable charts in the editorial palette: a log-x scatter and a log-x
+   dot plot. Each is a pure function that mounts into a container element and
+   returns nothing; data and options are passed in. Tufte-minimal: thin rules,
+   direct series labels, no gridline clutter. Every chart is responsive via
+   viewBox + preserveAspectRatio, carries role="img" + an aria-label, draws a
+   hover tooltip with exact values, and accepts a value-label toggle.
+
+   Loaded by reading this file at build time and inlining it into the generated
+   page, so the explorer stays openable from file:// with only D3 from a CDN.
+   Both builders define window.PROCGREP_PALETTE before this runs. */
+(function (global) {
+  "use strict";
+
+  var PAL = global.PROCGREP_PALETTE || {
+    paper: "#F7F5F2", ink: "#14110E", rule: "#d9d4cc", copper: "#CB4D20",
+    blue: "#5692E5", teal: "#20A380", olive: "#585E53", gray: "#b7b1a7",
+  };
+  var MONO = 'ui-monospace,"SFMono-Regular",Menlo,monospace';
+
+  // One shared tooltip element, positioned over the page on hover.
+  var _tip = null;
+  function tip() {
+    if (_tip) return _tip;
+    _tip = document.createElement("div");
+    _tip.setAttribute("role", "status");
+    _tip.style.cssText =
+      "position:fixed;pointer-events:none;z-index:9999;opacity:0;" +
+      "transition:opacity .08s;font-family:" + MONO + ";font-size:12px;" +
+      "background:" + PAL.ink + ";color:" + PAL.paper + ";padding:5px 8px;" +
+      "border-radius:3px;line-height:1.45;max-width:280px;box-shadow:0 1px 4px rgba(0,0,0,.25)";
+    document.body.appendChild(_tip);
+    return _tip;
+  }
+  function showTip(html, ev) {
+    var t = tip();
+    t.innerHTML = html;
+    t.style.opacity = "1";
+    moveTip(ev);
+  }
+  function moveTip(ev) {
+    var t = tip(), pad = 14;
+    var x = ev.clientX + pad, y = ev.clientY + pad;
+    var r = t.getBoundingClientRect();
+    if (x + r.width > window.innerWidth) x = ev.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight) y = ev.clientY - r.height - pad;
+    t.style.left = x + "px";
+    t.style.top = y + "px";
+  }
+  function hideTip() {
+    if (_tip) _tip.style.opacity = "0";
+  }
+
+  // A small palette-styled checkbox that shows/hides value labels on all marks.
+  function labelToggle(mount, onChange, initial) {
+    var wrap = document.createElement("label");
+    wrap.style.cssText =
+      "display:inline-flex;align-items:center;gap:6px;cursor:pointer;" +
+      "font-family:" + MONO + ";font-size:11px;color:" + PAL.olive + ";" +
+      "user-select:none;margin:4px 0 2px";
+    var box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = !!initial;
+    box.style.cssText = "accent-color:" + PAL.copper + ";cursor:pointer";
+    var txt = document.createElement("span");
+    txt.textContent = "value labels";
+    wrap.appendChild(box);
+    wrap.appendChild(txt);
+    box.addEventListener("change", function () { onChange(box.checked); });
+    mount.appendChild(wrap);
+    return box;
+  }
+
+  // Log-x scatter. points: [{name, x, y, color, r, valueLabel, tipHTML}].
+  // opts: {ariaLabel, xLabel, yLabel, xTicks:[{v,label}], yTicks:[{v,label}],
+  //        xDomain:[min,max], yDomain:[min,max], width, height, showLabels}.
+  function logScatter(mount, points, opts) {
+    opts = opts || {};
+    var W = opts.width || 620, H = opts.height || 300;
+    var m = { t: 16, r: 18, b: 46, l: 58 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "scatter plot")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var x = d3.scaleLog()
+      .domain(opts.xDomain || d3.extent(points, function (p) { return p.x; }))
+      .range([m.l, m.l + pw]);
+    var y = d3.scaleLinear()
+      .domain(opts.yDomain || [0, 1])
+      .range([m.t + ph, m.t]);
+
+    // y reference rules (thin), with mid emphasized if a chance line is wanted.
+    (opts.yTicks || []).forEach(function (tk) {
+      var yy = y(tk.v);
+      svg.append("line")
+        .attr("x1", m.l).attr("y1", yy).attr("x2", m.l + pw).attr("y2", yy)
+        .attr("stroke", tk.emphasize ? "#d8b8b0" : "#ece7df")
+        .attr("stroke-dasharray", tk.emphasize ? "3 3" : null);
+      svg.append("text")
+        .attr("x", m.l - 8).attr("y", yy + 3).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk.label);
+    });
+    (opts.xTicks || []).forEach(function (tk) {
+      var xx = x(tk.v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk.label);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 33).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+    if (opts.yLabel)
+      svg.append("text")
+        .attr("x", 14).attr("y", m.t + ph / 2)
+        .attr("transform", "rotate(-90 14 " + (m.t + ph / 2) + ")")
+        .attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.yLabel);
+
+    var marks = svg.append("g").selectAll("circle").data(points).join("circle")
+      .attr("cx", function (p) { return x(p.x); })
+      .attr("cy", function (p) { return y(p.y); })
+      .attr("r", function (p) { return p.r || 4; })
+      .attr("fill", function (p) { return p.color || PAL.teal; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, p) { showTip(p.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip);
+    marks.append("title").text(function (p) { return p.title || p.name; });
+
+    // Series labels (fixed editorial annotations) drawn as <text>.
+    (opts.seriesLabels || []).forEach(function (sl) {
+      svg.append("text")
+        .attr("x", sl.x).attr("y", sl.y)
+        .attr("text-anchor", sl.anchor || "start")
+        .attr("font-family", MONO).attr("font-size", 11).attr("fill", sl.color)
+        .text(sl.text);
+    });
+
+    // Per-mark value labels, toggled on/off as a group.
+    var vlabels = svg.append("g").attr("class", "vlabels")
+      .selectAll("text").data(points).join("text")
+      .attr("x", function (p) { return x(p.x) + (p.r || 4) + 4; })
+      .attr("y", function (p) { return y(p.y) + 3; })
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (p) { return p.color || PAL.teal; })
+      .text(function (p) { return p.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(!!opts.showLabels);
+    labelToggle(mount, setLabels, !!opts.showLabels);
+  }
+
+  // Log-x dot plot. rows: [{label, x, color, valueLabel, tipHTML}].
+  // opts: {ariaLabel, xLabel, xTicks, xDomain, width, height, rowHeight, showLabels}.
+  function logDotPlot(mount, rows, opts) {
+    opts = opts || {};
+    var m = { t: 18, r: 70, b: 44, l: 250 };
+    var rh = opts.rowHeight || 38;
+    var W = opts.width || 640;
+    var ph = rows.length * rh;
+    var H = m.t + ph + m.b;
+    var pw = W - m.l - m.r;
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "dot plot")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var xmin = opts.xDomain ? opts.xDomain[0] : d3.min(rows, function (d) { return d.x; });
+    var x = d3.scaleLog()
+      .domain(opts.xDomain || [xmin, d3.max(rows, function (d) { return d.x; })])
+      .range([m.l, m.l + pw])
+      .clamp(true);
+
+    (opts.xTicks || []).forEach(function (tk) {
+      var xx = x(tk.v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk.label);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 33).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+
+    var g = svg.append("g").selectAll("g").data(rows).join("g")
+      .attr("transform", function (d, i) {
+        return "translate(0," + (m.t + (i + 0.5) / rows.length * ph) + ")";
+      });
+    g.append("text")
+      .attr("x", m.l - 10).attr("y", 3).attr("text-anchor", "end")
+      .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.ink)
+      .text(function (d) { return d.label; });
+    g.append("line")
+      .attr("x1", x(xmin)).attr("y1", 0).attr("x2", function (d) { return x(d.x); }).attr("y2", 0)
+      .attr("stroke", PAL.rule);
+    g.append("circle")
+      .attr("cx", function (d) { return x(d.x); }).attr("cy", 0).attr("r", 5)
+      .attr("fill", function (d) { return d.color; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, d) { showTip(d.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip)
+      .append("title").text(function (d) { return d.title || d.label; });
+
+    var vlabels = g.append("text").attr("class", "vlabel")
+      .attr("x", function (d) { return x(d.x) + 9; }).attr("y", 3)
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (d) { return d.color; })
+      .text(function (d) { return d.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+  }
+
+  /* Linear horizontal bar chart. Each row is either a point value (a bar from
+     zero) or a range band (lo to hi, drawn translucent). Hover shows the tip,
+     and a checkbox toggles the value labels, matching the other charts. */
+  function barChart(mount, rows, opts) {
+    opts = opts || {};
+    var m = { t: 18, r: 64, b: 52, l: opts.labelWidth || 210 };
+    var rh = opts.rowHeight || 34;
+    var W = opts.width || 660;
+    var ph = rows.length * rh;
+    var H = m.t + ph + m.b;
+    var pw = W - m.l - m.r;
+    var xmax = opts.xMax || d3.max(rows, function (d) {
+      return d.hi != null ? d.hi : d.value;
+    });
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "bar chart")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var x = d3.scaleLinear().domain([0, xmax]).range([m.l, m.l + pw]);
+
+    (opts.xTicks || x.ticks(5)).forEach(function (tk) {
+      var v = typeof tk === "object" ? tk.v : tk;
+      var lab = typeof tk === "object" ? tk.label : String(tk);
+      var xx = x(v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(lab);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 34).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+
+    var bh = (ph / rows.length) * 0.55;
+    var g = svg.append("g").selectAll("g").data(rows).join("g")
+      .attr("transform", function (d, i) {
+        return "translate(0," + (m.t + (i + 0.5) / rows.length * ph) + ")";
+      });
+    g.append("text")
+      .attr("x", m.l - 10).attr("y", 3).attr("text-anchor", "end")
+      .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.ink)
+      .text(function (d) { return d.label; });
+    g.append("rect")
+      .attr("x", function (d) { return d.hi != null ? x(d.lo) : m.l; })
+      .attr("y", -bh / 2)
+      .attr("width", function (d) {
+        return d.hi != null ? x(d.hi) - x(d.lo) : x(d.value) - m.l;
+      })
+      .attr("height", bh)
+      .attr("fill", function (d) { return d.color; })
+      .attr("opacity", function (d) { return d.hi != null ? 0.45 : 1; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, d) { showTip(d.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip)
+      .append("title").text(function (d) { return d.title || d.label; });
+
+    var vlabels = g.append("text").attr("class", "vlabel")
+      .attr("x", function (d) {
+        return (d.hi != null ? x(d.hi) : x(d.value)) + 8;
+      })
+      .attr("y", 3)
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (d) { return d.hi != null ? PAL.olive : d.color; })
+      .text(function (d) { return d.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+
+    (opts.legend || []).forEach(function (lg, i) {
+      var lx = m.l + i * 150;
+      svg.append("rect").attr("x", lx).attr("y", H - 12).attr("width", 10)
+        .attr("height", 10).attr("fill", lg.color);
+      svg.append("text").attr("x", lx + 15).attr("y", H - 3)
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(lg.label);
+    });
+  }
+
+  global.ProcgrepCharts = {
+    logScatter: logScatter, logDotPlot: logDotPlot, barChart: barChart, palette: PAL,
+    labelToggle: labelToggle, showTip: showTip, moveTip: moveTip, hideTip: hideTip,
+  };
+})(window);
+</script>
+<script id="representation-f1-data" type="application/json">[{"label": "Structural pattern overlap", "color": "#CB4D20", "group": "deterministic", "value": 0.347}, {"label": "Action sequence distance", "color": "#CB4D20", "group": "deterministic", "value": 0.274}, {"label": "Edit action overlap", "color": "#CB4D20", "group": "deterministic", "value": 0.256}, {"label": "Narrative description", "color": "#585E53", "group": "narrative", "value": 0.177}, {"label": "Agent plan description", "color": "#585E53", "group": "narrative", "value": 0.155}, {"label": "Divergence classifier", "color": "#b7b1a7", "group": "llm", "lo": 0.0, "hi": 0.363}, {"label": "Random retrieval", "color": "#d9d4cc", "group": "baseline", "lo": 0.13, "hi": 0.24}]</script>
+<script>
+(function(){
+  var el=document.getElementById('representation-f1-data'); if(!el)return;
+  var mount=document.getElementById('representation-f1'); if(!mount||!window.ProcgrepCharts)return;
+  var rows=JSON.parse(el.textContent).map(function(r){
+    var base={label:r.label,color:r.color};
+    if(r.lo!=null){
+      base.lo=r.lo; base.hi=r.hi;
+      base.valueLabel=r.lo.toFixed(2)+' to '+r.hi.toFixed(2);
+      base.title=r.label+': F1 '+r.lo.toFixed(3)+' to '+r.hi.toFixed(3);
+      base.tipHTML='<b>'+r.label+'</b><br>retrieval F1 <b>'+r.lo.toFixed(3)+
+        '</b> to <b>'+r.hi.toFixed(3)+'</b>';
+    }else{
+      base.value=r.value;
+      base.valueLabel=r.value.toFixed(3);
+      base.title=r.label+': F1 '+r.value.toFixed(3);
+      base.tipHTML='<b>'+r.label+'</b><br>retrieval F1 <b>'+r.value.toFixed(3)+'</b>';
+    }
+    return base;
+  });
+  ProcgrepCharts.barChart(mount,rows,{
+    width:660,rowHeight:34,xMax:0.4,labelWidth:210,
+    ariaLabel:'retrieval F1 by representation',
+    xLabel:'retrieval F1 at k = 1, n = 289',
+    xTicks:[{v:0,label:'0.0'},{v:0.1,label:'0.1'},{v:0.2,label:'0.2'},
+      {v:0.3,label:'0.3'},{v:0.4,label:'0.4'}],
+    legend:[{label:'deterministic',color:'#CB4D20'},
+      {label:'varies by model',color:'#585E53'},
+      {label:'LLM, unstable',color:'#b7b1a7'}]});
+})();
+</script>
+</body></html>

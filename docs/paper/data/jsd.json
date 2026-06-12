@@ -1,0 +1,191 @@
+{
+ "agents": [
+  "Agentless+Claude-3.5",
+  "Claude-3",
+  "Claude-3.5",
+  "Claude-3.7-thinking",
+  "Claude-4",
+  "DARS+R1",
+  "GPT-4",
+  "GPT-4o",
+  "Moatless+V3"
+ ],
+ "matrix": [
+  [
+   0.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ],
+  [
+   1.0,
+   0.0,
+   0.162,
+   0.546,
+   0.699,
+   0.649,
+   0.143,
+   0.101,
+   0.662
+  ],
+  [
+   1.0,
+   0.162,
+   0.0,
+   0.504,
+   0.676,
+   0.638,
+   0.19,
+   0.176,
+   0.598
+  ],
+  [
+   1.0,
+   0.546,
+   0.504,
+   0.0,
+   0.321,
+   0.711,
+   0.597,
+   0.565,
+   0.763
+  ],
+  [
+   1.0,
+   0.699,
+   0.676,
+   0.321,
+   0.0,
+   0.813,
+   0.742,
+   0.693,
+   0.8
+  ],
+  [
+   1.0,
+   0.649,
+   0.638,
+   0.711,
+   0.813,
+   0.0,
+   0.667,
+   0.684,
+   0.752
+  ],
+  [
+   1.0,
+   0.143,
+   0.19,
+   0.597,
+   0.742,
+   0.667,
+   0.0,
+   0.167,
+   0.615
+  ],
+  [
+   1.0,
+   0.101,
+   0.176,
+   0.565,
+   0.693,
+   0.684,
+   0.167,
+   0.0,
+   0.656
+  ],
+  [
+   1.0,
+   0.662,
+   0.598,
+   0.763,
+   0.8,
+   0.752,
+   0.615,
+   0.656,
+   0.0
+  ]
+ ],
+ "meta": [
+  {
+   "agent": "Agentless+Claude-3.5",
+   "family": "Claude",
+   "era": "mid",
+   "scaffold": "Agentless"
+  },
+  {
+   "agent": "Claude-3",
+   "family": "Claude",
+   "era": "early",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Claude-3.5",
+   "family": "Claude",
+   "era": "mid",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Claude-3.7-thinking",
+   "family": "Claude",
+   "era": "late",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Claude-4",
+   "family": "Claude",
+   "era": "newest",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "DARS+R1",
+   "family": "DeepSeek",
+   "era": "late",
+   "scaffold": "DARS"
+  },
+  {
+   "agent": "GPT-4",
+   "family": "GPT",
+   "era": "early",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "GPT-4o",
+   "family": "GPT",
+   "era": "mid",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Moatless+V3",
+   "family": "DeepSeek",
+   "era": "mid",
+   "scaffold": "Moatless"
+  }
+ ],
+ "axis_stats": {
+  "scaffold": {
+   "within": 0.419,
+   "across": 0.81,
+   "scope": "all 9 agents"
+  },
+  "era": {
+   "within": 0.159,
+   "across": 0.459,
+   "scope": "within SWE-agent scaffold"
+  },
+  "family": {
+   "within": 0.439,
+   "across": 0.401,
+   "scope": "within SWE-agent scaffold"
+  }
+ },
+ "highlights": {
+  "old_dense_cluster": 0.157,
+  "claude4_isolation": 0.626
+ }
+}

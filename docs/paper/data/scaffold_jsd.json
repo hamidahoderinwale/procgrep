@@ -1,0 +1,27 @@
+[
+  {
+    "label": "Llama 8B vs 70B, one scaffold",
+    "jsd": 0.0013,
+    "group": "within"
+  },
+  {
+    "label": "Llama 8B vs 405B, one scaffold",
+    "jsd": 0.0043,
+    "group": "within"
+  },
+  {
+    "label": "OpenHands vs OpenHands variant",
+    "jsd": 0.1304,
+    "group": "across"
+  },
+  {
+    "label": "SWE-agent vs OpenHands",
+    "jsd": 0.1644,
+    "group": "across"
+  },
+  {
+    "label": "SWE-agent vs OpenHands variant",
+    "jsd": 0.3281,
+    "group": "across"
+  }
+]

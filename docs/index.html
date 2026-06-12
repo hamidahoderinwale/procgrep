@@ -1,0 +1,2370 @@
+<!doctype html>
+<html lang="en"><head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Agent trajectories as programs · ProcGrep</title>
+<style>
+:root{--paper:#F7F5F2;--ink:#14110E;--rule:#d9d4cc;--copper:#CB4D20;--blue:#5692E5;
+--teal:#20A380;--olive:#585E53;--gray:#b7b1a7;
+--serif:'Charter','Iowan Old Style','Palatino Linotype',Palatino,'Spectral',Georgia,serif;
+--mono:ui-monospace,"SFMono-Regular",Menlo,monospace}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);
+font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+.topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.92);backdrop-filter:blur(6px);
+font-family:var(--mono);font-size:13px}
+.progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
+.topbar .in{max-width:1080px;margin:0 auto;padding:11px 32px;display:flex;justify-content:space-between;align-items:baseline}
+.topbar .mark{font-weight:600}.topbar a{color:var(--olive);text-decoration:none;margin-left:18px}
+.topbar a:hover{color:var(--ink)}
+:root{--col:1020px;--gutter:300px}
+.hero{max-width:var(--col);margin:0 auto;padding:64px var(--gutter) 8px 32px}
+.hero h1{font-size:42px;line-height:1.12;font-weight:600;margin:0 0 14px;letter-spacing:-.01em}
+.hero .sub{font-size:20px;color:var(--olive);margin:0 0 22px;line-height:1.4}
+.hero .byline{font-family:var(--mono);font-size:13px;color:var(--olive);padding:4px 0;display:flex;gap:18px;flex-wrap:wrap}
+.hero .byline a{color:var(--copper);text-decoration:none}
+.abstract{max-width:var(--col);margin:30px auto 0;padding:0 var(--gutter) 0 32px}
+.abstract .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px}
+.abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
+.abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
+.abstract .avail a{color:var(--copper)}
+/* showcase */
+.showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
+background:#fff;border-radius:4px}
+.sc-head{display:flex;justify-content:space-between;align-items:baseline}
+.sc-eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--copper)}
+.sc-open{font-family:var(--mono);font-size:12px;color:var(--copper);text-decoration:none}
+.sc-open:hover{text-decoration:underline}
+.exfig{max-width:1020px;margin:26px auto;padding:0}
+.exfig img,.exfig video{width:100%;height:auto;display:block;border:1px solid var(--rule)}
+.exfig figcaption{margin-top:8px}
+.sc-title{font-size:26px;font-weight:600;margin:6px 0 6px}
+.sc-sub{font-size:16px;color:var(--olive);max-width:64ch;margin:0 0 14px}
+.sc-frame{border:1px solid var(--rule);border-radius:3px;overflow:hidden;background:var(--paper)}
+.sc-frame iframe{width:100%;height:560px;border:0;display:block}
+.sc-note{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:8px}
+.sc-note a{color:var(--copper)}
+/* TOC */
+.toc{max-width:var(--col);margin:30px auto 12px;padding:0 var(--gutter) 0 32px}
+.toc .toclab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:12px}
+.toc ol{list-style:none;margin:0;padding:0;columns:2;column-gap:44px}
+.toc li{margin:0 0 8px;break-inside:avoid}
+.toc a{color:var(--ink);text-decoration:none;display:flex;gap:11px;align-items:baseline;font-size:15px;line-height:1.35}
+.toc a:hover .toct{color:var(--copper)}
+.toc .tocn{font-family:var(--mono);font-size:12px;color:var(--copper);min-width:18px;flex:none}
+.toc .toct{transition:color .12s}
+/* article body */
+article{max-width:var(--col);margin:0 auto;padding:10px var(--gutter) 90px 32px;position:relative}
+article h1{font-size:28px;font-weight:600;margin:60px 0 12px;letter-spacing:-.01em}
+article h2{font-size:21px;font-weight:600;margin:38px 0 10px}
+article h3{font-size:17px;font-family:var(--mono);font-weight:600;margin:26px 0 8px;color:var(--olive)}
+article p{margin:0 0 18px}
+article a{color:var(--copper)}
+article code{font-family:var(--mono);font-size:.86em;background:#efeae2;padding:1px 5px;border-radius:2px}
+article figure{margin:30px 0;text-align:center}
+article figure img{max-width:100%;height:auto;border:1px solid var(--rule);background:#fff;border-radius:3px}
+article figure figcaption,article .caption{font-family:var(--mono);font-size:13px;color:var(--olive);
+line-height:1.5;margin-top:10px;text-align:left;max-width:62ch;margin-left:auto;margin-right:auto}
+/* tables */
+article table{width:100%;border-collapse:collapse;margin:24px 0;font-family:var(--mono);font-size:13px}
+article th{text-align:left;font-weight:600;color:var(--olive);border-bottom:1px solid var(--ink);padding:6px 8px}
+article td{border-bottom:1px solid var(--rule);padding:6px 8px;vertical-align:top}
+/* the procgrep example query box */
+article .tcolorbox{background:#fff;border:1px solid var(--copper);border-left:3px solid var(--copper);
+border-radius:3px;padding:12px 16px;margin:22px 0;font-family:var(--mono);font-size:14px;color:var(--ink)}
+/* citations + references */
+.citation{font-family:var(--mono);font-size:.8em;color:var(--copper)}
+#refs{font-size:14px;line-height:1.5}
+#refs .csl-entry{margin:0 0 10px;padding-left:1.4em;text-indent:-1.4em}
+math{font-family:var(--serif)}
+/* interactive figures */
+.interactive{margin:30px 0;padding:16px;border:1px solid var(--rule);border-radius:3px;background:#fff}
+.interactive svg text{font-family:var(--mono)}
+.jc{cursor:crosshair}
+.jtip{font-family:var(--mono);font-size:13px;color:var(--ink);min-height:38px;margin:2px 0 6px;line-height:1.5}
+.jtip .dim{color:var(--olive)}
+.jctl{font-family:var(--mono);font-size:13px;margin-top:6px;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.jlab{color:var(--olive);text-transform:uppercase;letter-spacing:.1em;font-size:11px}
+.jbtn{font-family:var(--mono);font-size:12px;padding:3px 11px;border:1px solid var(--rule);background:var(--paper);cursor:pointer;border-radius:2px;color:var(--ink)}
+.jbtn:hover{border-color:var(--ink)}
+.jbtn.on{background:var(--copper);color:#fff;border-color:var(--copper)}
+.jstat{margin-left:4px}.jstat .dim{color:var(--olive)}
+.ftleg{font-family:var(--mono);font-size:12px;color:var(--olive);display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
+.ftleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
+.ftleg svg{vertical-align:middle}.fc{cursor:crosshair}
+.ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
+.ptab{font-family:var(--mono);font-size:12px;padding:4px 10px;border:1px solid var(--rule);background:var(--paper);cursor:pointer;border-radius:2px;color:var(--olive)}
+.ptab.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
+.pbody{min-height:160px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:14px;background:var(--paper);border-radius:3px}
+.prow{font-family:var(--mono);font-size:13px;margin:2px 0}.prow code{background:none;padding:0}
+.pspine{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
+.pspine.big{gap:14px}.pspine.big .pchip{font-size:18px;padding:8px 18px}
+.pchip{font-family:var(--mono);font-size:12px;color:#fff;padding:3px 9px;border-radius:3px}
+.pwrap{display:inline-block;border:2px solid;border-radius:5px;padding:2px}
+.pvocab{font-family:var(--mono);font-size:14px}.pvrow{margin:7px 0}
+.pdim{font-family:var(--mono);font-size:12px;color:var(--olive);text-align:center}
+.pnav{display:flex;gap:8px;justify-content:center;margin-top:12px}
+.pnav button{font-family:var(--mono);font-size:12px;padding:4px 14px;border:1px solid var(--rule);background:#fff;cursor:pointer;border-radius:2px}
+.pnav button:hover{border-color:var(--ink)}
+/* margin citations (Tufte sidenotes) — float into the right whitespace on wide screens */
+.sidenote{float:right;clear:right;width:250px;margin:.2em -288px 1.2em 0;
+  font-family:var(--mono);font-size:10.5px;line-height:1.5;color:var(--olive)}
+.sidenote .sn-ref{display:block;margin-bottom:9px;padding-left:10px;border-left:1px solid var(--rule)}
+.sidenote .sn-ref:last-child{margin-bottom:0}
+.sidenote a{color:var(--copper);word-break:break-word}
+@media(max-width:1100px){
+  .hero,.abstract,.toc,article{padding-right:32px}
+  /* no room for a margin — drop the sidenotes; the in-text citation is still a hyperlink to References */
+  .sidenote{display:none}}
+/* grounded tooltips */
+.term{border-bottom:1px dotted var(--olive);cursor:help;position:relative}
+.term .tip{position:absolute;left:0;top:1.6em;z-index:30;width:272px;background:var(--ink);color:var(--paper);
+  font-family:var(--mono);font-size:11px;line-height:1.5;padding:10px 12px;border-radius:5px;
+  box-shadow:0 6px 18px rgba(20,17,14,.2);opacity:0;visibility:hidden;transition:opacity .12s}
+.term:hover .tip,.term:focus .tip{opacity:1;visibility:visible}
+.term .tip-def{display:block}
+.term .tip-src{display:block;margin-top:7px;color:#b7b1a7}
+.term .tip-src a{color:#e9b8a6}
+.foot{max-width:var(--col);margin:40px auto 0;padding:24px var(--gutter) 70px 32px;
+font-family:var(--mono);font-size:12px;color:var(--olive)}
+@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}}
+/* code cards — light, Cursor-blog style (NOT a dark terminal theme) */
+.codecard{margin:24px 0;border:1px solid var(--rule);border-radius:7px;background:#fff;
+  overflow:hidden;box-shadow:0 1px 2px rgba(20,17,14,.04)}
+.codecard-head{display:flex;align-items:center;gap:8px;padding:8px 14px;
+  background:#f3efe8;border-bottom:1px solid var(--rule);
+  font-family:var(--mono);font-size:11.5px;letter-spacing:.02em}
+.codecard-dot{width:9px;height:9px;border-radius:50%;background:var(--copper);flex:none;opacity:.7}
+.codecard-name{color:var(--ink);font-weight:600}
+.codecard-lang{margin-left:auto;color:var(--olive);text-transform:uppercase;letter-spacing:.12em;font-size:10px}
+.codecard-body{margin:0;padding:14px 16px;background:#fff;overflow-x:auto;
+  font-family:var(--mono);font-size:13px;line-height:1.6;color:var(--ink);
+  white-space:pre;tab-size:2}
+.codecard-body code{background:none;padding:0;font-size:inherit;border-radius:0}
+/* syntax tinting */
+.cc-key{color:var(--copper)}
+.cc-com{color:var(--olive);font-style:italic}
+.cc-str{color:var(--teal)}
+.cc-num{color:var(--blue)}
+.cc-punc{color:var(--gray)}
+.cc-kw{color:var(--copper);font-weight:600}
+.cc-val{color:var(--ink)}
+.cc-ln{color:var(--gray);user-select:none;display:inline-block;width:2.1em;text-align:right;
+  margin-right:1.1em;font-size:11px}
+.algocard .codecard-head{background:#efece5}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};</script>
+<script>/* Shared D3 v7 chart module for the procgrep explorer and essay.
+   Two reusable charts in the editorial palette: a log-x scatter and a log-x
+   dot plot. Each is a pure function that mounts into a container element and
+   returns nothing; data and options are passed in. Tufte-minimal: thin rules,
+   direct series labels, no gridline clutter. Every chart is responsive via
+   viewBox + preserveAspectRatio, carries role="img" + an aria-label, draws a
+   hover tooltip with exact values, and accepts a value-label toggle.
+
+   Loaded by reading this file at build time and inlining it into the generated
+   page, so the explorer stays openable from file:// with only D3 from a CDN.
+   Both builders define window.PROCGREP_PALETTE before this runs. */
+(function (global) {
+  "use strict";
+
+  var PAL = global.PROCGREP_PALETTE || {
+    paper: "#F7F5F2", ink: "#14110E", rule: "#d9d4cc", copper: "#CB4D20",
+    blue: "#5692E5", teal: "#20A380", olive: "#585E53", gray: "#b7b1a7",
+  };
+  var MONO = 'ui-monospace,"SFMono-Regular",Menlo,monospace';
+
+  // One shared tooltip element, positioned over the page on hover.
+  var _tip = null;
+  function tip() {
+    if (_tip) return _tip;
+    _tip = document.createElement("div");
+    _tip.setAttribute("role", "status");
+    _tip.style.cssText =
+      "position:fixed;pointer-events:none;z-index:9999;opacity:0;" +
+      "transition:opacity .08s;font-family:" + MONO + ";font-size:12px;" +
+      "background:" + PAL.ink + ";color:" + PAL.paper + ";padding:5px 8px;" +
+      "border-radius:3px;line-height:1.45;max-width:280px;box-shadow:0 1px 4px rgba(0,0,0,.25)";
+    document.body.appendChild(_tip);
+    return _tip;
+  }
+  function showTip(html, ev) {
+    var t = tip();
+    t.innerHTML = html;
+    t.style.opacity = "1";
+    moveTip(ev);
+  }
+  function moveTip(ev) {
+    var t = tip(), pad = 14;
+    var x = ev.clientX + pad, y = ev.clientY + pad;
+    var r = t.getBoundingClientRect();
+    if (x + r.width > window.innerWidth) x = ev.clientX - r.width - pad;
+    if (y + r.height > window.innerHeight) y = ev.clientY - r.height - pad;
+    t.style.left = x + "px";
+    t.style.top = y + "px";
+  }
+  function hideTip() {
+    if (_tip) _tip.style.opacity = "0";
+  }
+
+  // A small palette-styled checkbox that shows/hides value labels on all marks.
+  function labelToggle(mount, onChange, initial) {
+    var wrap = document.createElement("label");
+    wrap.style.cssText =
+      "display:inline-flex;align-items:center;gap:6px;cursor:pointer;" +
+      "font-family:" + MONO + ";font-size:11px;color:" + PAL.olive + ";" +
+      "user-select:none;margin:4px 0 2px";
+    var box = document.createElement("input");
+    box.type = "checkbox";
+    box.checked = !!initial;
+    box.style.cssText = "accent-color:" + PAL.copper + ";cursor:pointer";
+    var txt = document.createElement("span");
+    txt.textContent = "value labels";
+    wrap.appendChild(box);
+    wrap.appendChild(txt);
+    box.addEventListener("change", function () { onChange(box.checked); });
+    mount.appendChild(wrap);
+    return box;
+  }
+
+  // Log-x scatter. points: [{name, x, y, color, r, valueLabel, tipHTML}].
+  // opts: {ariaLabel, xLabel, yLabel, xTicks:[{v,label}], yTicks:[{v,label}],
+  //        xDomain:[min,max], yDomain:[min,max], width, height, showLabels}.
+  function logScatter(mount, points, opts) {
+    opts = opts || {};
+    var W = opts.width || 620, H = opts.height || 300;
+    var m = { t: 16, r: 18, b: 46, l: 58 };
+    var pw = W - m.l - m.r, ph = H - m.t - m.b;
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "scatter plot")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var x = d3.scaleLog()
+      .domain(opts.xDomain || d3.extent(points, function (p) { return p.x; }))
+      .range([m.l, m.l + pw]);
+    var y = d3.scaleLinear()
+      .domain(opts.yDomain || [0, 1])
+      .range([m.t + ph, m.t]);
+
+    // y reference rules (thin), with mid emphasized if a chance line is wanted.
+    (opts.yTicks || []).forEach(function (tk) {
+      var yy = y(tk.v);
+      svg.append("line")
+        .attr("x1", m.l).attr("y1", yy).attr("x2", m.l + pw).attr("y2", yy)
+        .attr("stroke", tk.emphasize ? "#d8b8b0" : "#ece7df")
+        .attr("stroke-dasharray", tk.emphasize ? "3 3" : null);
+      svg.append("text")
+        .attr("x", m.l - 8).attr("y", yy + 3).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk.label);
+    });
+    (opts.xTicks || []).forEach(function (tk) {
+      var xx = x(tk.v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk.label);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 33).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+    if (opts.yLabel)
+      svg.append("text")
+        .attr("x", 14).attr("y", m.t + ph / 2)
+        .attr("transform", "rotate(-90 14 " + (m.t + ph / 2) + ")")
+        .attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.yLabel);
+
+    var marks = svg.append("g").selectAll("circle").data(points).join("circle")
+      .attr("cx", function (p) { return x(p.x); })
+      .attr("cy", function (p) { return y(p.y); })
+      .attr("r", function (p) { return p.r || 4; })
+      .attr("fill", function (p) { return p.color || PAL.teal; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, p) { showTip(p.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip);
+    marks.append("title").text(function (p) { return p.title || p.name; });
+
+    // Series labels (fixed editorial annotations) drawn as <text>.
+    (opts.seriesLabels || []).forEach(function (sl) {
+      svg.append("text")
+        .attr("x", sl.x).attr("y", sl.y)
+        .attr("text-anchor", sl.anchor || "start")
+        .attr("font-family", MONO).attr("font-size", 11).attr("fill", sl.color)
+        .text(sl.text);
+    });
+
+    // Per-mark value labels, toggled on/off as a group.
+    var vlabels = svg.append("g").attr("class", "vlabels")
+      .selectAll("text").data(points).join("text")
+      .attr("x", function (p) { return x(p.x) + (p.r || 4) + 4; })
+      .attr("y", function (p) { return y(p.y) + 3; })
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (p) { return p.color || PAL.teal; })
+      .text(function (p) { return p.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(!!opts.showLabels);
+    labelToggle(mount, setLabels, !!opts.showLabels);
+  }
+
+  // Log-x dot plot. rows: [{label, x, color, valueLabel, tipHTML}].
+  // opts: {ariaLabel, xLabel, xTicks, xDomain, width, height, rowHeight, showLabels}.
+  function logDotPlot(mount, rows, opts) {
+    opts = opts || {};
+    var m = { t: 18, r: 70, b: 44, l: 250 };
+    var rh = opts.rowHeight || 38;
+    var W = opts.width || 640;
+    var ph = rows.length * rh;
+    var H = m.t + ph + m.b;
+    var pw = W - m.l - m.r;
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "dot plot")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var xmin = opts.xDomain ? opts.xDomain[0] : d3.min(rows, function (d) { return d.x; });
+    var x = d3.scaleLog()
+      .domain(opts.xDomain || [xmin, d3.max(rows, function (d) { return d.x; })])
+      .range([m.l, m.l + pw])
+      .clamp(true);
+
+    (opts.xTicks || []).forEach(function (tk) {
+      var xx = x(tk.v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk.label);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 33).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+
+    var g = svg.append("g").selectAll("g").data(rows).join("g")
+      .attr("transform", function (d, i) {
+        return "translate(0," + (m.t + (i + 0.5) / rows.length * ph) + ")";
+      });
+    g.append("text")
+      .attr("x", m.l - 10).attr("y", 3).attr("text-anchor", "end")
+      .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.ink)
+      .text(function (d) { return d.label; });
+    g.append("line")
+      .attr("x1", x(xmin)).attr("y1", 0).attr("x2", function (d) { return x(d.x); }).attr("y2", 0)
+      .attr("stroke", PAL.rule);
+    g.append("circle")
+      .attr("cx", function (d) { return x(d.x); }).attr("cy", 0).attr("r", 5)
+      .attr("fill", function (d) { return d.color; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, d) { showTip(d.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip)
+      .append("title").text(function (d) { return d.title || d.label; });
+
+    var vlabels = g.append("text").attr("class", "vlabel")
+      .attr("x", function (d) { return x(d.x) + 9; }).attr("y", 3)
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (d) { return d.color; })
+      .text(function (d) { return d.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+  }
+
+  /* Linear horizontal bar chart. Each row is either a point value (a bar from
+     zero) or a range band (lo to hi, drawn translucent). Hover shows the tip,
+     and a checkbox toggles the value labels, matching the other charts. */
+  function barChart(mount, rows, opts) {
+    opts = opts || {};
+    var m = { t: 18, r: 64, b: 52, l: opts.labelWidth || 210 };
+    var rh = opts.rowHeight || 34;
+    var W = opts.width || 660;
+    var ph = rows.length * rh;
+    var H = m.t + ph + m.b;
+    var pw = W - m.l - m.r;
+    var xmax = opts.xMax || d3.max(rows, function (d) {
+      return d.hi != null ? d.hi : d.value;
+    });
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "bar chart")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var x = d3.scaleLinear().domain([0, xmax]).range([m.l, m.l + pw]);
+
+    (opts.xTicks || x.ticks(5)).forEach(function (tk) {
+      var v = typeof tk === "object" ? tk.v : tk;
+      var lab = typeof tk === "object" ? tk.label : String(tk);
+      var xx = x(v);
+      svg.append("line")
+        .attr("x1", xx).attr("y1", m.t).attr("x2", xx).attr("y2", m.t + ph)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", xx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(lab);
+    });
+    if (opts.xLabel)
+      svg.append("text")
+        .attr("x", m.l + pw).attr("y", m.t + ph + 34).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.xLabel);
+
+    var bh = (ph / rows.length) * 0.55;
+    var g = svg.append("g").selectAll("g").data(rows).join("g")
+      .attr("transform", function (d, i) {
+        return "translate(0," + (m.t + (i + 0.5) / rows.length * ph) + ")";
+      });
+    g.append("text")
+      .attr("x", m.l - 10).attr("y", 3).attr("text-anchor", "end")
+      .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.ink)
+      .text(function (d) { return d.label; });
+    g.append("rect")
+      .attr("x", function (d) { return d.hi != null ? x(d.lo) : m.l; })
+      .attr("y", -bh / 2)
+      .attr("width", function (d) {
+        return d.hi != null ? x(d.hi) - x(d.lo) : x(d.value) - m.l;
+      })
+      .attr("height", bh)
+      .attr("fill", function (d) { return d.color; })
+      .attr("opacity", function (d) { return d.hi != null ? 0.45 : 1; })
+      .style("cursor", "pointer")
+      .on("mouseenter", function (ev, d) { showTip(d.tipHTML, ev); })
+      .on("mousemove", moveTip)
+      .on("mouseleave", hideTip)
+      .append("title").text(function (d) { return d.title || d.label; });
+
+    var vlabels = g.append("text").attr("class", "vlabel")
+      .attr("x", function (d) {
+        return (d.hi != null ? x(d.hi) : x(d.value)) + 8;
+      })
+      .attr("y", 3)
+      .attr("font-family", MONO).attr("font-size", 10)
+      .attr("fill", function (d) { return d.hi != null ? PAL.olive : d.color; })
+      .text(function (d) { return d.valueLabel; });
+
+    function setLabels(on) { vlabels.style("display", on ? null : "none"); }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+
+    (opts.legend || []).forEach(function (lg, i) {
+      var lx = m.l + i * 150;
+      svg.append("rect").attr("x", lx).attr("y", H - 12).attr("width", 10)
+        .attr("height", 10).attr("fill", lg.color);
+      svg.append("text").attr("x", lx + 15).attr("y", H - 3)
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(lg.label);
+    });
+  }
+
+  /* Grouped box-and-whisker plot, faceted into panels. Each box carries its
+     own summary stats (q1, med, q3, mean, lo, hi); nothing is recomputed here.
+     Boxes are an IQR rect with a median line, 5 to 95 percent whiskers, and a
+     mean label that the value-label toggle shows or hides. Hover shows the tip. */
+  function boxPlot(mount, boxes, opts) {
+    opts = opts || {};
+    var uniq = function (key) {
+      var seen = [];
+      boxes.forEach(function (b) { if (seen.indexOf(b[key]) < 0) seen.push(b[key]); });
+      return seen;
+    };
+    var panels = opts.panels || uniq("panel");
+    var groups = opts.groups || uniq("group");
+    var m = { t: 26, r: 14, b: 42, l: 48 };
+    var W = opts.width || 520;
+    var H = opts.height || 270;
+    var gap = opts.panelGap || 30;
+    var ph = H - m.t - m.b;
+    var avail = W - m.l - m.r - gap * (panels.length - 1);
+    var panelW = avail / panels.length;
+
+    var host = d3.select(mount).html("");
+    var svg = host.append("svg")
+      .attr("viewBox", "0 0 " + W + " " + H)
+      .attr("preserveAspectRatio", "xMidYMid meet")
+      .attr("role", "img")
+      .attr("aria-label", opts.ariaLabel || "box plot")
+      .style("width", "100%")
+      .style("max-width", W + "px")
+      .style("height", "auto")
+      .style("display", "block");
+
+    var y = d3.scaleLinear().domain(opts.yDomain || [0, 1]).range([m.t + ph, m.t]);
+
+    (opts.yTicks || y.ticks(5)).forEach(function (tk) {
+      var yy = y(tk);
+      svg.append("line")
+        .attr("x1", m.l).attr("y1", yy).attr("x2", W - m.r).attr("y2", yy)
+        .attr("stroke", "#ece7df");
+      svg.append("text")
+        .attr("x", m.l - 8).attr("y", yy + 3).attr("text-anchor", "end")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(tk);
+    });
+    if (opts.yLabel)
+      svg.append("text")
+        .attr("transform", "translate(12," + (m.t + ph / 2) + ") rotate(-90)")
+        .attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+        .text(opts.yLabel);
+
+    var vlabelSel = [];
+    panels.forEach(function (panel, pi) {
+      var x0 = m.l + pi * (panelW + gap);
+      svg.append("text")
+        .attr("x", x0 + panelW / 2).attr("y", m.t - 12).attr("text-anchor", "middle")
+        .attr("font-family", MONO).attr("font-size", 11).attr("fill", PAL.ink)
+        .text(panel);
+      var band = d3.scaleBand().domain(groups).range([x0, x0 + panelW]).padding(0.4);
+      var bw = Math.min(band.bandwidth(), 36);
+
+      groups.forEach(function (group) {
+        var b = boxes.filter(function (d) {
+          return d.panel === panel && d.group === group;
+        })[0];
+        if (!b) return;
+        var cx = band(group) + band.bandwidth() / 2;
+        var g = svg.append("g").style("cursor", "pointer")
+          .on("mouseenter", function (ev) { showTip(b.tipHTML, ev); })
+          .on("mousemove", moveTip)
+          .on("mouseleave", hideTip);
+        // whiskers
+        g.append("line").attr("x1", cx).attr("x2", cx)
+          .attr("y1", y(b.hi)).attr("y2", y(b.q3)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        g.append("line").attr("x1", cx).attr("x2", cx)
+          .attr("y1", y(b.q1)).attr("y2", y(b.lo)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        g.append("line").attr("x1", cx - bw / 4).attr("x2", cx + bw / 4)
+          .attr("y1", y(b.hi)).attr("y2", y(b.hi)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        g.append("line").attr("x1", cx - bw / 4).attr("x2", cx + bw / 4)
+          .attr("y1", y(b.lo)).attr("y2", y(b.lo)).attr("stroke", b.color).attr("stroke-width", 1.4);
+        // IQR box
+        g.append("rect").attr("x", cx - bw / 2).attr("y", y(b.q3))
+          .attr("width", bw).attr("height", Math.max(1, y(b.q1) - y(b.q3)))
+          .attr("fill", b.color).attr("opacity", 0.82);
+        // median
+        g.append("line").attr("x1", cx - bw / 2).attr("x2", cx + bw / 2)
+          .attr("y1", y(b.med)).attr("y2", y(b.med)).attr("stroke", PAL.paper).attr("stroke-width", 1.6);
+        // group label under axis
+        g.append("text").attr("x", cx).attr("y", m.t + ph + 16).attr("text-anchor", "middle")
+          .attr("font-family", MONO).attr("font-size", 10).attr("fill", PAL.olive)
+          .text(b.group);
+        // mean label
+        vlabelSel.push(g.append("text").attr("class", "vlabel")
+          .attr("x", cx).attr("y", y(b.q3) - 7).attr("text-anchor", "middle")
+          .attr("font-family", MONO).attr("font-size", 9).attr("font-weight", "bold")
+          .attr("fill", PAL.ink).text(b.mean.toFixed(2)).node());
+      });
+    });
+
+    function setLabels(on) {
+      vlabelSel.forEach(function (n) { n.style.display = on ? null : "none"; });
+    }
+    setLabels(opts.showLabels !== false);
+    labelToggle(mount, setLabels, opts.showLabels !== false);
+  }
+
+  global.ProcgrepCharts = {
+    logScatter: logScatter, logDotPlot: logDotPlot, barChart: barChart,
+    boxPlot: boxPlot, palette: PAL,
+    labelToggle: labelToggle, showTip: showTip, moveTip: moveTip, hideTip: hideTip,
+  };
+})(window);
+</script>
+</head><body>
+<div class="progress" id="progress"></div>
+<div class="topbar"><div class="in"><span class="mark">procgrep</span>
+<nav><a href="#showcase">demo</a><a href="#refs">references</a>
+<a href="explorer/">explorer ↗</a><a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a></nav></div></div>
+
+<div class="hero">
+  <h1>Agent trajectories as programs</h1>
+  <div class="sub">Fingerprinting and programming coding-agent behavior.</div>
+  <div class="byline"><span>Hamidah Oderinwale</span><span>Taste Labs</span>
+    <a href="https://github.com/hamidahoderinwale/procgrep">ProcGrep on GitHub ↗</a></div>
+</div>
+
+<div class="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
+<p class="avail">Procgrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
+
+
+<aside class="showcase" id="showcase">
+  <div class="sc-head"><span class="sc-eyebrow">procgrep demo · live</span>
+    <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">open full screen ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="explorer/index.html#why" target="_blank" rel="noopener">structural vs LLM ↗</a></span></div>
+  <div class="sc-frame">
+    <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
+  </div>
+  <p class="caption">The live explorer, embedded. Ask a structural question over the whole store, set two agents, evals, or resolved versus unresolved runs side by side, and replay any trajectory step by step. No model call. If it is cold it takes a moment to wake; the snapshots below show the same tool.</p>
+</aside>
+<figure class="exfig" id="compare-fig">
+  <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
+</figure>
+<figure class="exfig" id="replay-fig">
+  <video autoplay loop muted playsinline poster="figures/replay_poster.png" aria-label="Replaying one trajectory step by step with a live structural query firing">
+    <source src="figures/replay.webm" type="video/webm">
+    <source src="figures/replay.mp4" type="video/mp4">
+  </video>
+</figure>
+
+
+<nav class='toc'><div class='toclab'>Contents</div><ol><li><a href="#background"><span class="tocn">01</span><span class="toct">Background</span></a></li><li><a href="#a-theory-of-procedural-understanding"><span class="tocn">02</span><span class="toct">A theory of procedural understanding</span></a></li><li><a href="#why-procedural-representations-matter"><span class="tocn">03</span><span class="toct">Why procedural representations matter</span></a></li><li><a href="#natural-studies-with-procedural-representations"><span class="tocn">04</span><span class="toct">Natural studies with procedural representations</span></a></li><li><a href="#controlled-evaluations-with-procedural-controls"><span class="tocn">05</span><span class="toct">Controlled evaluations with procedural controls</span></a></li><li><a href="#sec:distillation"><span class="tocn">06</span><span class="toct">Do students behave like their teachers? (a distilled model case study)</span></a></li><li><a href="#conclusion"><span class="tocn">07</span><span class="toct">Conclusion</span></a></li><li><a href="#appendix"><span class="tocn">08</span><span class="toct">Appendix</span></a></li><li><a href="#references"><span class="tocn">★</span><span class="toct">References</span></a></li></ol></nav>
+
+<article>
+<section id="background" class="level1">
+<h1>Background</h1>
+<p>As agent-style programming becomes more accessible, engineers will spend less time writing code directly and more time shaping how their agents frame and solve problems in the form of <em>scaffolds</em>—the wrappers around models that determine which tools they can employ, how they acquire context, and how they react to feedback. That said, traditional program analysis methods are too static to support this reliably and at scale <span class="citation" data-cites="jimenez2024swebenchlanguagemodelsresolve yang2024sweagentagentcomputerinterfacesenable chen2021evaluatinglargelanguagemodels austin2021programsynthesislargelanguage">(<a href="#ref-jimenez2024swebenchlanguagemodelsresolve" role="doc-biblioref">Jimenez et al. 2024</a>; <a href="#ref-yang2024sweagentagentcomputerinterfacesenable" role="doc-biblioref">Yang et al. 2024</a>; <a href="#ref-chen2021evaluatinglargelanguagemodels" role="doc-biblioref">Chen et al. 2021</a>; <a href="#ref-austin2021programsynthesislargelanguage" role="doc-biblioref">Austin et al. 2021</a>)</span><span class="sidenote"><span class="sn-ref">Jimenez, Carlos E., John Yang, Alexander Wettig, et al. 2024. <em>SWE-Bench: Can Language Models Resolve Real-World GitHub Issues?</em> <a href="https://arxiv.org/abs/2310.06770">https://arxiv.org/abs/2310.06770</a>.</span><span class="sn-ref">Yang, John, Carlos E. Jimenez, Alexander Wettig, et al. 2024. <em>SWE-Agent: Agent-Computer Interfaces Enable Automated Software Engineering</em>. <a href="https://arxiv.org/abs/2405.15793">https://arxiv.org/abs/2405.15793</a>.</span><span class="sn-ref">Chen, Mark, Jerry Tworek, Heewoo Jun, et al. 2021. <em>Evaluating Large Language Models Trained on Code</em>. <a href="https://arxiv.org/abs/2107.03374">https://arxiv.org/abs/2107.03374</a>.</span><span class="sn-ref">Austin, Jacob, Augustus Odena, Maxwell Nye, et al. 2021. <em>Program Synthesis with Large Language Models</em>. <a href="https://arxiv.org/abs/2108.07732">https://arxiv.org/abs/2108.07732</a>.</span></span>. In this work, we introduce a suite of procedural programming tools and analyses on agent traces from software engineering evaluations to address this problem. We motivate this work by showing how variation in agent behavior affects outcomes. While traces can be interpreted in isolation, there is much to gain from studying them in aggregate—tapping into collective wisdom <span class="citation" data-cites="surowiecki2004wisdom Alizadeh_2015">(<a href="#ref-surowiecki2004wisdom" role="doc-biblioref">Surowiecki 2004</a>; <a href="#ref-Alizadeh_2015" role="doc-biblioref">Alizadeh et al. 2015</a>)</span><span class="sidenote"><span class="sn-ref">Surowiecki, James. 2004. <em>The Wisdom of Crowds: Why the Many Are Smarter Than the Few and How Collective Wisdom Shapes Business, Economies, Societies, and Nations</em>. Doubleday.</span><span class="sn-ref">Alizadeh, Hosein, Muhammad Yousefnezhad, and Behrouz Minaei Bidgoli. 2015. <span>“Wisdom of Crowds Cluster Ensemble.”</span> <em>Intelligent Data Analysis</em> 19 (3): 485–503. <a href="https://doi.org/10.3233/ida-150728">https://doi.org/10.3233/ida-150728</a>.</span></span>—yet there is a lack of tools for doing so, as meaningful comparison calls for shared representations.</p>
+<p>While chain-of-thought has proven itself (eliciting rationale from the agent) useful for post-hoc rationalizing—it cannot be taken as grounded accounts of action <span class="citation" data-cites="wei2023chainofthoughtpromptingelicitsreasoning ross2025modelingstudentlearning38 guan2025monitoringmonitorability">(<a href="#ref-wei2023chainofthoughtpromptingelicitsreasoning" role="doc-biblioref">Wei et al. 2023</a>; <a href="#ref-ross2025modelingstudentlearning38" role="doc-biblioref">Ross et al. 2025</a>; <a href="#ref-guan2025monitoringmonitorability" role="doc-biblioref">Guan et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Wei, Jason, Xuezhi Wang, Dale Schuurmans, et al. 2023. <em>Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</em>. <a href="https://arxiv.org/abs/2201.11903">https://arxiv.org/abs/2201.11903</a>.</span><span class="sn-ref">Ross, Alexis, Megha Srivastava, Jeremiah Blanchard, and Jacob Andreas. 2025. <em>Modeling Student Learning with 3.8 Million Program Traces</em>. <a href="https://arxiv.org/abs/2510.05056">https://arxiv.org/abs/2510.05056</a>.</span><span class="sn-ref">Guan, Melody Y., Miles Wang, Micah Carroll, et al. 2025. <em>Monitoring Monitorability</em>. <a href="https://arxiv.org/abs/2512.18311">https://arxiv.org/abs/2512.18311</a>.</span></span>. Given this, in this work we explore representations from traces to turn them into structured objects and motivate the need for doing so, and we employ our suite of analytical tools to study the different trajectories that agents take outside controlled settings (in an area of work we call <em>behavioral fingerprinting</em>). The goal is to expand the evaluation of agents beyond whether they simply pass or fail a task by venturing into the analysis of their procedural habits or “style” <span class="citation" data-cites="bisztray2025iknowllmwrote">(<a href="#ref-bisztray2025iknowllmwrote" role="doc-biblioref">Bisztray et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Bisztray, Tamas, Bilel Cherif, Richard A. Dubniczky, et al. 2025. <em>I Know Which LLM Wrote Your Code Last Summer: LLM Generated Code Stylometry for Authorship Attribution</em>. <a href="https://arxiv.org/abs/2506.17323">https://arxiv.org/abs/2506.17323</a>.</span></span>. Additionally, we propose a number of interfaces and measurement frameworks to make these kinds of studies more accessible. This is our motivation for building ProcGrep which is a framework for setting up agent studies and studying their procedural variation.</p>
+<p>Previous work has explored solution variation at scale for MOOCs (massively online open courses) to observe behavior with clustering <span class="citation" data-cites="glassman2015overcode">(<a href="#ref-glassman2015overcode" role="doc-biblioref">Glassman et al. 2015</a>)</span><span class="sidenote"><span class="sn-ref">Glassman, Elena L., Jeremy Scott, Rishabh Singh, Philip J. Guo, and Robert C. Miller. 2015. <span>“<span>OverCode</span>: Visualizing Variation in Student Solutions to Programming Problems at Scale.”</span> <em><span>ACM</span> Transactions on Computer-Human Interaction</em> 22 (2): 7:1–35. <a href="https://doi.org/10.1145/2699751">https://doi.org/10.1145/2699751</a>.</span></span>. Platforms like LMArena compare agent outputs by evaluating preferred outputs in a pairwise fashion <span class="citation" data-cites="chiang2024chatbotarenaopenplatform">(<a href="#ref-chiang2024chatbotarenaopenplatform" role="doc-biblioref">Chiang et al. 2024</a>)</span><span class="sidenote"><span class="sn-ref">Chiang, Wei-Lin, Lianmin Zheng, Ying Sheng, et al. 2024. <em>Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference</em>. <a href="https://arxiv.org/abs/2403.04132">https://arxiv.org/abs/2403.04132</a>.</span></span>. Prior work has investigated using LLMs to generate plans from formal specifications <span class="citation" data-cites="silver2024generalized">(<a href="#ref-silver2024generalized" role="doc-biblioref">Silver et al. 2024</a>)</span><span class="sidenote"><span class="sn-ref">Silver, Tom, Soham Dan, Kavitha Srinivas, Josh Tenenbaum, Leslie Kaelbling, and Michael Katz. 2024. <span>“Generalized Planning in <span>PDDL</span> Domains with Pretrained Large Language Models.”</span> <em>Proceedings of the AAAI Conference on Artificial Intelligence</em> 38. <a href="https://doi.org/10.1609/aaai.v38i18.30006">https://doi.org/10.1609/aaai.v38i18.30006</a>.</span></span>; with procedural representations it is possible to do the inverse, where queries can be written as procedural specs to ‘grep’ traces. <span class="citation" data-cites="yin2017syntacticneuralmodelgeneralpurpose">(<a href="#ref-yin2017syntacticneuralmodelgeneralpurpose" role="doc-biblioref">Yin and Neubig 2017a</a>)</span><span class="sidenote"><span class="sn-ref">Yin, Pengcheng, and Graham Neubig. 2017a. <em>A Syntactic Neural Model for General-Purpose Code Generation</em>. <a href="https://arxiv.org/abs/1704.01696">https://arxiv.org/abs/1704.01696</a>.</span></span>. Observational studies of LLM chats have been performed at scale to understand trends in model use <span class="citation" data-cites="tamkin2024clioprivacypreservinginsightsrealworld chatterji2025how">(<a href="#ref-tamkin2024clioprivacypreservinginsightsrealworld" role="doc-biblioref">Tamkin et al. 2024</a>; <a href="#ref-chatterji2025how" role="doc-biblioref">Chatterji et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Tamkin, Alex, Miles McCain, Kunal Handa, et al. 2024. <em>Clio: Privacy-Preserving Insights into Real-World AI Use</em>. <a href="https://arxiv.org/abs/2412.13678">https://arxiv.org/abs/2412.13678</a>.</span><span class="sn-ref">Chatterji, Aaron, Thomas Cunningham, David J. Deming, et al. 2025. <em>How People Use ChatGPT</em>. NBER Working Paper No. 34255. National Bureau of Economic Research. <a href="https://www.nber.org/papers/w34255">https://www.nber.org/papers/w34255</a>.</span></span>. Frameworks have also been introduced for configuring models as agents to perform multi-step tasks with their own feedback loops given a goal specified upfront with ‘discovered’ end states <span class="citation" data-cites="yao2023reactsynergizingreasoningacting">(<a href="#ref-yao2023reactsynergizingreasoningacting" role="doc-biblioref">Yao et al. 2023</a>)</span><span class="sidenote"><span class="sn-ref">Yao, Shunyu, Jeffrey Zhao, Dian Yu, et al. 2023. <em>ReAct: Synergizing Reasoning and Acting in Language Models</em>. <a href="https://arxiv.org/abs/2210.03629">https://arxiv.org/abs/2210.03629</a>.</span></span>. And past work has also shown that coding style can be derived from source code using ASTs and decision trees in the form of random forest classifiers <span class="citation" data-cites="code_stylometry">(<a href="#ref-code_stylometry" role="doc-biblioref">Caliskan-Islam et al. 2015</a>)</span><span class="sidenote"><span class="sn-ref">Caliskan-Islam, Aylin, Richard Harang, Andrew Liu, et al. 2015. <span>“De-Anonymizing Programmers via Code Stylometry.”</span> <em>Proceedings of the 24th USENIX Conference on Security Symposium</em> (USA), SEC’15, 255–70.</span></span>.</p>
+<p>Existing frameworks have been built for code alone in siloed environments where context is missing, looking at patches <span class="citation" data-cites="GumTree2014 yin-neubig-2017-syntactic">(<a href="#ref-GumTree2014" role="doc-biblioref">Falleri et al. 2014</a>; <a href="#ref-yin-neubig-2017-syntactic" role="doc-biblioref">Yin and Neubig 2017b</a>)</span><span class="sidenote"><span class="sn-ref">Falleri, Jean-Rémy, Floréal Morandat, Xavier Blanc, Matias Martinez, and Martin Monperrus. 2014. <span>“Fine-Grained and Accurate Source Code Differencing.”</span> <em>Proceedings of the 29th ACM/IEEE International Conference on Automated Software Engineering</em> (New York, NY, USA), ASE ’14, 313–24. <a href="https://doi.org/10.1145/2642937.2642982">https://doi.org/10.1145/2642937.2642982</a>.</span><span class="sn-ref">Yin, Pengcheng, and Graham Neubig. 2017b. <span>“A Syntactic Neural Model for General-Purpose Code Generation.”</span> In <em>Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)</em>, edited by Regina Barzilay and Min-Yen Kan. Association for Computational Linguistics. <a href="https://doi.org/10.18653/v1/P17-1041">https://doi.org/10.18653/v1/P17-1041</a>.</span></span> with ASTs (<span class="term" tabindex="0">abstract syntax trees<span class="tip"><span class="tip-def">AST — the parsed tree structure of source code, capturing its syntactic and semantic form independent of formatting.</span><span class="tip-src">— standard program analysis</span></span></span>) which generalizes across languages. We make use of established parsing methods and extend them to work in multi-modal free-form environments where prompts, for example, are written in natural language <span class="citation" data-cites="cruz2026textastherichestpreferencesignal">(<a href="#ref-cruz2026textastherichestpreferencesignal" role="doc-biblioref">Cruz et al. 2026</a>)</span><span class="sidenote"><span class="sn-ref">Cruz, André F., Jon Kleinberg, and Rediet Abebe. 2026. <em>Text as the Richest Preference Signal</em>.</span></span> demonstrating that a rich set of features can be observed and made sense of. Next, given one’s ability to audit procedures, there is an avenue for work which involves seeing what processes yield the best outputs. A new kind of model routing adapted to preferences could blossom by extending on our explorations <span class="citation" data-cites="hu2024routerbenchbenchmarkmultillmrouting">(<a href="#ref-hu2024routerbenchbenchmarkmultillmrouting" role="doc-biblioref">Hu et al. 2024</a>)</span><span class="sidenote"><span class="sn-ref">Hu, Qitian Jason, Jacob Bieker, Xiuyu Li, et al. 2024. <em>RouterBench: A Benchmark for Multi-LLM Routing System</em>. <a href="https://arxiv.org/abs/2403.12031">https://arxiv.org/abs/2403.12031</a>.</span></span>.</p>
+</section>
+<section id="a-theory-of-procedural-understanding" class="level1">
+<h1>A theory of procedural understanding</h1>
+<p>Framing agent coding traces as procedures lets us comparatively study and interact with them in ways that are useful for benchmarking, evaluating the difficulty of evals themselves, differentiating models by their behavioral <span class="term" tabindex="0">fingerprints<span class="tip"><span class="tip-def">An agent's characteristic procedural habits — recurring patterns of tool use and ordering distinctive enough to identify the producing agent.</span><span class="tip-src">— this paper, Abstract</span></span></span>, and performing procedural search. We release a library called ProcGrep to support these use cases. For example, ProcGrep supports queries such as the following.</p>
+<div class="tcolorbox">
+<p>“All Claude-4 trajectories from the past two weeks on Python repositories where <code>search_repo</code> was followed by three or more <code>read_file</code> calls within the first 8 steps, the agent then made at least one <code>edit</code>, and no <code>run_test</code> occurred before the final <code>submit</code>—on instances with difficulty score above 3.”</p>
+</div>
+<p>In this work, we use traces for a number of popular software engineering benchmarks and test a number of SOTA model families (GPT, Claude, DeepSeek, and Qwen). We use public archives of model traces for SWE-Bench (<a href="princeton-nlp/SWE-bench-experiments" class="uri">princeton-nlp/SWE-bench-experiments</a>) and do the same for Agentless logs. Table <a href="#tab:models" data-reference-type="ref" data-reference="tab:models">1</a> lists the full set of agents studied: ten agents across four <span class="term" tabindex="0">scaffolds<span class="tip"><span class="tip-def">The wrapper around a model that determines which tools it can use, how it acquires context, and how it reacts to feedback.</span><span class="tip-src">— this paper, §Background</span></span></span> (SWE-agent, Agentless, DARS, Moatless) with models from the GPT, Claude, DeepSeek, and Qwen families.</p>
+<div id="tab:models">
+<table>
+<caption>Models and scaffolds studied with the number of task instances per agent (ten agents). <span class="math inline">^\dagger</span>Distilled from the Claude-3.7 teacher (row 3); analysed in §<a href="#sec:distillation" data-reference-type="ref" data-reference="sec:distillation">6</a>.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Scaffold</strong></th>
+<th style="text-align: left;"><strong>Model</strong></th>
+<th style="text-align: left;"><strong>Paradigm</strong></th>
+<th style="text-align: right;"><strong><span class="math inline">n</span></strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">Claude-3 Opus</td>
+<td style="text-align: left;">RLHF dense</td>
+<td style="text-align: right;">300</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: left;">RLHF dense</td>
+<td style="text-align: right;">289</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">Claude-3.7 (thinking)</td>
+<td style="text-align: left;">Extended thinking</td>
+<td style="text-align: right;">284</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">Claude-4</td>
+<td style="text-align: left;">Extended thinking</td>
+<td style="text-align: right;">288</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">GPT-4</td>
+<td style="text-align: left;">RLHF dense</td>
+<td style="text-align: right;">300</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: left;">RLHF dense</td>
+<td style="text-align: right;">278</td>
+</tr>
+<tr>
+<td style="text-align: left;">DARS</td>
+<td style="text-align: left;">DeepSeek-R1</td>
+<td style="text-align: left;">RL reasoning</td>
+<td style="text-align: right;">300</td>
+</tr>
+<tr>
+<td style="text-align: left;">Agentless</td>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: left;">RLHF dense</td>
+<td style="text-align: right;">300</td>
+</tr>
+<tr>
+<td style="text-align: left;">Moatless</td>
+<td style="text-align: left;">DeepSeek-V3</td>
+<td style="text-align: left;">MoE pretrain</td>
+<td style="text-align: right;">300</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent</td>
+<td style="text-align: left;">SWE-agent-LM-32B<span class="math inline">^\dagger</span></td>
+<td style="text-align: left;">SFT-distilled (Qwen2.5-32B)</td>
+<td style="text-align: right;">499</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>We define what is the appropriate language to describe and program their behavior. What we call a “procedural fingerprint” is recovered from what an agent actually did (its trajectory) rather than its components or what it states. A fingerprint is a distinguishable feature of an agent from other agents and is consistent over time. Firstly, we demonstrate that these fingerprints do in fact exist, and different models are differentiable by their architectural types. We find that models are distinguishable by their fingerprints alone at 85.7% accuracy compared to a random baseline of 11.1% when selecting a model by chance. We attribute this to problem solving <em>style</em> <span class="citation" data-cites="bisztray2025iknowllmwrote">(<a href="#ref-bisztray2025iknowllmwrote" role="doc-biblioref">Bisztray et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Bisztray, Tamas, Bilel Cherif, Richard A. Dubniczky, et al. 2025. <em>I Know Which LLM Wrote Your Code Last Summer: LLM Generated Code Stylometry for Authorship Attribution</em>. <a href="https://arxiv.org/abs/2506.17323">https://arxiv.org/abs/2506.17323</a>.</span></span>. Furthermore, we extend this to deterministic scaffolds such as Agentless and Moatless to see if they affect procedural behavior and they also imprint unique fingerprints that are identifiable with near perfect accuracy. We performed the comparisons in pairwise settings, to understand distinguishability and we find that Claude-4 and SWE-agent-LM-32B are the most identifiable, whereas GPT-4 and Claude-3 Opus are the most confusable (F1  0.20–0.30).</p>
+<p>We show the discriminating action pairs for each agent and demonstrate how much signal for differentiability they offer–in other words, how discriminative they are. We find that deterministic agents have the most discriminating pairs. For example, DARS over-uses <code>search_repo</code><span class="math inline">\to</span><code>create_file</code> by <span class="math inline">31.6\times</span> and Moatless <code>edit</code><span class="math inline">\to</span><code>submit</code> by <span class="math inline">15.7\times</span>. Interestingly, looking at distilled models that are taught via the rollouts of their teacher (Claude-3.7 Sonnet), we see some semblance of learned behavior where procedural habits are passed down to student (SWE-agent-LM-32B) models.</p>
+<div id="tab:signature_transitions">
+<table>
+<caption>This table ranks the action pairs that distinguish agents. We put the discrimination factor in the third column which shows the amount of signal that can be derived from the action pair compared to the random baseline. Share represents the frequency of the transition with respect to the total number of action transitions.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Agent</strong></th>
+<th style="text-align: left;"><strong>Signature transition</strong></th>
+<th style="text-align: right;"><strong>Discrim. factor (<span class="math inline">\times</span>)</strong></th>
+<th style="text-align: right;"><strong>Share</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">DARS+R1</td>
+<td style="text-align: left;"><code>search_repo</code><span class="math inline">\to</span><code>create_file</code></td>
+<td style="text-align: right;">31.6</td>
+<td style="text-align: right;">0.022</td>
+</tr>
+<tr>
+<td style="text-align: left;">Moatless+V3</td>
+<td style="text-align: left;"><code>edit</code><span class="math inline">\to</span><code>submit</code></td>
+<td style="text-align: right;">15.7</td>
+<td style="text-align: right;">0.064</td>
+</tr>
+<tr>
+<td style="text-align: left;">Agentless+Claude-3.5</td>
+<td style="text-align: left;"><code>run_test</code><span class="math inline">\to</span><code>run_test</code></td>
+<td style="text-align: right;">12.5</td>
+<td style="text-align: right;">0.111</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.7-thinking</td>
+<td style="text-align: left;"><code>create_file</code><span class="math inline">\to</span><code>run_test</code></td>
+<td style="text-align: right;">9.7</td>
+<td style="text-align: right;">0.029</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent-LM-32B</td>
+<td style="text-align: left;"><code>create_file</code><span class="math inline">\to</span><code>run_test</code></td>
+<td style="text-align: right;">6.0</td>
+<td style="text-align: right;">0.023</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-4</td>
+<td style="text-align: left;"><code>read_file</code><span class="math inline">\to</span><code>read_file</code></td>
+<td style="text-align: right;">5.0</td>
+<td style="text-align: right;">0.603</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3</td>
+<td style="text-align: left;"><code>create_file</code><span class="math inline">\to</span><code>edit</code></td>
+<td style="text-align: right;">4.7</td>
+<td style="text-align: right;">0.117</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4</td>
+<td style="text-align: left;"><code>create_file</code><span class="math inline">\to</span><code>edit</code></td>
+<td style="text-align: right;">3.3</td>
+<td style="text-align: right;">0.092</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: left;"><code>run_test</code><span class="math inline">\to</span><code>edit</code></td>
+<td style="text-align: right;">3.3</td>
+<td style="text-align: right;">0.141</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: left;"><code>run_test</code><span class="math inline">\to</span><code>edit</code></td>
+<td style="text-align: right;">2.5</td>
+<td style="text-align: right;">0.115</td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="inducing-action-vocabularies" class="level2">
+<h2>Inducing action vocabularies</h2>
+<p>Given a set of procedures that we might want to compare, which we can call a procedural space, we need a vocabulary or a set of actions that we can use to describe all of them. The contributions of this framework comes from being able to define this vocabulary bottom-up instead of with a more hard-coded or classifier based approach. We benchmark our methods against prompt-based classifiers, finding that across four judge models, prompt-based classifiers have near-zero agreement across model families and struggle to identify compositional trajectories. This affirms our motivations for having representations that can be shared across models and instances to allow for comparative analysis (Table <a href="#tab:judge_comparison" data-reference-type="ref" data-reference="tab:judge_comparison">10</a>).</p>
+<p>This means that there are features of the full vocabulary or alphabet which we can study in itself and can form the basis of insights. To define our vocabulary, we need to be able to extract these procedures and label them to understand what they are. Each procedure should be composable and collapse into one another because steps are taken in sequence for specific tasks and to avoid redundancy—where each procedure of the trajectory should be meaningfully unique or composed of unique sub-procedures. We find that procedural diversity does not correspond with capabilities, where stronger and newer extended-thinking models do better with fewer procedures (Claude-3.7 = 32, Claude-4 = 35) compared to older Claude-3/3.5 models, which have repertoires of 42–44 procedures—which is relatively counter-intuitive.</p>
+</section>
+<section id="an-information-theory-of-procedures" class="level2">
+<h2>An information theory of procedures</h2>
+<p>Because of this, we do not rely on a stopping point defined by behavior as in library learning, and instead determine it intrinsically. Metrics such as compression ratio, <span class="term" tabindex="0">entropy<span class="tip"><span class="tip-def">Shannon entropy H: the uncertainty, or spread, of a probability distribution, measured in bits.</span><span class="tip-src">— this paper, §An information theory of procedures</span></span></span>, and vocabulary size characterize a vocabulary but do not on their own mark where to stop. We therefore treat the induction of a vocabulary as a similar class of problem to a clustering one, and draw on how clustering algorithms are evaluated to form the basis of an emergent stopping criterion <span class="citation" data-cites="rosenberg-hirschberg-2007-v">(<a href="#ref-rosenberg-hirschberg-2007-v" role="doc-biblioref">Rosenberg and Hirschberg 2007</a>)</span><span class="sidenote"><span class="sn-ref">Rosenberg, Andrew, and Julia Hirschberg. 2007. <span>“<span>V</span>-Measure: A Conditional Entropy-Based External Cluster Evaluation Measure.”</span> In <em>Proceedings of the 2007 Joint Conference on Empirical Methods in Natural Language Processing and Computational Natural Language Learning (<span>EMNLP</span>-<span>C</span>o<span>NLL</span>)</em>, edited by Jason Eisner. Association for Computational Linguistics. <a href="https://aclanthology.org/D07-1043/">https://aclanthology.org/D07-1043/</a>.</span></span>: the <span class="term" tabindex="0">V-measure<span class="tip"><span class="tip-def">The harmonic mean of homogeneity and completeness — an entropy-based score for how well a clustering matches ground-truth labels.</span><span class="tip-src">— <a href="#ref-rosenberg2007vmeasure">Rosenberg & Hirschberg 2007</a></span></span></span>. We consider a vocabulary stable when it maximizes two measures: completeness, meaning the sub-actions of each procedure are correctly aligned with an intent, and homogeneity, meaning a procedure contains only actions that belong to it. In our sweep, the V-measure rises, plateaus across vocabulary sizes <span class="math inline">K=128</span>–<span class="math inline">256</span>, and then degrades; we take our stopping point at the plateau’s peak, <span class="math inline">K=192</span> (V-measure <span class="math inline">0.644</span>).</p>
+<figure id="fig:vmeasure" data-latex-placement="H">
+<img loading="lazy" src="figures/fig_vmeasure_sweep.png" style="width:85.0%" />
+<figcaption>V-measure of BPE vocabulary clustering against agent labels as a function of vocabulary size.</figcaption>
+</figure>
+<p>BPE or <span class="term" tabindex="0">Byte-Pair Encoding<span class="tip"><span class="tip-def">Iteratively merge the most frequent adjacent pair into a new token, building a compact vocabulary bottom-up; here applied to action sequences rather than text.</span><span class="tip-src">— <a href="#ref-sennrich2016neuralmachinetranslationrare">Sennrich et al. 2016</a></span></span></span> is a useful analog for this process and we employ it to induce our vocabulary. While BPE chunks natural language tokens by merging those that frequently appear together to compress the data for pre-training LLMs, we chunk actions from generated code <span class="citation" data-cites="sennrich2016neuralmachinetranslationrare">(<a href="#ref-sennrich2016neuralmachinetranslationrare" role="doc-biblioref">Sennrich et al. 2016</a>)</span><span class="sidenote"><span class="sn-ref">Sennrich, Rico, Barry Haddow, and Alexandra Birch. 2016. <em>Neural Machine Translation of Rare Words with Subword Units</em>. <a href="https://arxiv.org/abs/1508.07909">https://arxiv.org/abs/1508.07909</a>.</span></span>. The idea of learning action vocabularies bottom-up is drawn from library learning and <span class="term" tabindex="0">program synthesis<span class="tip"><span class="tip-def">Automatically generating programs from a specification — input/output examples, types, or a natural-language description.</span><span class="tip-src">— <a href="#ref-austin2021programsynthesislargelanguage">Austin et al. 2021</a></span></span></span> <span class="citation" data-cites="ellis2020dreamcodergrowinggeneralizableinterpretable">(<a href="#ref-ellis2020dreamcodergrowinggeneralizableinterpretable" role="doc-biblioref">Ellis et al. 2020</a>)</span><span class="sidenote"><span class="sn-ref">Ellis, Kevin, Catherine Wong, Maxwell Nye, et al. 2020. <em>DreamCoder: Growing Generalizable, Interpretable Knowledge with Wake-Sleep Bayesian Program Learning</em>. <a href="https://arxiv.org/abs/2006.08381">https://arxiv.org/abs/2006.08381</a>.</span></span>, where recurring procedural subsequences are abstracted from longer programs. While they are typically tied to specific tasks to improve performance, we do so largely for the emergent representations they offer. Additionally, BPE is just one algorithm for accomplishing this chunking, we evaluate BPE and <span class="term" tabindex="0">PrefixSpan<span class="tip"><span class="tip-def">A classic sequential-pattern miner that grows frequent subsequences by projecting the database on each pattern's prefix.</span><span class="tip-src">— standard sequential-pattern mining</span></span></span> along the metrics that we care about in this work, but acknowledge that certain methods might favor different goals and find that BPE offers better separability (Figure <a href="#fig:bpe_vs_prefixspan" data-reference-type="ref" data-reference="fig:bpe_vs_prefixspan">12</a>).</p>
+<figure id="fig:encoding_pipeline" data-latex-placement="h">
+<div id="fig-pipe" class="interactive"></div>
+<figcaption>Illustrative figure of the process of vocabulary induction given an agent trace.</figcaption>
+</figure>
+<p><span class="math display">V = 2 \cdot \frac{h \cdot c}{h + c}</span> where homogeneity <span class="math inline">h</span> and completeness <span class="math inline">c</span> are defined as <span class="math display">h = 1 - \frac{H(\text{actions} \mid \text{procedure})}{H(\text{actions})} \qquad c = 1 - \frac{H(\text{procedure} \mid
+  \text{actions})}{H(\text{procedure})}</span> <span class="math inline">H(\text{actions} \mid \text{procedure})</span> measures the confidence of belonging of an action to a procedure, and <span class="math inline">H(\text{procedure} \mid \text{actions})</span> measures the reverse. A vocabulary is stable when <span class="math inline">V</span> is maximized. To extract the actions themselves, we take code hunks—solution patches—from these evaluation datasets and then parse them with an AST that gives a node tree and a syntactical and semantic representation of the code. Given the structural representation of the solution patches, we then apply an embedding stage to encode the change in plain language and the underlying intent by contextualizing the structured patch with the surrounding code and a behavioral description from the model.</p>
+<p>We investigate entropy, and use <span class="term" tabindex="0">Jensen–Shannon Divergence<span class="tip"><span class="tip-def">A symmetric, smoothed measure of how different two probability distributions are: 0 when identical, and 1 (base-2) when they share no support.</span><span class="tip-src">— defined in this paper, §An information theory of procedures</span></span></span> (<span class="term" tabindex="0">JSD<span class="tip"><span class="tip-def">Jensen–Shannon divergence — a symmetric distance between two probability distributions, 0 (identical) to 1 (disjoint, base-2).</span><span class="tip-src">— defined in this paper, §An information theory of procedures</span></span></span>) to study how models diverge from the norm. This is important for detecting out-of-distribution behavior which may be useful in observational settings. Entropy (H), a measure of uncertainty in a distribution (where a distribution here is the probability over all the possible actions in our vocabulary), is a property that can be applied to a single agent’s distribution of actions, where it is defined as: <span class="math display">H(p_a) = -\sum_{v \in \mathcal{V}} p_a(v) \log_2 p_a(v)</span> JSD allows us to build on entropy and measure how different two distributions are. We denote the agent distributions <span class="math inline">a</span> and <span class="math inline">b</span>, where <span class="math inline">p_a</span> and <span class="math inline">p_b</span> denote the action distributions of agents <span class="math inline">a</span> and <span class="math inline">b</span>.</p>
+<p><span class="math display">\mathrm{JSD}(p_a, p_b) = H\!\left(\frac{p_a + p_b}{2}\right) - \frac{1}{2}H(p_a)
+- \frac{1}{2}H(p_b)</span></p>
+<p>Across all models, passing behavior includes a higher ratio of browsing to other actions. Extended thinking Claude models spend the largest proportion of their time in the shell compared to older models with more even task breakdowns. Models in the GPT family have more consistent behavior, but newer ones spend more time editing. Agent harnesses have less task diversity, potentially due to their programmed behavior and have more distinct breakdowns, the Agentless agent spends a disproportionate amount of time browsing and the Moatless scaffold leads to a large proportion of testing. An interesting application of this is forecasting the costs of an agent, as it is not only a product of the cost per tool call, but a function of the action types needed to complete it and the procedural tendencies of the model being orchestrated.</p>
+<figure id="fig:step_token_cost" data-latex-placement="!t">
+<img loading="lazy" src="figures/fig_step_vs_token_cost.png" style="width:70.0%" />
+<figcaption>Cost breakdown of agents by action type and tokens.</figcaption>
+</figure>
+<div class="table*">
+<p><br />
+<span><span class="math inline">^*</span>Cost estimated. $/step = cost per inference call. Extended thinking models reduce cost per step by routing calls through the shell and orchestrating them before invoking the more expensive inference calls (Claude-4: $0.018/step vs. Claude-3: $0.200/step).</span></p>
+</div>
+<figure id="fig:steps_resolved" data-latex-placement="!t">
+<img loading="lazy" src="figures/fig_steps_per_resolved.png" style="width:70.0%" />
+<figcaption>Average number of steps per resolved tasks across agents.</figcaption>
+</figure>
+<div id="tab:representation_comparison">
+<table>
+<caption>Comparison of different procedural representations by their ability to signal whether the agent succeeded or failed, scored with F1 on single nearest-neighbor prediction. We find that representations derived directly from the trace beat the random baseline (<span class="math inline">0.13</span>–<span class="math inline">0.24</span>), and that natural-language accounts barely improve on it.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Representation</strong></th>
+<th style="text-align: center;"><strong>n</strong></th>
+<th style="text-align: center;"><strong>F1 (k=1)</strong></th>
+<th style="text-align: center;"><strong>Source</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Structural pattern overlap</td>
+<td style="text-align: center;">289</td>
+<td style="text-align: center;">0.347</td>
+<td style="text-align: center;">Deterministic</td>
+</tr>
+<tr>
+<td style="text-align: left;">Action sequence distance</td>
+<td style="text-align: center;">289</td>
+<td style="text-align: center;">0.274</td>
+<td style="text-align: center;">Deterministic</td>
+</tr>
+<tr>
+<td style="text-align: left;">Edit action overlap</td>
+<td style="text-align: center;">289</td>
+<td style="text-align: center;">0.256</td>
+<td style="text-align: center;">Deterministic</td>
+</tr>
+<tr>
+<td style="text-align: left;">Narrative description</td>
+<td style="text-align: center;">289</td>
+<td style="text-align: center;">0.177</td>
+<td style="text-align: center;">Varies by model</td>
+</tr>
+<tr>
+<td style="text-align: left;">Agent plan description</td>
+<td style="text-align: center;">289</td>
+<td style="text-align: center;">0.155</td>
+<td style="text-align: center;">Varies by model</td>
+</tr>
+<tr>
+<td style="text-align: left;">Divergence classifier (LLM)</td>
+<td style="text-align: center;">87–286</td>
+<td style="text-align: center;">0.000–0.363</td>
+<td style="text-align: center;"><span class="math inline">\kappa &lt; 0.05</span> (cross-family)</td>
+</tr>
+<tr>
+<td style="text-align: left;">Random retrieval</td>
+<td style="text-align: center;">289</td>
+<td style="text-align: center;">0.13–0.24</td>
+<td style="text-align: center;">Baseline</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="why-procedural-representations-matter" class="level1">
+<h1>Why procedural representations matter</h1>
+<p>Given theoretical grounding, we put foundations to work in a number of ways. In this section we look at top-down analyses given agent traces. Firstly, we show that these approaches offer a more grounded representation of process than what can be elicited from models in natural language alone. We ask two questions: given what a model says it will do, what does it actually do (forward follow-through)? Then, given what a model says it did, what did it actually do (reverse follow-through)? Lastly, we show how procedural representations allow for structural search over traces.</p>
+<p>We find that both model families have high reverse follow-through rates, where every action they take is mentioned somewhere in their reasoning. For GPT-4 and GPT-4o the reverse follow-through rate is 1.0, and for DARS+R1 and the Claude family (Claude-3 / 3.5 / 3.7 / 4) it is high but not complete (0.875 / 0.857 / 0.833 / 0.800 / 0.750, respectively).</p>
+<figure id="fig:cot_alignment" data-latex-placement="H">
+<div id="fig-ft" class="interactive"></div>
+<figcaption>Follow-through for behavioral accounts from the Claude and GPT model families.</figcaption>
+</figure>
+<p>We also assess precision in the behavioral descriptions themselves as a proxy for ‘groundedness’ from a representation. We find that models are generally verbose in their accounts, which might be a signal of performative chain-of-thought <span class="citation" data-cites="boppana2026reasoningtheaterdisentanglingmodel">(<a href="#ref-boppana2026reasoningtheaterdisentanglingmodel" role="doc-biblioref">Boppana et al. 2026</a>)</span><span class="sidenote"><span class="sn-ref">Boppana, Siddharth, Annabel Ma, Max Loeffler, et al. 2026. <em>Reasoning Theater: Disentangling Model Beliefs from Chain-of-Thought</em>. <a href="https://arxiv.org/abs/2603.05488">https://arxiv.org/abs/2603.05488</a>.</span></span>. For example, the GPT family are trained with heavy RLHF and instruction-tuning. Whereas the Claude family of models are presumably trained to follow more sprawling reasoning patterns before coalescing them into some preferred approach. Extended thinking models are the most verbose and have similar behavior to our baseline of shuffled rationales.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Model</strong></th>
+<th style="text-align: right;"><strong>n</strong></th>
+<th style="text-align: right;"><strong>Verbosity</strong></th>
+<th style="text-align: right;"><strong>Precision</strong></th>
+<th style="text-align: right;"><strong>Baseline</strong></th>
+<th style="text-align: right;"><strong>Recall</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Claude-3</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">1.07</td>
+<td style="text-align: right;">0.833</td>
+<td style="text-align: right;">0.678</td>
+<td style="text-align: right;">0.857</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: right;">289</td>
+<td style="text-align: right;">1.00</td>
+<td style="text-align: right;">0.857</td>
+<td style="text-align: right;">0.732</td>
+<td style="text-align: right;">0.833</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.7-thinking</td>
+<td style="text-align: right;">284</td>
+<td style="text-align: right;">1.35</td>
+<td style="text-align: right;">0.625</td>
+<td style="text-align: right;">0.623</td>
+<td style="text-align: right;">0.800</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-4</td>
+<td style="text-align: right;">288</td>
+<td style="text-align: right;">1.32</td>
+<td style="text-align: right;">0.500</td>
+<td style="text-align: right;">0.536</td>
+<td style="text-align: right;">0.750</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">1.17</td>
+<td style="text-align: right;">0.800</td>
+<td style="text-align: right;">0.713</td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: right;">278</td>
+<td style="text-align: right;">1.18</td>
+<td style="text-align: right;">0.750</td>
+<td style="text-align: right;">0.679</td>
+<td style="text-align: right;">1.000</td>
+</tr>
+<tr>
+<td style="text-align: left;">DARS+R1</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">1.07</td>
+<td style="text-align: right;">0.857</td>
+<td style="text-align: right;">0.775</td>
+<td style="text-align: right;">0.875</td>
+</tr>
+</tbody>
+</table>
+<p>Currently, it is difficult for a developer to search through their agents’ history without employing an LLM. The agent first has to surface the code it wrote, with context that it may or may not have written to memory. With ProcGrep, search can be deterministic in the same way that writing a SQL query is. We compare search with ProcGrep against LLM judges over the same queries, taking the deterministic structural match as ground truth. We find that ProcGrep is exact on queries spanning a range of agent actions: context retrieval and the number of files read; conditional events, where an action is retrieved based on a preceding event; and missing actions, where an event is retrieved by the absence of an action.</p>
+<div id="tab:query-vs-llm">
+<table>
+<caption>Answering the same queries: ProcGrep versus LLM judges.</caption>
+<thead>
+<tr>
+<th style="text-align: left;">Method</th>
+<th style="text-align: right;">Mean <span class="math inline">F_1</span></th>
+<th style="text-align: right;">Latency/decision</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">ProcGrep (structural query)</td>
+<td style="text-align: right;">1.000</td>
+<td style="text-align: right;">1.1 μs</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude Sonnet 4.6</td>
+<td style="text-align: right;">0.278</td>
+<td style="text-align: right;">1.71 s</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: right;">0.230</td>
+<td style="text-align: right;">0.66 s</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o-mini</td>
+<td style="text-align: right;">0.221</td>
+<td style="text-align: right;">0.69 s</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude Opus 4.8</td>
+<td style="text-align: right;">0.152</td>
+<td style="text-align: right;">1.73 s</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude 3.5 Haiku</td>
+<td style="text-align: right;">0.098</td>
+<td style="text-align: right;">1.03 s</td>
+</tr>
+<tr>
+<td style="text-align: left;">DeepSeek-chat</td>
+<td style="text-align: right;">0.093</td>
+<td style="text-align: right;">1.51 s</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="natural-studies-with-procedural-representations" class="level1">
+<h1>Natural studies with procedural representations</h1>
+<p>With this data, we can also validate other kinds of inferences regarding the shapes of problems and model behavior. For example, past work has found that models struggle with compositional generalization—this means that they are brittle in contexts where they need to do incremental work. We validate this in the wild and find that problems that require compositional generalization, defined by problems that have nested procedures, are especially difficult for agents, as evidenced by their failure rates. We define compositional problems as ones where the subproblems are ones that have been solved by the agent before, but when put together the agent failed. Looking at Figure <a href="#fig:compositional_failure" data-reference-type="ref" data-reference="fig:compositional_failure">6</a> we can observe that compositionality is a relatively strong signal of failure, followed by novel actions, and familiar procedures yield the lowest failure rates. However, the pattern holds the most strongly for RLHF-trained models and much more modest for more classically trained models. Across models, similar trends hold, but open-weight agents have lower failure rates to compositional problems—when computing the difference of open-weight model failure at all points compared to other model families is <span class="math inline">{\sim}9\%</span>.</p>
+<figure id="fig:composition_analysis" data-latex-placement="H">
+<figure id="fig:compositional_failure">
+<img loading="lazy" src="figures/failure_mix_by_agent_84.png" />
+<figcaption>Pass rate by compositional difficulty.</figcaption>
+</figure>
+<figure id="fig:failure_by_family">
+<img loading="lazy" src="figures/failure_by_family.png" />
+<figcaption>Failure types by model family.</figcaption>
+</figure>
+<figcaption>Model behavior on compositional tasks.</figcaption>
+</figure>
+<p>Next, developers make a number of decisions to train and scaffold their models. We set out to understand how this affects model processes based on a set of tasks and find that “fingerprints” are recoverable—unique model-specific patterns regarding tool-use and order of operations that can be attributed back to an agent. Given certain parameters like the costs for different types of actions and the length of a task, hopefully this can form the basis of more informed model choice and configuration decisions depending on a developer’s goal (i.e. task and workflow-aware routing). For a given model, its procedural space can be described by its entropy and compression, where entropy describes the variance of the actions and compression is a rough proxy for repetitiveness. We find the GPT-4o has the most diversity of actions compared to Claude models.</p>
+<p>Entropy is just one method of characterizing procedural behavior given a trajectory and it makes sense that there is some level of behavioral similarity for models of the same family and harness—suggesting that architectural design choices bleed into procedural tendencies. We compare the divergence of procedural distributions with JSD to test and find that scaffolds and model generation are the strongest indicators of procedural habits compared to the model generation in distilled model pairs, suggesting that the generation of the model and programmed behavior play a disproportionate role and that a distilled student’s procedural style is largely derived from its teacher. See Figure <a href="#fig:jsd_full" data-reference-type="ref" data-reference="fig:jsd_full">13</a> for a matrix showing all the pairwise divergence rates across models.</p>
+<table>
+<caption>Procedural divergence across agent distributions, grouped by agent type.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Factor</strong></th>
+<th style="text-align: left;"><strong>Comparison</strong></th>
+<th style="text-align: right;"><strong>JSD</strong></th>
+<th style="text-align: right;"><strong><span class="math inline">\times</span> floor</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Lineage</td>
+<td style="text-align: left;">teacher <span class="math inline">\to</span> distilled child</td>
+<td style="text-align: right;">0.250</td>
+<td style="text-align: right;">3.0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Family</td>
+<td style="text-align: left;">within family, across generations</td>
+<td style="text-align: right;">0.518</td>
+<td style="text-align: right;">6.3</td>
+</tr>
+<tr>
+<td style="text-align: left;">Scaffold</td>
+<td style="text-align: left;">same model, two harnesses</td>
+<td style="text-align: right;">0.533</td>
+<td style="text-align: right;">6.5</td>
+</tr>
+</tbody>
+</table>
+<section id="how-agents-acquire-context" class="level2">
+<h2>How agents acquire context</h2>
+<p>We also look at the breadth of files that agents access. We believe this is a measure of efficiency and localization ability. In other words, the file coverage is a proxy for the range of the codebase that the agent interacts with. Claude-3.5 has the largest range, with a mean of 2.41 files per task, compared to an average of 1.66-1.90. However, the pass rate of the model is not proportional to the number of files that it accesses, where for every model there is usually a tipping point where accessing files becomes a signal of struggle rather than success. We observe this more broadly across agents where the highest pass rate instances are correlated with fewer files being edited, while there is a drop in pass rate (steeper for older models and milder for newer ones) when file edits increase—likely suggesting that success on a problem is tied to how easy it is to pinpoint.</p>
+<figure id="fig:files_by_pass_rate" data-latex-placement="H">
+<img loading="lazy" src="figures/fig_patch_files_passrate.png" style="width:60.0%" />
+<figcaption>Figure plotting agent pass rate by the number of files changed. We observe that a low file change rate is lightly correlated with pass rate, potentially because it means the scope of the solution was more straightforward, compared to complex tasks that are either hard to localize or require a breadth of files as context to solve. </figcaption>
+</figure>
+<p>We can also use our framework to understand trajectory anomalies as it pertains to context retrieval to offer developers useful signal for when their agents are failing. For instance, out of all 63 times that Agentless “wins”—where it successfully passes a task that SWE-agent does not—SWE-agent’s failures are marked by long edit streaks: it is over twice as likely to make five or more edits in a row when it fails as when it succeeds. Agentless is an overall more efficient agent, as it will require an average of 13 steps, where it will localize the error, patch the problem, and validate in a clean loop, compared to SWE-agent’s average of 33.</p>
+<div id="tab:scaffold_outcomes">
+<table>
+<caption>Outcomes of two agent scaffolds on 289 tasks.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Outcome</strong></th>
+<th style="text-align: right;"><strong><span class="math inline">n</span></strong></th>
+<th style="text-align: right;"><strong>Difficulty</strong></th>
+<th style="text-align: right;"><strong>SWE-agent steps</strong></th>
+<th style="text-align: right;"><strong>Agentless steps</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Both pass</td>
+<td style="text-align: right;">54</td>
+<td style="text-align: right;">7.17</td>
+<td style="text-align: right;">20.4</td>
+<td style="text-align: right;">13.0</td>
+</tr>
+<tr>
+<td style="text-align: left;">SWE-agent only</td>
+<td style="text-align: right;">15</td>
+<td style="text-align: right;">4.53</td>
+<td style="text-align: right;">30.7</td>
+<td style="text-align: right;">13.0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Agentless only</td>
+<td style="text-align: right;">63</td>
+<td style="text-align: right;">4.59</td>
+<td style="text-align: right;">33.3</td>
+<td style="text-align: right;">13.0</td>
+</tr>
+<tr>
+<td style="text-align: left;">Neither passes</td>
+<td style="text-align: right;">157</td>
+<td style="text-align: right;">0.69</td>
+<td style="text-align: right;">36.8</td>
+<td style="text-align: right;">13.0</td>
+</tr>
+<tr>
+<td colspan="2" style="text-align: left;">Total</td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;">289</td>
+<td style="text-align: right;"></td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="controlled-evaluations-with-procedural-controls" class="level1">
+<h1>Controlled evaluations with procedural controls</h1>
+<p>In agent programming and benchmarking, an engineer can specify parameters such as the number of tool use turns and response lengths in the form of tokens, but there is little control over how a task is done. Controlling for behavior at the level of actions is an under-explored way of assessing capabilities—while ablations are possible at different levels of abstraction, it is not possible to say a model can only retrieve context via grep or when, or run a certain number of tests and after what actions.</p>
+<p>Fingerprints give us behavioral trends that form the basis for predicting which actions a given agent is most likely to take, useful for next-action prediction and anomaly detection. We batch trajectories into five groups, training models on four and leaving one as a held-out test set using <span class="term" tabindex="0">GroupKFold<span class="tip"><span class="tip-def">K-fold cross-validation in which all samples from one group — here, one task instance — stay in the same fold, so no instance is ever split across train and test.</span><span class="tip-src">— scikit-learn</span></span></span> and see that fingerprinting accuracy is relatively unchanged when grouping by task (<span class="math inline">\Delta = -0.007</span>), demonstrating that identifiability is largely a function of style and not task memorization from the probe itself (for example, pattern matching certain actions to specific tasks).</p>
+<p>As shown in Table <a href="#tab:trajectory_holdouts" data-reference-type="ref" data-reference="tab:trajectory_holdouts">6</a>, agents fall into three regimes: deterministic scaffolds like Agentless, which are nearly fully predictable (82% accuracy, <span class="math inline">+</span>51 points over baseline); constrained scaffolds like Moatless, where the scaffold drives behavior and the baseline is already high (73% accuracy, <span class="math inline">+</span>8 points); and open-ended model-driven agents like Claude and GPT, where predictions are stronger at the single-action level (e.g., Claude-3.5 at 50% accuracy, <span class="math inline">+</span>33 points). We also find that edit streaks are a strong failure signal: for Moatless+DeepSeek-V3, 43% of trajectories have edit streaks of 5 or more, and of those, the fail rate is 80%, compared to 59% for no-streak trajectories. For Claude-3.5 the signal is weaker, with pass rate dropping from 26% to 11% with a streak <span class="math inline">\geq</span>5, though the magnitude is comparable. Overall, we believe this makes a strong case for procedural representations as a basis for next-action and final state prediction.</p>
+<div id="tab:trajectory_holdouts">
+<table>
+<caption>Next-action and next-stage prediction accuracy across agent trajectories.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"></th>
+<th colspan="3" style="text-align: center;"><strong>Next action</strong></th>
+<th colspan="3" style="text-align: center;"><strong>Next stage</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><span>2-4</span>(lr)<span>5-7</span> <strong>Agent</strong></td>
+<td style="text-align: right;">Base</td>
+<td style="text-align: right;">Acc.</td>
+<td style="text-align: right;"><span class="math inline">\Delta</span></td>
+<td style="text-align: right;">Base</td>
+<td style="text-align: right;">Acc.</td>
+<td style="text-align: right;"><span class="math inline">\Delta</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3</td>
+<td style="text-align: right;">13%</td>
+<td style="text-align: right;">46%</td>
+<td style="text-align: right;"><span class="math inline">+</span>33</td>
+<td style="text-align: right;">33%</td>
+<td style="text-align: right;">47%</td>
+<td style="text-align: right;"><span class="math inline">+</span>14</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: right;">18%</td>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;"><span class="math inline">+</span>33</td>
+<td style="text-align: right;">35%</td>
+<td style="text-align: right;">51%</td>
+<td style="text-align: right;"><span class="math inline">+</span>16</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.7-thinking</td>
+<td style="text-align: right;">23%</td>
+<td style="text-align: right;">54%</td>
+<td style="text-align: right;"><span class="math inline">+</span>31</td>
+<td style="text-align: right;">44%</td>
+<td style="text-align: right;">65%</td>
+<td style="text-align: right;"><span class="math inline">+</span>21</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-4</td>
+<td style="text-align: right;">51%</td>
+<td style="text-align: right;">61%</td>
+<td style="text-align: right;"><span class="math inline">+</span>10</td>
+<td style="text-align: right;">51%</td>
+<td style="text-align: right;">67%</td>
+<td style="text-align: right;"><span class="math inline">+</span>16</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4</td>
+<td style="text-align: right;">20%</td>
+<td style="text-align: right;">57%</td>
+<td style="text-align: right;"><span class="math inline">+</span>37</td>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;">56%</td>
+<td style="text-align: right;"><span class="math inline">+</span>6</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: right;">27%</td>
+<td style="text-align: right;">60%</td>
+<td style="text-align: right;"><span class="math inline">+</span>34</td>
+<td style="text-align: right;">50%</td>
+<td style="text-align: right;">62%</td>
+<td style="text-align: right;"><span class="math inline">+</span>12</td>
+</tr>
+<tr>
+<td style="text-align: left;">DARS+DeepSeek-R1</td>
+<td style="text-align: right;">30%</td>
+<td style="text-align: right;">46%</td>
+<td style="text-align: right;"><span class="math inline">+</span>17</td>
+<td style="text-align: right;">37%</td>
+<td style="text-align: right;">49%</td>
+<td style="text-align: right;"><span class="math inline">+</span>12</td>
+</tr>
+<tr>
+<td style="text-align: left;">Agentless+Claude-3.5</td>
+<td style="text-align: right;">31%</td>
+<td style="text-align: right;">82%</td>
+<td style="text-align: right;"><span class="math inline">+</span>51</td>
+<td style="text-align: right;">31%</td>
+<td style="text-align: right;">82%</td>
+<td style="text-align: right;"><span class="math inline">+</span>51</td>
+</tr>
+<tr>
+<td style="text-align: left;">Moatless+DeepSeek-V3</td>
+<td style="text-align: right;">65%</td>
+<td style="text-align: right;">73%</td>
+<td style="text-align: right;"><strong><span class="math inline">+</span>8</strong></td>
+<td style="text-align: right;">65%</td>
+<td style="text-align: right;">73%</td>
+<td style="text-align: right;"><strong><span class="math inline">+</span>8</strong></td>
+</tr>
+</tbody>
+</table>
+</div>
+<section id="programming-procedural-rewards" class="level2">
+<h2>Programming procedural rewards</h2>
+<p>One application of <code>ProcGrep</code> is the ability to specify and reward model behavior on long-horizon tasks. Typically, reward systems for coding models have focused on binary outcomes, but trajectory specifications enable partial rewards based on procedural milestones, providing a denser signal that captures intermediate progress and can be more readily adapted to changing goals. With ProcGrep, rewards can be assigned to action sequences in uniquely fine-grained ways. Here, we design a specification to reward what we define as problem-solving best practices such as exploration, implementation, and test verification and to penalize long edit streaks that would burn resources and a lack of search which suggests unsystematic problem-solving.</p>
+<div class="codecard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">reward_spec.yaml</span><span class="codecard-lang">yaml</span></div><pre class="codecard-body"><code><span class="cc-key">phases</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> exploration    reward: <span class="cc-num">0.10</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: search_repo}, {atom: read_file}]
+    <span class="cc-key">min_occurrences</span><span class="cc-punc">:</span> <span class="cc-num">2</span>    before_first: edit
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> implementation    reward: <span class="cc-num">0.15</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: edit}]
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> test_verification    reward: <span class="cc-num">0.25</span>
+    <span class="cc-key">require_sequence</span><span class="cc-punc">:</span> [edit, run_test]    max_gap: <span class="cc-num">5</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> completion    reward: <span class="cc-num">0.10</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: submit}]
+<span class="cc-key">penalties</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> edit_streak    penalty: <span class="cc-num">0.15</span>
+    <span class="cc-key">pattern</span><span class="cc-punc">:</span> [edit, edit, edit, edit, edit]    contiguous: true
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> no_search    penalty: <span class="cc-num">0.05</span>
+    <span class="cc-key">require_absent_before</span><span class="cc-punc">:</span> [search_repo, read_file]    before_first: edit
+<span class="cc-key">bonuses</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> test_driven    reward: <span class="cc-num">0.10</span>
+    <span class="cc-key">require_sequence</span><span class="cc-punc">:</span> [run_test]    before_first: edit</code></pre></div>
+<p>We show a snippet of the spec in YAML above and provide the point scheme below and a table of results where we show that Agentless+Claude-3.5 is the winning scaffold for following said instructions. Here, we hand-author an action sequence and the feedback derived from it, but do not close the loop with a trained model. Thus, we use the following as an illustrative example and recognize that crafting a state will depend on a variety of goals and decisions:</p>
+<div class="codecard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">proc_score.json</span><span class="codecard-lang">json</span></div><pre class="codecard-body"><code>{<span class="cc-key">&quot;instance_id&quot;</span><span class="cc-punc">:</span> <span class="cc-str">&quot;django__django-<span class="cc-num">12345</span>&quot;</span>,
+  <span class="cc-key">&quot;binary_pass&quot;</span><span class="cc-punc">:</span> <span class="cc-kw">false</span>,    <span class="cc-key">&quot;proc_score&quot;</span><span class="cc-punc">:</span> <span class="cc-num">0.35</span>,
+  <span class="cc-key">&quot;satisfied_phases&quot;</span><span class="cc-punc">:</span> [<span class="cc-str">&quot;exploration&quot;</span>,
+                 <span class="cc-str">&quot;implementation&quot;</span>, <span class="cc-str">&quot;test_verification&quot;</span>],
+  <span class="cc-key">&quot;triggered_penalties&quot;</span><span class="cc-punc">:</span> [<span class="cc-str">&quot;edit_streak&quot;</span>],
+  <span class="cc-key">&quot;triggered_bonuses&quot;</span><span class="cc-punc">:</span> []}</code></pre></div>
+<div id="tab:reward_scheme">
+<table>
+<caption>Point scheme for the procedural reward spec. Scores are bounded to the <span class="math inline">[0,1]</span> range and the maximum attainable score is <span class="math inline">0.70</span>).</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Type</strong></th>
+<th style="text-align: left;"><strong>Component</strong></th>
+<th style="text-align: left;"><strong>Triggered when</strong></th>
+<th style="text-align: right;"><strong>Points</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">Phase</td>
+<td style="text-align: left;">exploration</td>
+<td style="text-align: left;"><span class="math inline">\geq 2</span> search/read before first edit</td>
+<td style="text-align: right;"><span class="math inline">+0.10</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">implementation</td>
+<td style="text-align: left;">any edit</td>
+<td style="text-align: right;"><span class="math inline">+0.15</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">test_verification</td>
+<td style="text-align: left;">edit <span class="math inline">\to</span> run_test within 5 steps</td>
+<td style="text-align: right;"><span class="math inline">+0.25</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">completion</td>
+<td style="text-align: left;">any submit</td>
+<td style="text-align: right;"><span class="math inline">+0.10</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Bonus</td>
+<td style="text-align: left;">test_driven</td>
+<td style="text-align: left;">run_test before first edit</td>
+<td style="text-align: right;"><span class="math inline">+0.10</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Penalty</td>
+<td style="text-align: left;">edit_streak</td>
+<td style="text-align: left;">5 contiguous edits</td>
+<td style="text-align: right;"><span class="math inline">-0.15</span></td>
+</tr>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: left;">no_search</td>
+<td style="text-align: left;">first edit with no prior search/read</td>
+<td style="text-align: right;"><span class="math inline">-0.05</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<div id="tab:reward_results">
+<table>
+<caption>Procedural reward breakdown.</caption>
+<tbody>
+<tr>
+<td style="text-align: left;"></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"><strong>Proc.</strong></td>
+<td style="text-align: right;"><strong>Explore</strong></td>
+<td style="text-align: right;"><strong>Test</strong></td>
+<td style="text-align: right;"><strong>Test-</strong></td>
+<td style="text-align: right;"><strong>Edit</strong></td>
+<td style="text-align: right;"><strong>No</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;"><strong>Agent</strong></td>
+<td style="text-align: right;"><strong><span class="math inline">n</span></strong></td>
+<td style="text-align: right;"><strong>score</strong></td>
+<td style="text-align: right;"></td>
+<td style="text-align: right;"><strong>verif.</strong></td>
+<td style="text-align: right;"><strong>driven</strong></td>
+<td style="text-align: right;"><strong>streak</strong></td>
+<td style="text-align: right;"><strong>search</strong></td>
+</tr>
+<tr>
+<td style="text-align: left;">Agentless+Claude-3.5</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">0.600</td>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+<tr>
+<td style="text-align: left;">DARS+R1</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">0.468</td>
+<td style="text-align: right;">33%</td>
+<td style="text-align: right;">86%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">8%</td>
+<td style="text-align: right;">34%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: right;">289</td>
+<td style="text-align: right;">0.447</td>
+<td style="text-align: right;">36%</td>
+<td style="text-align: right;">90%</td>
+<td style="text-align: right;">1%</td>
+<td style="text-align: right;">16%</td>
+<td style="text-align: right;">54%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.7-thinking</td>
+<td style="text-align: right;">284</td>
+<td style="text-align: right;">0.397</td>
+<td style="text-align: right;">97%</td>
+<td style="text-align: right;">18%</td>
+<td style="text-align: right;">17%</td>
+<td style="text-align: right;">2%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">0.384</td>
+<td style="text-align: right;">19%</td>
+<td style="text-align: right;">88%</td>
+<td style="text-align: right;">9%</td>
+<td style="text-align: right;">12%</td>
+<td style="text-align: right;">73%</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: right;">278</td>
+<td style="text-align: right;">0.383</td>
+<td style="text-align: right;">23%</td>
+<td style="text-align: right;">97%</td>
+<td style="text-align: right;">2%</td>
+<td style="text-align: right;">32%</td>
+<td style="text-align: right;">70%</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">0.381</td>
+<td style="text-align: right;">21%</td>
+<td style="text-align: right;">85%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">21%</td>
+<td style="text-align: right;">75%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-4</td>
+<td style="text-align: right;">288</td>
+<td style="text-align: right;">0.345</td>
+<td style="text-align: right;">100%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">1%</td>
+<td style="text-align: right;">3%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+<tr>
+<td style="text-align: left;">Moatless+V3</td>
+<td style="text-align: right;">300</td>
+<td style="text-align: right;">0.187</td>
+<td style="text-align: right;">49%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">0%</td>
+<td style="text-align: right;">41%</td>
+<td style="text-align: right;">0%</td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>In the following, we do a run to compare two procedural types (test-driven and patch-driven) across agent rollouts. For the test-driven specification, we reward interleaving edits with tests; for the patch-driven one, we reward the model going directly from edits to submission and penalize tests in this regime. With this, we can interpret the <span class="math inline">\Delta</span> as how consistent each regime is with the model’s innate procedural tendencies (Table <a href="#tab:spec_comparison" data-reference-type="ref" data-reference="tab:spec_comparison">9</a>).</p>
+<div id="tab:spec_comparison">
+<table>
+<caption>Mean procedural score under a test-driven vs. patch-driven spec, where <span class="math inline">\Delta&gt;0</span> shows that a test-driven regime is favored.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Agent</strong></th>
+<th style="text-align: right;"><strong>Test-driven</strong></th>
+<th style="text-align: right;"><strong>Patch-driven</strong></th>
+<th style="text-align: right;"><strong><span class="math inline">\Delta</span></strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: right;">0.562</td>
+<td style="text-align: right;">0.399</td>
+<td style="text-align: right;"><span class="math inline">+0.163</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3</td>
+<td style="text-align: right;">0.541</td>
+<td style="text-align: right;">0.399</td>
+<td style="text-align: right;"><span class="math inline">+0.143</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4</td>
+<td style="text-align: right;">0.515</td>
+<td style="text-align: right;">0.452</td>
+<td style="text-align: right;"><span class="math inline">+0.063</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.5</td>
+<td style="text-align: right;">0.565</td>
+<td style="text-align: right;">0.513</td>
+<td style="text-align: right;"><span class="math inline">+0.052</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Agentless+Claude-3.5</td>
+<td style="text-align: right;">0.700</td>
+<td style="text-align: right;">0.700</td>
+<td style="text-align: right;"><span class="math inline">0.000</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">DARS+R1</td>
+<td style="text-align: right;">0.550</td>
+<td style="text-align: right;">0.557</td>
+<td style="text-align: right;"><span class="math inline">-0.007</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Moatless+V3</td>
+<td style="text-align: right;">0.095</td>
+<td style="text-align: right;">0.456</td>
+<td style="text-align: right;"><span class="math inline">-0.361</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-3.7-thinking</td>
+<td style="text-align: right;">0.285</td>
+<td style="text-align: right;">0.677</td>
+<td style="text-align: right;"><span class="math inline">-0.391</span></td>
+</tr>
+<tr>
+<td style="text-align: left;">Claude-4</td>
+<td style="text-align: right;">0.200</td>
+<td style="text-align: right;">0.692</td>
+<td style="text-align: right;"><span class="math inline">-0.492</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<p>With these examples, we hope to inspire what is possible to study, though we believe there are a number of configurations one could program depending on the use case. The scores we assign to the rewards are relatively arbitrary—our main contribution is building the means to specify them in the first place—and a meaningful area of future work is dynamic scoring that adapts to observed final states in continual-learning contexts.</p>
+</section>
+</section>
+<section id="sec:distillation" class="level1">
+<h1>Do students behave like their teachers? (a distilled model case study)</h1>
+<p>We consider a distilled model pair consisting of a teacher and a student model, where the student model is trained on trajectories generated by the teacher through supervised fine-tuning. While distillation is typically employed because it can produce performant models at a fraction of the cost, do students actually learn to problem solve like their parents and what value does this confer if they do <span class="citation" data-cites="hinton2015distillingknowledgeneuralnetwork zhang2026embarrassinglysimpleselfdistillationimproves">(<a href="#ref-hinton2015distillingknowledgeneuralnetwork" role="doc-biblioref">Hinton et al. 2015</a>; <a href="#ref-zhang2026embarrassinglysimpleselfdistillationimproves" role="doc-biblioref">Zhang et al. 2026</a>)</span><span class="sidenote"><span class="sn-ref">Hinton, Geoffrey, Oriol Vinyals, and Jeff Dean. 2015. <em>Distilling the Knowledge in a Neural Network</em>. <a href="https://arxiv.org/abs/1503.02531">https://arxiv.org/abs/1503.02531</a>.</span><span class="sn-ref">Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert, and Yizhe Zhang. 2026. <em>Embarrassingly Simple Self-Distillation Improves Code Generation</em>. <a href="https://arxiv.org/abs/2604.01193">https://arxiv.org/abs/2604.01193</a>.</span></span>? We find that the student inherits the teacher’s full action vocabulary and shows concentrated entropy, which means that when the distilled model succeeds it has lower entropy and is more procedurally similar than when it fails, showing that procedural mimicry could be a means to improve success rates for distilled models. We analyze 284 parent and 498 child trajectories using <code>lineage_diff</code> across three axes: vocabulary preservation, entropy shifts, and outcome divergence. Stratifying by outcome at the native level, passing child trajectories share 0.204 of the parent’s tool signatures, whereas failing trajectories share only 0.193 (<span class="math inline">\Delta = 0.01</span>).</p>
+<figure id="fig:distillation" data-latex-placement="H">
+<figure id="fig:dist_entropy">
+<div id="fig-dist" class="interactive"></div>
+<figcaption>Action entropy student and teacher model pair where the student’s action distribution is more concentrated (<span class="math inline">-0.41</span> bits).</figcaption>
+</figure>
+<figcaption>Comparing the trajectories of distilled student-teacher pairs, comparing Claude-3.7 Sonnet (teacher) <span class="math inline">\to</span> SWE-agent-LM-32B (child) on SWE-bench Verified.</figcaption>
+</figure>
+</section>
+<section id="conclusion" class="level1">
+<h1>Conclusion</h1>
+<p>In this work we set out to define and motivate a new lens for studying agent trajectories, specifically in coding settings. They are natural exhaust from models that are being deployed for increasingly long-horizon tasks, and we believe there is a need for tools to make use of them to help a new age of developers who are tasked with deciding which models to employ and how to architect their agents. We validate procedural fingerprinting, demonstrating that problem-solving style is a real property of agent behavior and something that can be programmed. We find that agents are recoverable from their traces alone at a near 90% rate as compared to random baseline of 11%. We show that different models that would otherwise be studied in isolation can be compared through new methods for representing their traces and breaking them into meaningful sub-processes. We also show that certain procedural quirks are linked to success and failure, which can be the basis of inferring outcomes even when a full trajectory has not been carried out in its entirety, suggesting that telemetry can be a way to reduce overall compute spend.</p>
+<p>We are excited about new ways of applying ProcGrep–the library that was built to do the top-down analysis we put forth in this work—particularly, when training models to carry out long-horizon tasks with resource management in mind. In the future, we anticipate the methods put forth in this work can complement model diffing methods built to probe into models at a functional and behavioral level to produce more holistic analyses of agents <span class="citation" data-cites="jiralerspong2026crossarchitecturemodeldiffingcrosscoders aranguri2025modeldiff">(<a href="#ref-jiralerspong2026crossarchitecturemodeldiffingcrosscoders" role="doc-biblioref">Jiralerspong and Bricken 2026</a>; <a href="#ref-aranguri2025modeldiff" role="doc-biblioref">Aranguri and McGrath 2025</a>)</span><span class="sidenote"><span class="sn-ref">Jiralerspong, Thomas, and Trenton Bricken. 2026. <em>Cross-Architecture Model Diffing with Crosscoders: Unsupervised Discovery of Differences Between LLMs</em>. <a href="https://arxiv.org/abs/2602.11729">https://arxiv.org/abs/2602.11729</a>.</span><span class="sn-ref">Aranguri, Santiago, and Tom McGrath. 2025. <span>“Discovering Undesired Rare Behaviors via Model Diff Amplification.”</span> <em>Goodfire</em>.</span></span>.</p>
+</section>
+<section id="appendix" class="level1">
+<h1>Appendix</h1>
+<section id="algorithms-for-vocabulary-discovery" class="level2">
+<h2>Algorithms for vocabulary discovery</h2>
+<section id="byte-pair-encoding" class="level3">
+<h3>Byte-Pair Encoding</h3>
+<div class="codecard algocard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">Algorithm: Byte-Pair Encoding (action vocabulary)</span><span class="codecard-lang">pseudocode</span></div><pre class="codecard-body"><code><span class="cc-kw">Input</span>:  action sequences S = {s1, ..., sn};  target vocabulary size K
+<span class="cc-kw">Output</span>: vocabulary V;  tokenized sequences T
+
+V ← { all atoms appearing in S }
+T ← S
+<span class="cc-kw">while</span> |V| &lt; K:
+    count frequency of every adjacent token pair (a, b) in T
+    (a*, b*) ← argmax over (a, b) of freq(a, b)
+    <span class="cc-kw">if</span> freq(a*, b*) below threshold:
+        <span class="cc-kw">break</span>
+    t ← a* · b*
+    V ← V ∪ { t }
+    replace every adjacent occurrence of (a*, b*) in T with t
+<span class="cc-kw">return</span> V, T</code></pre></div>
+</section>
+<section id="prefixspan" class="level3">
+<h3>PrefixSpan</h3>
+<div class="codecard algocard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">Algorithm: PrefixSpan</span><span class="codecard-lang">pseudocode</span></div><pre class="codecard-body"><code><span class="cc-kw">Input</span>:  sequences S;  minimum support σ
+<span class="cc-kw">Output</span>: frequent sequential patterns P
+
+P ← ∅
+<span class="cc-kw">for each</span> item b that is frequent in the σ-projected database S|α:
+    α&#x27; ← α · b
+    P  ← P ∪ { α&#x27; }
+    S|α&#x27; ← { suffix of r after its first occurrence of b : r ∈ S|α }
+    <span class="cc-kw">recurse on</span> S|α&#x27; to extend α&#x27;
+<span class="cc-kw">return</span> P</code></pre></div>
+<div id="tab:judge_comparison">
+<table>
+<caption>Agreement and compositionality metrics across LLM judges.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Judge</strong></th>
+<th style="text-align: center;"><strong>% Compositional</strong></th>
+<th style="text-align: center;"><strong>F1 (k=1) Pass/Fail</strong></th>
+<th style="text-align: center;"><strong>Mean <span class="math inline">\kappa</span></strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: center;">38.1%</td>
+<td style="text-align: center;">0.363</td>
+<td style="text-align: center;">0.136</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o-mini</td>
+<td style="text-align: center;">36.5%</td>
+<td style="text-align: center;">0.246</td>
+<td style="text-align: center;">0.156</td>
+</tr>
+<tr>
+<td style="text-align: left;">Qwen-2.5-72B</td>
+<td style="text-align: center;">17.2%</td>
+<td style="text-align: center;">0.167</td>
+<td style="text-align: center;">0.128</td>
+</tr>
+<tr>
+<td style="text-align: left;">Llama-3.3-70B</td>
+<td style="text-align: center;">21.8%</td>
+<td style="text-align: center;">0.000</td>
+<td style="text-align: center;">0.123</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+</section>
+<section id="classifier-prompt" class="level2">
+<h2>Classifier prompt</h2>
+<div class="tcolorbox">
+<p>You are evaluating a software engineer’s response to a bug report. You are given the reference patch—the actual fix—and use it as ground truth.</p>
+<table>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>Bug report:</code></td>
+<td style="text-align: left;"><code>{problem_statement}</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Reference patch:</code></td>
+<td style="text-align: left;"><code>{gold_patch}</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>Response:</code></td>
+<td style="text-align: left;"><code>{response}</code></td>
+</tr>
+</tbody>
+</table>
+<p>Reason briefly about each dimension, then score it <span class="math inline">0</span>–<span class="math inline">3</span> (<span class="math inline">0=</span> wrong, <span class="math inline">3=</span> exact match to the reference):</p>
+<ul>
+<li><p><em>localization</em> — same file/function as the patch?</p></li>
+<li><p><em>edit_type</em> — right kind of change?</p></li>
+<li><p><em>plan_quality</em> — would this plan reproduce the patch?</p></li>
+<li><p><em>explanation</em> — grounded in what the patch does?</p></li>
+</ul>
+<p>Identify the first plan step where the response diverges (<span class="math inline">-1</span> if fully aligned) and its level:</p>
+<ul>
+<li><p><em>surface</em> — wrong file/function name (token-level)</p></li>
+<li><p><em>compositional</em> — right location, wrong operation or order (syntactic-level)</p></li>
+<li><p><em>relational</em> — right operations, wrong dependency or interaction (graph-level)</p></li>
+<li><p><em>none</em> — no divergence</p></li>
+</ul>
+<p>Output per-dimension reasoning, then:</p>
+<p><span> {"localization": int, "edit_type": int, "plan_quality": int,<br />
+"explanation": int, "first_deviation_step": int,<br />
+"divergence_level": "surface|compositional|relational|none"}</span></p>
+</div>
+<div id="tab:divergence_by_model">
+<table>
+<caption>Comparing judges and their agreement. Overall, agreement is low across models with mean Cohen scores (<span class="math inline">\kappa</span>) of  0.12–0.16. GPT family models have low agreement rates with open-weight models and same-family model pairs and open-weight models tend to agree with each other.</caption>
+<thead>
+<tr>
+<th style="text-align: left;"><strong>Judge model</strong></th>
+<th style="text-align: center;"><strong>n</strong></th>
+<th style="text-align: center;"><strong>F1 (k=1)</strong></th>
+<th style="text-align: center;"><strong>% compositional</strong></th>
+<th style="text-align: center;"><strong>Mean <span class="math inline">\kappa</span></strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;">GPT-4o</td>
+<td style="text-align: center;">286</td>
+<td style="text-align: center;">0.363</td>
+<td style="text-align: center;">38.1%</td>
+<td style="text-align: center;">0.136</td>
+</tr>
+<tr>
+<td style="text-align: left;">GPT-4o mini</td>
+<td style="text-align: center;">285</td>
+<td style="text-align: center;">0.246</td>
+<td style="text-align: center;">36.5%</td>
+<td style="text-align: center;">0.156</td>
+</tr>
+<tr>
+<td style="text-align: left;">Qwen 2.5 72B</td>
+<td style="text-align: center;">87</td>
+<td style="text-align: center;">0.167</td>
+<td style="text-align: center;">17.2%</td>
+<td style="text-align: center;">0.128</td>
+</tr>
+<tr>
+<td style="text-align: left;">Llama 3.3 70B</td>
+<td style="text-align: center;">87</td>
+<td style="text-align: center;">0.000</td>
+<td style="text-align: center;">21.8%</td>
+<td style="text-align: center;">0.123</td>
+</tr>
+<tr>
+<td style="text-align: left;">Weighted mean</td>
+<td style="text-align: center;">745</td>
+<td style="text-align: center;">0.253</td>
+<td style="text-align: center;">–</td>
+<td style="text-align: center;">–</td>
+</tr>
+</tbody>
+</table>
+</div>
+</section>
+<section id="procedural-reward-specifications" class="level2">
+<h2>Procedural reward specifications</h2>
+<p>The test-driven and patch-driven specifications scored in Table <a href="#tab:spec_comparison" data-reference-type="ref" data-reference="tab:spec_comparison">9</a>. Both have a maximum attainable score of <span class="math inline">0.70</span> before penalties.<br />
+<br />
+</p>
+<div class="codecard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">reward_spec.yaml</span><span class="codecard-lang">yaml</span></div><pre class="codecard-body"><code><span class="cc-key">phases</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> exploration    reward: <span class="cc-num">0.10</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: search_repo}, {atom: read_file}]
+    <span class="cc-key">min_occurrences</span><span class="cc-punc">:</span> <span class="cc-num">2</span>    before_first: edit
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> test_first    reward: <span class="cc-num">0.20</span>
+    <span class="cc-key">require_sequence</span><span class="cc-punc">:</span> [run_test]    before_first: edit
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> implementation    reward: <span class="cc-num">0.10</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: edit}]
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> verification    reward: <span class="cc-num">0.30</span>
+    <span class="cc-key">require_sequence</span><span class="cc-punc">:</span> [edit, run_test]    max_gap: <span class="cc-num">5</span>
+<span class="cc-key">penalties</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> edit_streak    penalty: <span class="cc-num">0.15</span>
+    <span class="cc-key">pattern</span><span class="cc-punc">:</span> [edit, edit, edit, edit, edit]    contiguous: true</code></pre></div>
+<div class="codecard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">reward_spec.yaml</span><span class="codecard-lang">yaml</span></div><pre class="codecard-body"><code><span class="cc-key">phases</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> localization    reward: <span class="cc-num">0.20</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: search_repo}, {atom: read_file}]
+    <span class="cc-key">min_occurrences</span><span class="cc-punc">:</span> <span class="cc-num">2</span>    before_first: edit
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> implementation    reward: <span class="cc-num">0.30</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: edit}]
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> completion    reward: <span class="cc-num">0.20</span>
+    <span class="cc-key">require_any</span><span class="cc-punc">:</span> [{atom: submit}]
+<span class="cc-key">penalties</span><span class="cc-punc">:</span>
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> test_thrash    penalty: <span class="cc-num">0.15</span>
+    <span class="cc-key">pattern</span><span class="cc-punc">:</span> [run_test, run_test, run_test]    contiguous: true
+  - <span class="cc-key">name</span><span class="cc-punc">:</span> edit_streak    penalty: <span class="cc-num">0.10</span>
+    <span class="cc-key">pattern</span><span class="cc-punc">:</span> [edit, edit, edit, edit, edit]    contiguous: true</code></pre></div>
+<figure id="fig:bpe_vs_prefixspan" data-latex-placement="H">
+<img loading="lazy" src="figures/fig_bpe_vs_prefixspan.png" style="width:60.0%" />
+<figcaption>BPE separates agents better than PrefixSpan, scored by V-measure against agent labels. The golden set, derived from the evaluation dataset, treats a clustering as correct when every trajectory from a given agent is grouped with the others from that agent (e.g., all GPT-4o trajectories together, all Claude-3.5 trajectories together, and so on).</figcaption>
+</figure>
+<figure id="fig:jsd_full" data-latex-placement="H">
+<div id="fig-jsd" class="interactive"></div>
+<figcaption>Ten agents compared by their pairwise divergence. Of all agent pairs, the distilled student (SWE-agent-LM-32B) is closest to its teacher (Claude-3.7 Sonnet), at JSD <span class="math inline">=~0.25</span>.</figcaption>
+</figure>
+<figure id="fig:regression_length" data-latex-placement="H">
+<img loading="lazy" src="figures/fig_regression_length.png" style="width:70.0%" />
+<figcaption>Pass rate by trajectory length (canonical-action count). Pass rate declines modestly and in a non-linear fashion, from 45% at 1–10 steps to <span class="math inline">{\sim}29\%</span> beyond 60.</figcaption>
+</figure>
+<h1 id="references">References</h1>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-Alizadeh_2015" class="csl-entry" role="listitem">
+Alizadeh, Hosein, Muhammad Yousefnezhad, and Behrouz Minaei Bidgoli. 2015. <span>“Wisdom of Crowds Cluster Ensemble.”</span> <em>Intelligent Data Analysis</em> 19 (3): 485–503. <a href="https://doi.org/10.3233/ida-150728">https://doi.org/10.3233/ida-150728</a>.
+</div>
+<div id="ref-aranguri2025modeldiff" class="csl-entry" role="listitem">
+Aranguri, Santiago, and Tom McGrath. 2025. <span>“Discovering Undesired Rare Behaviors via Model Diff Amplification.”</span> <em>Goodfire</em>.
+</div>
+<div id="ref-austin2021programsynthesislargelanguage" class="csl-entry" role="listitem">
+Austin, Jacob, Augustus Odena, Maxwell Nye, et al. 2021. <em>Program Synthesis with Large Language Models</em>. <a href="https://arxiv.org/abs/2108.07732">https://arxiv.org/abs/2108.07732</a>.
+</div>
+<div id="ref-bisztray2025iknowllmwrote" class="csl-entry" role="listitem">
+Bisztray, Tamas, Bilel Cherif, Richard A. Dubniczky, et al. 2025. <em>I Know Which LLM Wrote Your Code Last Summer: LLM Generated Code Stylometry for Authorship Attribution</em>. <a href="https://arxiv.org/abs/2506.17323">https://arxiv.org/abs/2506.17323</a>.
+</div>
+<div id="ref-boppana2026reasoningtheaterdisentanglingmodel" class="csl-entry" role="listitem">
+Boppana, Siddharth, Annabel Ma, Max Loeffler, et al. 2026. <em>Reasoning Theater: Disentangling Model Beliefs from Chain-of-Thought</em>. <a href="https://arxiv.org/abs/2603.05488">https://arxiv.org/abs/2603.05488</a>.
+</div>
+<div id="ref-code_stylometry" class="csl-entry" role="listitem">
+Caliskan-Islam, Aylin, Richard Harang, Andrew Liu, et al. 2015. <span>“De-Anonymizing Programmers via Code Stylometry.”</span> <em>Proceedings of the 24th USENIX Conference on Security Symposium</em> (USA), SEC’15, 255–70.
+</div>
+<div id="ref-chatterji2025how" class="csl-entry" role="listitem">
+Chatterji, Aaron, Thomas Cunningham, David J. Deming, et al. 2025. <em>How People Use ChatGPT</em>. NBER Working Paper No. 34255. National Bureau of Economic Research. <a href="https://www.nber.org/papers/w34255">https://www.nber.org/papers/w34255</a>.
+</div>
+<div id="ref-chen2021evaluatinglargelanguagemodels" class="csl-entry" role="listitem">
+Chen, Mark, Jerry Tworek, Heewoo Jun, et al. 2021. <em>Evaluating Large Language Models Trained on Code</em>. <a href="https://arxiv.org/abs/2107.03374">https://arxiv.org/abs/2107.03374</a>.
+</div>
+<div id="ref-chiang2024chatbotarenaopenplatform" class="csl-entry" role="listitem">
+Chiang, Wei-Lin, Lianmin Zheng, Ying Sheng, et al. 2024. <em>Chatbot Arena: An Open Platform for Evaluating LLMs by Human Preference</em>. <a href="https://arxiv.org/abs/2403.04132">https://arxiv.org/abs/2403.04132</a>.
+</div>
+<div id="ref-cruz2026textastherichestpreferencesignal" class="csl-entry" role="listitem">
+Cruz, André F., Jon Kleinberg, and Rediet Abebe. 2026. <em>Text as the Richest Preference Signal</em>.
+</div>
+<div id="ref-ellis2020dreamcodergrowinggeneralizableinterpretable" class="csl-entry" role="listitem">
+Ellis, Kevin, Catherine Wong, Maxwell Nye, et al. 2020. <em>DreamCoder: Growing Generalizable, Interpretable Knowledge with Wake-Sleep Bayesian Program Learning</em>. <a href="https://arxiv.org/abs/2006.08381">https://arxiv.org/abs/2006.08381</a>.
+</div>
+<div id="ref-GumTree2014" class="csl-entry" role="listitem">
+Falleri, Jean-Rémy, Floréal Morandat, Xavier Blanc, Matias Martinez, and Martin Monperrus. 2014. <span>“Fine-Grained and Accurate Source Code Differencing.”</span> <em>Proceedings of the 29th ACM/IEEE International Conference on Automated Software Engineering</em> (New York, NY, USA), ASE ’14, 313–24. <a href="https://doi.org/10.1145/2642937.2642982">https://doi.org/10.1145/2642937.2642982</a>.
+</div>
+<div id="ref-glassman2015overcode" class="csl-entry" role="listitem">
+Glassman, Elena L., Jeremy Scott, Rishabh Singh, Philip J. Guo, and Robert C. Miller. 2015. <span>“<span>OverCode</span>: Visualizing Variation in Student Solutions to Programming Problems at Scale.”</span> <em><span>ACM</span> Transactions on Computer-Human Interaction</em> 22 (2): 7:1–35. <a href="https://doi.org/10.1145/2699751">https://doi.org/10.1145/2699751</a>.
+</div>
+<div id="ref-guan2025monitoringmonitorability" class="csl-entry" role="listitem">
+Guan, Melody Y., Miles Wang, Micah Carroll, et al. 2025. <em>Monitoring Monitorability</em>. <a href="https://arxiv.org/abs/2512.18311">https://arxiv.org/abs/2512.18311</a>.
+</div>
+<div id="ref-hinton2015distillingknowledgeneuralnetwork" class="csl-entry" role="listitem">
+Hinton, Geoffrey, Oriol Vinyals, and Jeff Dean. 2015. <em>Distilling the Knowledge in a Neural Network</em>. <a href="https://arxiv.org/abs/1503.02531">https://arxiv.org/abs/1503.02531</a>.
+</div>
+<div id="ref-hu2024routerbenchbenchmarkmultillmrouting" class="csl-entry" role="listitem">
+Hu, Qitian Jason, Jacob Bieker, Xiuyu Li, et al. 2024. <em>RouterBench: A Benchmark for Multi-LLM Routing System</em>. <a href="https://arxiv.org/abs/2403.12031">https://arxiv.org/abs/2403.12031</a>.
+</div>
+<div id="ref-jimenez2024swebenchlanguagemodelsresolve" class="csl-entry" role="listitem">
+Jimenez, Carlos E., John Yang, Alexander Wettig, et al. 2024. <em>SWE-Bench: Can Language Models Resolve Real-World GitHub Issues?</em> <a href="https://arxiv.org/abs/2310.06770">https://arxiv.org/abs/2310.06770</a>.
+</div>
+<div id="ref-jiralerspong2026crossarchitecturemodeldiffingcrosscoders" class="csl-entry" role="listitem">
+Jiralerspong, Thomas, and Trenton Bricken. 2026. <em>Cross-Architecture Model Diffing with Crosscoders: Unsupervised Discovery of Differences Between LLMs</em>. <a href="https://arxiv.org/abs/2602.11729">https://arxiv.org/abs/2602.11729</a>.
+</div>
+<div id="ref-rosenberg-hirschberg-2007-v" class="csl-entry" role="listitem">
+Rosenberg, Andrew, and Julia Hirschberg. 2007. <span>“<span>V</span>-Measure: A Conditional Entropy-Based External Cluster Evaluation Measure.”</span> In <em>Proceedings of the 2007 Joint Conference on Empirical Methods in Natural Language Processing and Computational Natural Language Learning (<span>EMNLP</span>-<span>C</span>o<span>NLL</span>)</em>, edited by Jason Eisner. Association for Computational Linguistics. <a href="https://aclanthology.org/D07-1043/">https://aclanthology.org/D07-1043/</a>.
+</div>
+<div id="ref-ross2025modelingstudentlearning38" class="csl-entry" role="listitem">
+Ross, Alexis, Megha Srivastava, Jeremiah Blanchard, and Jacob Andreas. 2025. <em>Modeling Student Learning with 3.8 Million Program Traces</em>. <a href="https://arxiv.org/abs/2510.05056">https://arxiv.org/abs/2510.05056</a>.
+</div>
+<div id="ref-sennrich2016neuralmachinetranslationrare" class="csl-entry" role="listitem">
+Sennrich, Rico, Barry Haddow, and Alexandra Birch. 2016. <em>Neural Machine Translation of Rare Words with Subword Units</em>. <a href="https://arxiv.org/abs/1508.07909">https://arxiv.org/abs/1508.07909</a>.
+</div>
+<div id="ref-silver2024generalized" class="csl-entry" role="listitem">
+Silver, Tom, Soham Dan, Kavitha Srinivas, Josh Tenenbaum, Leslie Kaelbling, and Michael Katz. 2024. <span>“Generalized Planning in <span>PDDL</span> Domains with Pretrained Large Language Models.”</span> <em>Proceedings of the AAAI Conference on Artificial Intelligence</em> 38. <a href="https://doi.org/10.1609/aaai.v38i18.30006">https://doi.org/10.1609/aaai.v38i18.30006</a>.
+</div>
+<div id="ref-surowiecki2004wisdom" class="csl-entry" role="listitem">
+Surowiecki, James. 2004. <em>The Wisdom of Crowds: Why the Many Are Smarter Than the Few and How Collective Wisdom Shapes Business, Economies, Societies, and Nations</em>. Doubleday.
+</div>
+<div id="ref-tamkin2024clioprivacypreservinginsightsrealworld" class="csl-entry" role="listitem">
+Tamkin, Alex, Miles McCain, Kunal Handa, et al. 2024. <em>Clio: Privacy-Preserving Insights into Real-World AI Use</em>. <a href="https://arxiv.org/abs/2412.13678">https://arxiv.org/abs/2412.13678</a>.
+</div>
+<div id="ref-wei2023chainofthoughtpromptingelicitsreasoning" class="csl-entry" role="listitem">
+Wei, Jason, Xuezhi Wang, Dale Schuurmans, et al. 2023. <em>Chain-of-Thought Prompting Elicits Reasoning in Large Language Models</em>. <a href="https://arxiv.org/abs/2201.11903">https://arxiv.org/abs/2201.11903</a>.
+</div>
+<div id="ref-yang2024sweagentagentcomputerinterfacesenable" class="csl-entry" role="listitem">
+Yang, John, Carlos E. Jimenez, Alexander Wettig, et al. 2024. <em>SWE-Agent: Agent-Computer Interfaces Enable Automated Software Engineering</em>. <a href="https://arxiv.org/abs/2405.15793">https://arxiv.org/abs/2405.15793</a>.
+</div>
+<div id="ref-yao2023reactsynergizingreasoningacting" class="csl-entry" role="listitem">
+Yao, Shunyu, Jeffrey Zhao, Dian Yu, et al. 2023. <em>ReAct: Synergizing Reasoning and Acting in Language Models</em>. <a href="https://arxiv.org/abs/2210.03629">https://arxiv.org/abs/2210.03629</a>.
+</div>
+<div id="ref-yin2017syntacticneuralmodelgeneralpurpose" class="csl-entry" role="listitem">
+Yin, Pengcheng, and Graham Neubig. 2017a. <em>A Syntactic Neural Model for General-Purpose Code Generation</em>. <a href="https://arxiv.org/abs/1704.01696">https://arxiv.org/abs/1704.01696</a>.
+</div>
+<div id="ref-yin-neubig-2017-syntactic" class="csl-entry" role="listitem">
+Yin, Pengcheng, and Graham Neubig. 2017b. <span>“A Syntactic Neural Model for General-Purpose Code Generation.”</span> In <em>Proceedings of the 55th Annual Meeting of the Association for Computational Linguistics (Volume 1: Long Papers)</em>, edited by Regina Barzilay and Min-Yen Kan. Association for Computational Linguistics. <a href="https://doi.org/10.18653/v1/P17-1041">https://doi.org/10.18653/v1/P17-1041</a>.
+</div>
+<div id="ref-zhang2026embarrassinglysimpleselfdistillationimproves" class="csl-entry" role="listitem">
+Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert, and Yizhe Zhang. 2026. <em>Embarrassingly Simple Self-Distillation Improves Code Generation</em>. <a href="https://arxiv.org/abs/2604.01193">https://arxiv.org/abs/2604.01193</a>.
+</div>
+</div>
+</section>
+</section>
+
+</article>
+
+<script id="jsd-data" type="application/json">{
+ "agents": [
+  "Agentless+Claude-3.5",
+  "Claude-3",
+  "Claude-3.5",
+  "Claude-3.7-thinking",
+  "Claude-4",
+  "DARS+R1",
+  "GPT-4",
+  "GPT-4o",
+  "Moatless+V3"
+ ],
+ "matrix": [
+  [
+   0.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0,
+   1.0
+  ],
+  [
+   1.0,
+   0.0,
+   0.162,
+   0.546,
+   0.699,
+   0.649,
+   0.143,
+   0.101,
+   0.662
+  ],
+  [
+   1.0,
+   0.162,
+   0.0,
+   0.504,
+   0.676,
+   0.638,
+   0.19,
+   0.176,
+   0.598
+  ],
+  [
+   1.0,
+   0.546,
+   0.504,
+   0.0,
+   0.321,
+   0.711,
+   0.597,
+   0.565,
+   0.763
+  ],
+  [
+   1.0,
+   0.699,
+   0.676,
+   0.321,
+   0.0,
+   0.813,
+   0.742,
+   0.693,
+   0.8
+  ],
+  [
+   1.0,
+   0.649,
+   0.638,
+   0.711,
+   0.813,
+   0.0,
+   0.667,
+   0.684,
+   0.752
+  ],
+  [
+   1.0,
+   0.143,
+   0.19,
+   0.597,
+   0.742,
+   0.667,
+   0.0,
+   0.167,
+   0.615
+  ],
+  [
+   1.0,
+   0.101,
+   0.176,
+   0.565,
+   0.693,
+   0.684,
+   0.167,
+   0.0,
+   0.656
+  ],
+  [
+   1.0,
+   0.662,
+   0.598,
+   0.763,
+   0.8,
+   0.752,
+   0.615,
+   0.656,
+   0.0
+  ]
+ ],
+ "meta": [
+  {
+   "agent": "Agentless+Claude-3.5",
+   "family": "Claude",
+   "era": "mid",
+   "scaffold": "Agentless"
+  },
+  {
+   "agent": "Claude-3",
+   "family": "Claude",
+   "era": "early",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Claude-3.5",
+   "family": "Claude",
+   "era": "mid",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Claude-3.7-thinking",
+   "family": "Claude",
+   "era": "late",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Claude-4",
+   "family": "Claude",
+   "era": "newest",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "DARS+R1",
+   "family": "DeepSeek",
+   "era": "late",
+   "scaffold": "DARS"
+  },
+  {
+   "agent": "GPT-4",
+   "family": "GPT",
+   "era": "early",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "GPT-4o",
+   "family": "GPT",
+   "era": "mid",
+   "scaffold": "SWE-agent"
+  },
+  {
+   "agent": "Moatless+V3",
+   "family": "DeepSeek",
+   "era": "mid",
+   "scaffold": "Moatless"
+  }
+ ],
+ "axis_stats": {
+  "scaffold": {
+   "within": 0.419,
+   "across": 0.81,
+   "scope": "all 9 agents"
+  },
+  "era": {
+   "within": 0.159,
+   "across": 0.459,
+   "scope": "within SWE-agent scaffold"
+  },
+  "family": {
+   "within": 0.439,
+   "across": 0.401,
+   "scope": "within SWE-agent scaffold"
+  }
+ },
+ "highlights": {
+  "old_dense_cluster": 0.157,
+  "claude4_isolation": 0.626
+ }
+}
+</script><script id="ft-data" type="application/json">{
+ "agents": [
+  {
+   "agent": "Claude-3",
+   "family": "Claude",
+   "fwd": 0.857,
+   "rev": 0.6,
+   "fwd_iqr": [
+    0.75,
+    1.0
+   ],
+   "rev_iqr": [
+    0.429,
+    0.75
+   ]
+  },
+  {
+   "agent": "Claude-3.5",
+   "family": "Claude",
+   "fwd": 0.833,
+   "rev": 0.714,
+   "fwd_iqr": [
+    0.75,
+    1.0
+   ],
+   "rev_iqr": [
+    0.571,
+    0.778
+   ]
+  },
+  {
+   "agent": "Claude-3.7-thinking",
+   "family": "Claude",
+   "fwd": 0.667,
+   "rev": 0.2,
+   "fwd_iqr": [
+    0.5,
+    1.0
+   ],
+   "rev_iqr": [
+    0.2,
+    0.4
+   ]
+  },
+  {
+   "agent": "Claude-4",
+   "family": "Claude",
+   "fwd": 0.5,
+   "rev": 0.25,
+   "fwd_iqr": [
+    0.333,
+    0.6
+   ],
+   "rev_iqr": [
+    0.2,
+    0.5
+   ]
+  },
+  {
+   "agent": "GPT-4",
+   "family": "GPT",
+   "fwd": 1.0,
+   "rev": 0.5,
+   "fwd_iqr": [
+    0.8,
+    1.0
+   ],
+   "rev_iqr": [
+    0.375,
+    0.625
+   ]
+  },
+  {
+   "agent": "GPT-4o",
+   "family": "GPT",
+   "fwd": 0.833,
+   "rev": 0.5,
+   "fwd_iqr": [
+    0.75,
+    1.0
+   ],
+   "rev_iqr": [
+    0.375,
+    0.667
+   ]
+  }
+ ]
+}
+</script><script id="dist-data" type="application/json">[
+  {
+    "panel": "canonical",
+    "group": "Parent",
+    "color": "#5692E5",
+    "n": 284,
+    "mean": 2.314,
+    "med": 2.321,
+    "q1": 2.272,
+    "q3": 2.368,
+    "lo": 2.132,
+    "hi": 2.473
+  },
+  {
+    "panel": "canonical",
+    "group": "Child",
+    "color": "#20A380",
+    "n": 498,
+    "mean": 1.986,
+    "med": 2.098,
+    "q1": 1.877,
+    "q3": 2.191,
+    "lo": 1.319,
+    "hi": 2.273
+  },
+  {
+    "panel": "native",
+    "group": "Parent",
+    "color": "#5692E5",
+    "n": 284,
+    "mean": 2.418,
+    "med": 2.42,
+    "q1": 2.329,
+    "q3": 2.502,
+    "lo": 2.216,
+    "hi": 2.654
+  },
+  {
+    "panel": "native",
+    "group": "Child",
+    "color": "#20A380",
+    "n": 498,
+    "mean": 2.047,
+    "med": 2.138,
+    "q1": 1.939,
+    "q3": 2.255,
+    "lo": 1.36,
+    "hi": 2.427
+  }
+]
+</script>
+<script>
+(function(){
+  const el=document.getElementById('jsd-data'); if(!el)return;
+  const JSD=JSON.parse(el.textContent);
+  const order=["Claude-3","Claude-3.5","Claude-3.7-thinking","Claude-4","GPT-4","GPT-4o","Agentless+Claude-3.5","DARS+R1","Moatless+V3"];
+  const A=JSD.agents,M=JSD.matrix,ME=JSD.meta,S=JSD.axis_stats;
+  const oi=order.map(a=>A.indexOf(a)).filter(i=>i>=0), N=oi.length, lab=oi.map(i=>A[i]);
+  const mount=document.getElementById('fig-jsd'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const PC=ProcgrepCharts, col=d3.scaleLinear().domain([0,1]).range(['rgb(230,240,236)','rgb(13,92,70)']).clamp(true);
+  const CELL=44,L=158,B=118,W=L+N*CELL+18,H=N*CELL+B;
+  let axis=null, showVals=false;
+  mount.innerHTML=`<div class="jtip" id="jsd-tip"><span class="dim">Pairwise procedural divergence across nine agents. Hover any cell; toggle an axis below to see what predicts similarity.</span></div>`+
+    `<div class="jctl"><span class="jlab">highlight axis:</span><span id="jsd-btns"></span></div>`;
+  const svg=d3.select(mount).insert('svg',':first-child')
+    .attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%')
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('role','img').attr('aria-label','pairwise procedural divergence heatmap across nine agents')
+    .style('max-width',W+'px').style('display','block').style('margin','0 auto');
+  const tip=document.getElementById('jsd-tip'),btns=document.getElementById('jsd-btns');
+  PC.labelToggle(mount,v=>{showVals=v;draw();},showVals);
+  function draw(){
+    svg.selectAll('*').remove();
+    const cells=[];
+    for(let r=0;r<N;r++)for(let c=0;c<N;c++)cells.push({r,c,ri:oi[r],ci:oi[c],v:M[oi[r]][oi[c]]});
+    const g=svg.append('g');
+    g.selectAll('rect').data(cells).join('rect').attr('class','jc')
+      .attr('x',d=>L+d.c*CELL).attr('y',d=>8+d.r*CELL)
+      .attr('width',CELL-1.5).attr('height',CELL-1.5)
+      .attr('fill',d=>col(d.v))
+      .attr('stroke',d=>(axis&&d.r!==d.c&&ME[d.ri][axis]===ME[d.ci][axis])?'#CB4D20':'#fff')
+      .attr('stroke-width',d=>(axis&&d.r!==d.c&&ME[d.ri][axis]===ME[d.ci][axis])?2.5:1)
+      .on('mouseenter',(e,d)=>hover(e,d)).on('mousemove',(e,d)=>hover(e,d));
+    // value labels: the JSD number in every off-diagonal cell, the 0 on the diagonal
+    g.selectAll('text.cv').data(cells).join('text').attr('class','cv')
+      .attr('x',d=>L+d.c*CELL+CELL/2).attr('y',d=>8+d.r*CELL+CELL/2+3)
+      .attr('text-anchor','middle').attr('font-size',d=>d.r===d.c?9:8.5)
+      .attr('fill',d=>d.r===d.c?'#aaa':(d.v>0.55?'#F7F5F2':'#14110E'))
+      .style('display',d=>(d.r===d.c||showVals)?null:'none')
+      .text(d=>d.r===d.c?'0':d.v.toFixed(2));
+    for(let r=0;r<N;r++)svg.append('text').attr('x',L-8).attr('y',8+r*CELL+CELL/2+3)
+      .attr('text-anchor','end').attr('font-size',11).text(lab[r]);
+    for(let c=0;c<N;c++){const cx=L+c*CELL+CELL/2,cy=8+N*CELL+10;
+      svg.append('text').attr('x',cx).attr('y',cy).attr('text-anchor','end').attr('font-size',11)
+        .attr('transform',`rotate(-45 ${cx} ${cy})`).text(lab[c]);}
+    btns.innerHTML=['scaffold','era','family'].map(k=>`<button class="jbtn ${axis===k?'on':''}" data-k="${k}">${k}</button>`).join(' ')+
+      (axis?`<span class="jstat">same <b>${axis}</b> ${S[axis].within} · different ${S[axis].across} <span class="dim">(${S[axis].scope})</span></span>`:'');
+  }
+  function hover(e,d){
+    const a=ME[d.ri],b=ME[d.ci];
+    if(d.ri===d.ci){tip.innerHTML='<span class="dim">an agent vs itself — JSD 0 by definition</span>';return;}
+    tip.innerHTML=`<b>${a.agent}</b> vs <b>${b.agent}</b> &nbsp; JSD <b>${d.v.toFixed(2)}</b><br>`+
+      ['family','era','scaffold'].map(k=>`${k}: `+(a[k]===b[k]?`<span style="color:#20A380">same</span>`:`<span style="color:#CB4D20">differ</span>`)).join(' &nbsp;·&nbsp; ');
+  }
+  btns.addEventListener('click',e=>{const k=e.target.dataset.k;if(k){axis=axis===k?null:k;draw();}});
+  draw();
+})();
+</script>
+<script>
+(function(){
+  const el=document.getElementById('ft-data'); if(!el)return;
+  const D=JSON.parse(el.textContent).agents;
+  const mount=document.getElementById('fig-ft'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const PC=ProcgrepCharts, FCOL={Claude:'#CB4D20',GPT:'#5692E5',Other:'#585E53'};
+  const W=560,RH=34,PADL=160,PADR=20,PADT=18,PADB=46,H=PADT+D.length*RH+PADB;
+  const x=d3.scaleLinear().domain([0,1]).range([PADL,W-PADR]);
+  mount.innerHTML=
+    `<div class="jtip" id="ft-tip"><span class="dim">Forward = the agent does what it said (says→does). Reverse = it said what it did (did→says). Hover a marker.</span></div>`+
+    `<div class="ftleg"><span><svg width=14 height=14><circle cx=7 cy=7 r=5 fill="#585E53"/></svg> forward</span>`+
+    `<span><svg width=14 height=14><polygon points="7,2 12,12 2,12" fill="#585E53"/></svg> reverse</span>`+
+    `<span><i style="background:#CB4D20"></i>Claude</span><span><i style="background:#5692E5"></i>GPT</span></div>`;
+  const svg=d3.select(mount).insert('svg',':first-child')
+    .attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%')
+    .attr('preserveAspectRatio','xMidYMid meet')
+    .attr('role','img').attr('aria-label','forward and reverse action-account coverage by agent')
+    .style('max-width',W+'px').style('display','block').style('margin','0 auto');
+  const tip=document.getElementById('ft-tip');
+  [0,0.5,1].forEach(t=>{svg.append('line').attr('x1',x(t)).attr('y1',PADT).attr('x2',x(t)).attr('y2',H-PADB+4).attr('stroke','#e6e1d8');
+    svg.append('text').attr('x',x(t)).attr('y',H-PADB+18).attr('text-anchor','middle').attr('font-size',11).attr('fill','#585E53').text(t);});
+  svg.append('text').attr('x',(PADL+W-PADR)/2).attr('y',H-6).attr('text-anchor','middle').attr('font-size',11).attr('fill','#585E53').text('action-account coverage');
+  const rows=svg.append('g').selectAll('g').data(D).join('g')
+    .attr('transform',(d,i)=>`translate(0,${PADT+i*RH+RH/2})`);
+  rows.append('text').attr('x',PADL-10).attr('y',3).attr('text-anchor','end').attr('font-size',11).text(d=>d.agent);
+  rows.append('line').attr('x1',d=>x(d.fwd_iqr[0])).attr('y1',-6).attr('x2',d=>x(d.fwd_iqr[1])).attr('y2',-6)
+    .attr('stroke',d=>FCOL[d.family]).attr('stroke-opacity',.4);
+  rows.append('circle').attr('class','fc').attr('cx',d=>x(d.fwd)).attr('cy',-6).attr('r',5.5).attr('fill',d=>FCOL[d.family])
+    .on('mouseenter',(e,d)=>hover(d)).on('mousemove',(e,d)=>hover(d));
+  rows.append('line').attr('x1',d=>x(d.rev_iqr[0])).attr('y1',7).attr('x2',d=>x(d.rev_iqr[1])).attr('y2',7)
+    .attr('stroke',d=>FCOL[d.family]).attr('stroke-opacity',.4);
+  rows.append('polygon').attr('class','fc')
+    .attr('points',d=>{const tx=x(d.rev);return `${tx},${2} ${tx+5.5},${12} ${tx-5.5},${12}`;})
+    .attr('fill',d=>FCOL[d.family])
+    .on('mouseenter',(e,d)=>hover(d)).on('mousemove',(e,d)=>hover(d));
+  // value labels: forward and reverse numbers beside each marker, toggled as a group
+  const fwdLab=rows.append('text').attr('class','ftv').attr('x',d=>x(d.fwd)+9).attr('y',-3)
+    .attr('font-size',9.5).attr('fill',d=>FCOL[d.family]).text(d=>d.fwd.toFixed(2));
+  const revLab=rows.append('text').attr('class','ftv').attr('x',d=>x(d.rev)+9).attr('y',14)
+    .attr('font-size',9.5).attr('fill',d=>FCOL[d.family]).text(d=>d.rev.toFixed(2));
+  function setLabels(on){fwdLab.style('display',on?null:'none');revLab.style('display',on?null:'none');}
+  setLabels(false);
+  PC.labelToggle(mount,setLabels,false);
+  function hover(d){
+    tip.innerHTML=`<b>${d.agent}</b> &nbsp; forward <b>${d.fwd.toFixed(2)}</b> <span class="dim">[${d.fwd_iqr[0]}–${d.fwd_iqr[1]}]</span> &nbsp;·&nbsp; reverse <b>${d.rev.toFixed(2)}</b> <span class="dim">[${d.rev_iqr[0]}–${d.rev_iqr[1]}]</span>`;
+  }
+})();
+</script>
+<script>
+(function(){
+  const mount=document.getElementById('fig-pipe'); if(!mount)return;
+  const VC={localize:'#8C1040',read:'#5692E5',edit:'#CB4D20',test:'#20A380',submit:'#14110E'};
+  const SC={A:'#5692E5',B:'#CB4D20',C:'#A98D5A'};
+  const trace=[
+    {op:'localize_file("auth.py")',verb:'localize',sub:'A'},
+    {op:'read_file("auth.py")',verb:'read',sub:'A'},
+    {op:'edit_file("auth.py", p1)',verb:'edit',sub:'B'},
+    {op:'run_tests("test_auth")',verb:'test',sub:'B'},
+    {op:'edit_file("auth.py", p2)',verb:'edit',sub:'B'},
+    {op:'run_tests("test_auth")',verb:'test',sub:'C'},
+    {op:'submit()',verb:'submit',sub:'C'}];
+  const subs={A:['localize','read'],B:['edit','test','edit'],C:['test','submit']};
+  const stages=[
+    {t:'Raw tool calls',d:'The agent emits a stream of tool invocations — verbose, parameterized, every one different.'},
+    {t:'Canonical verbs',d:'Each call is normalized to a canonical action; surface detail dropped, the verb kept.'},
+    {t:'Merge co-occurring',d:'Frequently-adjacent verbs are merged into recurring subroutines — exactly as BPE merges tokens.'},
+    {t:'Induced vocabulary',d:'The merges define an alphabet of procedures, learned bottom-up from the corpus.'},
+    {t:'Encoded trace',d:'The trajectory is now a short string over that alphabet — a program we can compare and query.'}];
+  let st=0;
+  const chip=(l,c)=>`<span class="pchip" style="background:${c}">${l}</span>`;
+  function render(){
+    let b='';
+    if(st===0) b=trace.map(r=>`<div class="prow"><code>${r.op}</code></div>`).join('');
+    else if(st===1) b='<div class="pspine">'+trace.map(r=>chip(r.verb,VC[r.verb])).join('')+'</div>';
+    else if(st===2) b='<div class="pspine">'+trace.map(r=>`<span class="pwrap" style="border-color:${SC[r.sub]}">`+chip(r.verb,VC[r.verb])+'</span>').join('')+'</div><div class="pdim">brackets = the subroutine each verb merges into</div>';
+    else if(st===3) b='<div class="pvocab">'+Object.entries(subs).map(([k,v])=>`<div class="pvrow">${chip(k,SC[k])} = <span class="pdim" style="margin:0">{ ${v.join(', ')} }</span></div>`).join('')+'</div>';
+    else b='<div class="pspine big">'+['A','B','C'].map(k=>chip(k,SC[k])).join('')+'</div><div class="pdim">localize→read · edit→test→edit · test→submit</div>';
+    mount.querySelector('#pipe-body').innerHTML=b;
+    mount.querySelector('#pipe-desc').textContent=stages[st].d;
+    mount.querySelectorAll('.ptab').forEach((x,i)=>x.classList.toggle('on',i===st));
+  }
+  mount.innerHTML=`<div class="ptabs">${stages.map((s,i)=>`<button class="ptab" data-i="${i}">${i+1}. ${s.t}</button>`).join('')}</div>`+
+    `<div id="pipe-body" class="pbody"></div><div id="pipe-desc" class="pdim" style="margin-top:10px"></div>`+
+    `<div class="pnav"><button id="pplay">❚❚ pause</button><button id="pprev">‹ prev</button><button id="pnext">next ›</button></div>`;
+  // GIF-like autoplay: loop the stages; any manual control pauses it.
+  let timer=null, playing=false;
+  function play(){playing=true;mount.querySelector('#pplay').textContent='❚❚ pause';
+    timer=setInterval(()=>{st=(st+1)%stages.length;render();},2000);}
+  function pause(){playing=false;mount.querySelector('#pplay').textContent='▶ play';
+    if(timer){clearInterval(timer);timer=null;}}
+  mount.querySelector('.ptabs').addEventListener('click',e=>{const i=e.target.dataset.i;if(i!=null){pause();st=+i;render();}});
+  mount.querySelector('#pprev').onclick=()=>{pause();st=(st+stages.length-1)%stages.length;render();};
+  mount.querySelector('#pnext').onclick=()=>{pause();st=(st+1)%stages.length;render();};
+  mount.querySelector('#pplay').onclick=()=>{playing?pause():play();};
+  // start playing only when scrolled into view, so it's not spinning off-screen
+  render();
+  if('IntersectionObserver' in window){
+    const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!playing&&!timer)play();else if(!e.isIntersecting&&playing)pause();});},{threshold:0.3});
+    io.observe(mount);
+  } else play();
+})();
+</script>
+<script>
+(function(){
+  const el=document.getElementById('dist-data'); if(!el)return;
+  const mount=document.getElementById('fig-dist'); if(!mount||!window.d3||!window.ProcgrepCharts)return;
+  const boxes=JSON.parse(el.textContent).map(function(b){
+    b.tipHTML='<b>'+b.group+', '+b.panel+'</b><br>mean <b>'+b.mean.toFixed(2)+'</b> bits'+
+      '<br>median '+b.med.toFixed(2)+', IQR '+b.q1.toFixed(2)+' to '+b.q3.toFixed(2)+
+      '<br>5 to 95 pct '+b.lo.toFixed(2)+' to '+b.hi.toFixed(2)+'<br>n = '+b.n;
+    return b;
+  });
+  ProcgrepCharts.boxPlot(mount,boxes,{
+    width:520,height:280,panels:['canonical','native'],groups:['Parent','Child'],
+    yDomain:[1.0,2.8],yTicks:[1.0,1.4,1.8,2.2,2.6],
+    yLabel:'per-trajectory entropy, bits',
+    ariaLabel:'action entropy distributions, parent versus child, canonical and native'});
+})();
+</script>
+<script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
+<script>window.addEventListener('load',function(){
+  if(!window.katex)return;
+  document.querySelectorAll('span.math').forEach(function(el){
+    try{katex.render(el.textContent,el,{displayMode:el.classList.contains('display'),throwOnError:false});}catch(e){}
+  });
+});</script>
+<script>
+(function(){const p=document.getElementById('progress');
+function upd(){const h=document.documentElement,max=h.scrollHeight-h.clientHeight;
+p.style.width=(max>0?(h.scrollTop/max*100):0)+'%';}
+addEventListener('scroll',upd,{passive:true});addEventListener('resize',upd);upd();})();
+</script>
+</body></html>

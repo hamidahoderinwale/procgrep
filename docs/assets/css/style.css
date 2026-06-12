@@ -1,0 +1,582 @@
+:root {
+  --bg: #F7F8FA;          /* cool off-white */
+  --bg-code: #EEF1F5;     /* cool grey-blue */
+  --text: #16181D;        /* slight blue cast on near-black */
+  --muted: #4A5468;       /* cool grey */
+  --faint: #7B8493;       /* cooler faint */
+  --rule: #D6DBE3;        /* cool grey */
+  --link: #1853C7;
+  --link-hover: #103E96;
+  --maxw: 680px;
+  --sidebar-w: 180px;
+  --margin-w: 200px;
+  --gutter: 40px;
+  --page-w: calc(var(--sidebar-w) + var(--gutter) + var(--maxw) + var(--gutter) + var(--margin-w));
+
+  /* Syntax colors, calibrated for cool palette and WCAG AA contrast */
+  --code-comment: #7B8493;
+  --code-keyword: #8E2C73; /* muted aubergine */
+  --code-string:  #1F6B5A; /* deep teal */
+  --code-fn:      #1853C7; /* same as link */
+  --code-num:     #9C5018; /* warm anchor against cool palette */
+}
+
+* { box-sizing: border-box; }
+
+html { scroll-behavior: smooth; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Palatino', 'Palatino Linotype', 'Book Antiqua', 'URW Palladio L', Georgia, serif;
+  font-size: 17px;        /* slightly larger to compensate for serif's smaller x-height */
+  line-height: 1.62;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+code, pre, kbd, samp {
+  font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+  font-size: 13.5px;
+}
+
+a {
+  color: var(--link);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--link-hover);
+  text-decoration: underline;
+}
+
+h1, h2, h3 {
+  margin: 0 0 0.45em;
+  line-height: 1.3;
+  letter-spacing: -0.005em;
+  font-weight: 700;
+}
+h1 { font-size: 1.75rem; margin-top: 0; }
+h2 {
+  font-size: 1.15rem;
+  margin-top: 2.4em;
+  font-weight: 700;
+}
+h3 {
+  font-size: 1rem;
+  margin-top: 1.6em;
+  font-weight: 600;
+}
+
+p { margin: 0 0 1em; }
+
+ul, ol { padding-left: 1.4em; margin: 0 0 1em; }
+li { margin-bottom: 0.3em; }
+
+hr {
+  border: none;
+  border-top: 1px solid var(--rule);
+  margin: 2.5rem 0;
+}
+
+/* -- Layout ------------------------------------------------------ */
+
+.layout {
+  display: grid;
+  grid-template-columns: var(--sidebar-w) minmax(0, var(--maxw));
+  gap: var(--gutter);
+  max-width: var(--page-w);
+  margin: 0 auto;
+  padding: 0 28px;
+}
+
+/* Tufte-style sidenotes: float into the right margin on wide screens,
+   inline on narrow. Use <span class="sidenote">…</span> directly
+   after the word the note belongs to. */
+.sidenote, .marginnote {
+  float: right;
+  clear: right;
+  margin-right: calc(-1 * (var(--margin-w) + var(--gutter)));
+  width: var(--margin-w);
+  font-size: 13px;
+  line-height: 1.45;
+  color: var(--muted);
+  position: relative;
+  vertical-align: baseline;
+  margin-top: 0;
+  margin-bottom: 6px;
+  font-family: 'Palatino', 'Palatino Linotype', 'Book Antiqua', Georgia, serif;
+}
+.sidenote a, .marginnote a { color: var(--link); }
+.sidenote code, .marginnote code {
+  font-size: 11.5px;
+  padding: 0 4px;
+}
+@media (max-width: 1180px) {
+  /* Inline-fallback once the layout no longer has room for a margin column. */
+  .sidenote, .marginnote {
+    float: none;
+    clear: none;
+    margin: 8px 0 14px;
+    width: auto;
+    display: block;
+    padding: 8px 12px;
+    background: var(--bg-code);
+    border-left: 2px solid var(--rule);
+    font-size: 13px;
+  }
+}
+
+aside.sidebar {
+  padding: 60px 0 32px;
+  position: sticky;
+  top: 0;
+  align-self: start;
+  max-height: 100vh;
+  overflow-y: auto;
+  font-size: 13.5px;
+  font-family: 'Palatino', 'Palatino Linotype', Georgia, serif;
+}
+
+/* Brand block at top of sidebar */
+aside.sidebar .brand {
+  display: block;
+  font-weight: 700;
+  font-size: 17px;
+  color: var(--text);
+  margin-bottom: 4px;
+  letter-spacing: -0.01em;
+}
+aside.sidebar .brand:hover { color: var(--link); text-decoration: none; }
+aside.sidebar .brand-meta {
+  display: block;
+  font-size: 11.5px;
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+  letter-spacing: 0.02em;
+  margin-bottom: 28px;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--rule);
+}
+
+/* Section labels */
+aside.sidebar .nav-label {
+  display: block;
+  font-size: 10.5px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+  margin: 18px 0 8px;
+}
+aside.sidebar .nav-label:first-of-type { margin-top: 0; }
+
+/* Nav links: column stack with subtle left rule on hover and active */
+aside.sidebar nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+aside.sidebar nav a {
+  color: var(--muted);
+  padding: 3px 0 3px 10px;
+  line-height: 1.5;
+  border-left: 2px solid transparent;
+  margin-left: -10px;
+  transition: color 0.12s, border-color 0.12s;
+}
+aside.sidebar nav a:hover {
+  color: var(--text);
+  text-decoration: none;
+  border-left-color: var(--rule);
+}
+
+/* Meta link block at the bottom of the sidebar */
+aside.sidebar .meta-link {
+  margin-top: 28px;
+  padding-top: 18px;
+  border-top: 1px solid var(--rule);
+  font-size: 12.5px;
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+}
+aside.sidebar .meta-link a { color: var(--faint); display: block; padding: 2px 0; }
+aside.sidebar .meta-link a:hover { color: var(--text); text-decoration: none; }
+
+main {
+  padding: 60px 0 80px;
+  min-width: 0;  /* prevent grid item from forcing overflow */
+}
+
+/* Collapse to single column on narrow viewports.
+   The 11-item nav becomes too dense to wrap horizontally; instead
+   it collapses to a clean two-row header: brand on top, links
+   below as a single comma-flow wrap with bullet separators. */
+@media (max-width: 880px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 0;
+    max-width: var(--maxw);
+  }
+  aside.sidebar {
+    position: static;
+    max-height: none;
+    overflow: visible;
+    padding: 28px 0 14px;
+    border-bottom: 1px solid var(--rule);
+    margin-bottom: 0;
+  }
+  aside.sidebar .brand { font-size: 16px; margin-bottom: 2px; }
+  aside.sidebar .brand-meta {
+    display: inline-block;
+    margin-bottom: 14px;
+    padding-bottom: 0;
+    border-bottom: none;
+  }
+  aside.sidebar .nav-label { display: none; }
+  aside.sidebar nav {
+    display: flex;
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 2px 0;
+    font-size: 13px;
+  }
+  aside.sidebar nav a {
+    padding: 3px 0;
+    margin: 0;
+    border-left: none;
+  }
+  aside.sidebar nav a:not(:last-child)::after {
+    content: " ·";
+    color: var(--faint);
+    margin: 0 8px 0 8px;
+    pointer-events: none;
+  }
+  aside.sidebar nav a:hover { border-left: none; }
+  aside.sidebar .meta-link { display: none; }
+  main { padding: 24px 0 60px; }
+}
+
+header.intro { margin-bottom: 1.5em; }
+header.intro .sub {
+  color: var(--muted);
+  margin-top: 0.4em;
+  font-size: 1.02rem;
+}
+header.intro .meta {
+  margin-top: 1em;
+  font-size: 13px;
+  color: var(--faint);
+}
+header.intro .meta a { color: var(--muted); }
+header.intro .meta a:hover { color: var(--text); }
+
+/* -- Code blocks ------------------------------------------------- */
+
+pre {
+  background: var(--bg-code);
+  border-radius: 6px;
+  padding: 18px 22px;
+  overflow-x: auto;
+  margin: 18px 0;
+  line-height: 1.6;
+  border: 1px solid var(--rule);
+  tab-size: 4;
+  -moz-tab-size: 4;
+  -webkit-overflow-scrolling: touch;
+  font-feature-settings: "liga" 0;  /* disable ligatures for code clarity */
+}
+pre code {
+  background: none;
+  padding: 0;
+  font-size: 13.5px;
+  white-space: pre;
+  color: var(--text);
+  display: block;
+}
+
+p code, li code, td code, h3 code {
+  background: var(--bg-code);
+  border: 1px solid var(--rule);
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 0.88em;
+  color: var(--text);
+  white-space: nowrap;
+}
+
+.code-comment { color: var(--code-comment); font-style: italic; }
+.code-keyword { color: var(--code-keyword); }
+.code-string  { color: var(--code-string); }
+.code-fn      { color: var(--code-fn); }
+.code-num     { color: var(--code-num); }
+
+/* Pipeline list: ordered steps with monospace function names */
+ol.pipeline {
+  list-style: none;
+  padding: 0;
+  margin: 18px 0 22px;
+  counter-reset: pipeline;
+}
+ol.pipeline li {
+  counter-increment: pipeline;
+  display: grid;
+  grid-template-columns: 28px 180px 1fr;
+  align-items: baseline;
+  gap: 14px;
+  padding: 8px 0;
+  border-bottom: 1px solid var(--rule);
+  margin: 0;
+}
+ol.pipeline li:last-child { border-bottom: none; }
+ol.pipeline li::before {
+  content: counter(pipeline);
+  color: var(--faint);
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 12px;
+  text-align: right;
+}
+ol.pipeline li .name {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  color: var(--code-keyword);
+}
+ol.pipeline li .desc {
+  color: var(--muted);
+  font-size: 0.95em;
+}
+@media (max-width: 600px) {
+  ol.pipeline li {
+    grid-template-columns: 22px 1fr;
+  }
+  ol.pipeline li .name { grid-column: 2; }
+  ol.pipeline li .desc { grid-column: 2; }
+}
+
+/* -- Tables ------------------------------------------------------ */
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 16px 0;
+  font-size: 14px;
+}
+th, td {
+  text-align: left;
+  padding: 9px 10px 9px 0;
+  vertical-align: top;
+  border-bottom: 1px solid var(--rule);
+}
+th {
+  font-weight: 600;
+  color: var(--text);
+  border-bottom-width: 1.5px;
+  border-bottom-color: var(--text);
+  font-size: 13px;
+}
+td { color: var(--muted); }
+td strong { color: var(--text); font-weight: 600; }
+
+/* -- Utility ----------------------------------------------------- */
+
+.muted { color: var(--muted); }
+.faint { color: var(--faint); font-size: 13px; }
+
+/* Highlight: subtle warm tint behind key numerical findings or
+   load-bearing phrases. Use sparingly; saturation kept low so the
+   highlight reads as emphasis, not decoration. */
+mark {
+  background: #FFF1B8;
+  padding: 0 4px;
+  border-radius: 2px;
+  color: var(--text);
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* Mode-specific accent squares before the three h3 headings in
+   the Modes section. Each mode gets one color from the palette;
+   the square sits at the optical baseline of the heading. */
+h3#mode-research::before,
+h3#mode-controlled::before,
+h3#mode-deployment::before {
+  content: "";
+  display: inline-block;
+  width: 9px;
+  height: 9px;
+  border-radius: 2px;
+  margin-right: 10px;
+  vertical-align: 0.12em;
+}
+h3#mode-research::before    { background: #1853C7; } /* blue */
+h3#mode-controlled::before  { background: #1F6B5A; } /* teal */
+h3#mode-deployment::before  { background: #9C5018; } /* copper */
+
+/* Pill: small inline label for version, license, status indicators */
+.pill {
+  display: inline-block;
+  font-size: 11.5px;
+  padding: 1px 8px;
+  background: var(--bg-code);
+  color: var(--muted);
+  border-radius: 10px;
+  font-family: 'JetBrains Mono', 'SF Mono', monospace;
+  border: 1px solid var(--rule);
+  vertical-align: 0.06em;
+  letter-spacing: 0.02em;
+}
+.pill.accent {
+  background: #E6EFF8;
+  color: #103E96;
+  border-color: #C7D7EA;
+}
+
+/* Heading section bar: a small colored leading rule before h2 to
+   give the eye an anchor while scanning down the page. Color
+   rotates subtly through the palette for visual rhythm without
+   shouting. */
+h2[id] {
+  position: relative;
+  padding-left: 16px;
+}
+h2[id]::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.4em;
+  bottom: 0.4em;
+  width: 3px;
+  border-radius: 2px;
+  background: var(--rule);
+}
+h2#what::before        { background: #1853C7; }
+h2#pipeline::before    { background: #1F6B5A; }
+h2#modes::before       { background: #8E2C73; }
+h2#quickstart::before  { background: #1853C7; }
+h2#sample-run::before  { background: #9C5018; }
+h2#capabilities::before{ background: #1F6B5A; }
+h2#position::before    { background: #9C5018; }
+h2#integrations::before{ background: #1853C7; }
+h2#notes::before       { background: #8E2C73; }
+h2#concepts::before    { background: #1F6B5A; }
+h2#studies::before     { background: #1853C7; }
+h2#glossary::before    { background: #1F6B5A; }
+
+/* Figures: clean treatment for inline images with captions */
+figure {
+  margin: 24px 0 28px;
+  padding: 0;
+}
+figure img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+  border: 1px solid var(--rule);
+  border-radius: 4px;
+  background: white;
+  padding: 6px;
+}
+figure figcaption {
+  margin-top: 10px;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--muted);
+  padding-left: 12px;
+  border-left: 2px solid var(--rule);
+}
+
+footer {
+  padding: 30px 0 60px;
+  border-top: 1px solid var(--rule);
+  margin-top: 3rem;
+  font-size: 13px;
+  color: var(--faint);
+}
+footer a { color: var(--muted); }
+footer a:hover { color: var(--text); }
+
+/* Anchor heading hover affordance for section linking */
+h2[id]:hover::after,
+h3[id]:hover::after {
+  content: " #";
+  color: var(--faint);
+  font-weight: 400;
+}
+
+/* Glossary: definition list with monospace term keys */
+dl.glossary {
+  margin: 18px 0 22px;
+  display: grid;
+  grid-template-columns: minmax(150px, 200px) 1fr;
+  gap: 12px 24px;
+}
+dl.glossary dt {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 13.5px;
+  color: var(--text);
+  font-weight: 500;
+  padding-top: 2px;
+}
+dl.glossary dd {
+  margin: 0;
+  color: var(--muted);
+}
+dl.glossary dd a { color: var(--link); }
+@media (max-width: 600px) {
+  dl.glossary { grid-template-columns: 1fr; gap: 4px 0; }
+  dl.glossary dt { margin-top: 14px; }
+  dl.glossary dt:first-of-type { margin-top: 0; }
+}
+
+/* Notes section: emphasized callouts pulled from FAQ */
+.note {
+  border-left: 3px solid var(--rule);
+  padding: 12px 18px;
+  margin: 18px 0;
+  background: transparent;
+}
+.note h3 { margin-top: 0; }
+.note p:last-child { margin-bottom: 0; }
+
+/* Inline term with hover tooltip and side-margin definition.
+   Usage:
+     <dfn class="def" data-def="Definition text…">term</dfn>
+     <span class="sidenote">Definition text (same or longer).</span>
+   The dfn carries the dotted-underline affordance and the hover
+   tooltip; the sidenote pairs the same definition in the right
+   margin on wide screens. */
+dfn.def {
+  font-style: normal;
+  border-bottom: 1px dotted var(--muted);
+  cursor: help;
+  text-decoration: none;
+  position: relative;
+}
+dfn.def::after {
+  content: attr(data-def);
+  position: absolute;
+  bottom: calc(100% + 6px);
+  left: 0;
+  max-width: 320px;
+  width: max-content;
+  background: var(--text);
+  color: #F0F1F4;
+  padding: 9px 13px;
+  border-radius: 4px;
+  font-size: 12.5px;
+  font-style: normal;
+  z-index: 100;
+  font-family: 'Palatino', 'Palatino Linotype', Georgia, serif;
+  line-height: 1.45;
+  pointer-events: none;
+  opacity: 0;
+  transform: translateY(3px);
+  transition: opacity 0.15s ease, transform 0.15s ease;
+  box-shadow: 0 4px 14px rgba(20, 24, 32, 0.18);
+}
+dfn.def:hover::after,
+dfn.def:focus-visible::after {
+  opacity: 1;
+  transform: translateY(0);
+}
+dfn.def[tabindex] { outline: none; }
