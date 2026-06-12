@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jensen-Shannon divergence, by hand</title>
+<style>
+  :root{--paper:#F7F5F2;--ink:#14110E;--rule:#d9d4cc;--copper:#CB4D20;--blue:#5692E5;
+        --teal:#20A380;--olive:#585E53;--gray:#b7b1a7;--mono:ui-monospace,Menlo,monospace;}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5}
+  .wrap{max-width:640px;margin:0 auto;padding:22px}
+  .lead{color:var(--olive);max-width:60ch;margin:0 0 16px}
+  .lead b{color:var(--ink)}
+  .panels{display:flex;gap:14px;align-items:flex-end;justify-content:space-between}
+  .panel{flex:1;text-align:center}
+  .ptitle{font-size:11px;color:var(--olive);margin-bottom:2px}
+  .ptitle .dot{display:inline-block;width:8px;height:8px;border-radius:2px;vertical-align:middle;margin-right:4px}
+  svg{display:block;width:100%;height:auto}
+  .barhit{cursor:ns-resize}
+  .gaugewrap{margin:18px 0 4px}
+  .gaugehead{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}
+  .gaugehead .val{font-size:30px;font-weight:600;letter-spacing:-.01em}
+  .gaugehead .lab{font-size:11px;color:var(--olive)}
+  .presets{margin:14px 0 0}
+  .presets button{font-family:var(--mono);font-size:11px;padding:5px 11px;margin:0 6px 6px 0;
+        border:1px solid var(--rule);background:#fff;color:var(--ink);border-radius:2px;cursor:pointer}
+  .presets button:hover{border-color:var(--ink)}
+  .note{color:var(--olive);font-size:11px;margin-top:12px;max-width:60ch}
+  .note code{background:#efeae2;padding:1px 4px;border-radius:2px}
+</style>
+</head><body><div class="wrap">
+
+<p class="lead">Two agents have <b>action habits</b> &mdash; how often each reaches for read, search,
+edit, test, think. Drag the bars to reshape either agent. <b>Jensen-Shannon divergence</b> asks one thing:
+how differently are the two mixed? <b>0</b> means identical habits, <b>1</b> means nothing in common.
+It works by building the <b>blend</b> halfway between them and measuring how far each agent sits from that blend.</p>
+
+<div class="panels">
+  <div class="panel"><div class="ptitle"><span class="dot" style="background:var(--copper)"></span>Agent A</div>
+    <svg id="pA" viewBox="0 0 190 150" aria-label="Agent A action distribution, draggable"></svg></div>
+  <div class="panel"><div class="ptitle"><span class="dot" style="background:var(--teal)"></span>Agent B</div>
+    <svg id="pB" viewBox="0 0 190 150" aria-label="Agent B action distribution, draggable"></svg></div>
+  <div class="panel"><div class="ptitle"><span class="dot" style="background:var(--gray)"></span>Blend</div>
+    <svg id="pM" viewBox="0 0 190 150" aria-label="The blended midpoint distribution"></svg></div>
+</div>
+
+<div class="gaugewrap">
+  <div class="gaugehead"><span class="val" id="jval">0.00</span>
+    <span class="lab">Jensen-Shannon divergence</span></div>
+  <svg id="gauge" viewBox="0 0 600 46" aria-label="JSD on a 0 to 1 scale"></svg>
+</div>
+
+<div class="presets" id="presets"></div>
+
+<p class="note">The tick marks show where real agent pairs actually land: two models in the
+<b>same scaffold</b> sit at JSD&nbsp;&asymp;&nbsp;0.001 (nearly identical habits), while two
+<b>different scaffolds</b> sit at &asymp;&nbsp;0.16. Almost the entire 0&ndash;1 range is empty &mdash;
+which is the point: the scaffold moves an agent's procedure far more than the model does.</p>
+
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>
+const PAL={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};
+const ATOMS=["read","search","edit","test","think","other"];
+const COL={A:PAL.copper,B:PAL.teal,M:PAL.gray};
+
+// Raw non-negative weights; the displayed distribution is the normalized form,
+// so dragging one bar up pushes the others down (the mass is conserved).
+let A=[0.30,0.15,0.22,0.13,0.15,0.05];
+let B=[0.10,0.10,0.30,0.25,0.20,0.05];
+
+const PRESETS={
+  "identical":        {A:[.30,.15,.22,.13,.15,.05], B:[.30,.15,.22,.13,.15,.05]},
+  "a nudge apart":    {A:[.30,.15,.22,.13,.15,.05], B:[.24,.16,.26,.16,.13,.05]},
+  "scaffold-level":   {A:[.34,.20,.14,.08,.20,.04], B:[.10,.08,.34,.28,.16,.04]},
+  "nothing in common":{A:[.45,.40,.15,.001,.001,.001], B:[.001,.001,.001,.34,.33,.32]},
+};
+
+const norm=a=>{const s=d3.sum(a)||1;return a.map(v=>v/s);};
+function jsd(p,q){
+  const m=p.map((v,i)=>(v+q[i])/2);
+  const kl=(a,b)=>d3.sum(a.map((v,i)=>v>0?v*Math.log2(v/b[i]):0));
+  return 0.5*kl(p,m)+0.5*kl(q,m);
+}
+
+const M={t:8,r:6,b:20,l:6}, W=190, H=150, pw=W-M.l-M.r, ph=H-M.t-M.b, YMAX=0.55;
+const x=d3.scaleBand().domain(ATOMS).range([M.l,M.l+pw]).padding(0.22);
+const y=d3.scaleLinear().domain([0,YMAX]).range([M.t+ph,M.t]);
+
+function drawDist(sel,raw,color,draggable,key){
+  const dist=norm(raw), svg=d3.select(sel).html("");
+  svg.append("line").attr("x1",M.l).attr("x2",M.l+pw).attr("y1",M.t+ph+.5).attr("y2",M.t+ph+.5)
+     .attr("stroke",PAL.rule);
+  const g=svg.selectAll("g").data(dist).join("g")
+     .attr("transform",(d,i)=>`translate(${x(ATOMS[i])},0)`);
+  g.append("rect").attr("y",d=>y(Math.min(d,YMAX))).attr("width",x.bandwidth())
+     .attr("height",d=>M.t+ph-y(Math.min(d,YMAX))).attr("fill",color)
+     .attr("rx",1.5).attr("opacity",draggable?1:.82);
+  // wide invisible hit-area for comfortable dragging; drag is attached in wireDrag
+  if(draggable){
+    g.append("rect").attr("class","barhit").attr("x",-2).attr("width",x.bandwidth()+4)
+       .attr("y",M.t).attr("height",ph+10).attr("fill","transparent");
+  }
+  g.append("text").attr("x",x.bandwidth()/2).attr("y",M.t+ph+13).attr("text-anchor","middle")
+     .attr("font-family",PAL.mono).attr("font-size",8.5).attr("fill",PAL.olive).text((d,i)=>ATOMS[i]);
+  // value caps on hover-free, subtle
+  g.append("text").attr("x",x.bandwidth()/2).attr("y",d=>y(Math.min(d,YMAX))-3).attr("text-anchor","middle")
+     .attr("font-family",PAL.mono).attr("font-size",8).attr("fill",color)
+     .attr("opacity",.85).text(d=>d.toFixed(2));
+  return svg;
+}
+
+// Drag wiring done separately so we can index bins cleanly.
+function wireDrag(sel,raw,color,onchange){
+  const svg=d3.select(sel);
+  svg.selectAll("g").each(function(d,i){
+    d3.select(this).select(".barhit").call(
+      d3.drag().on("drag",(ev)=>{
+        const val=Math.max(0.01,Math.min(YMAX,y.invert(ev.y)));
+        raw[i]=val; onchange();
+      }));
+  });
+}
+
+function gauge(j){
+  const w=600,h=46,gx0=8,gx1=w-8,gy=24, X=d3.scaleLinear().domain([0,1]).range([gx0,gx1]);
+  const svg=d3.select("#gauge").html("");
+  svg.append("rect").attr("x",gx0).attr("y",gy-4).attr("width",gx1-gx0).attr("height",8)
+     .attr("rx",4).attr("fill","#ece7df");
+  svg.append("rect").attr("x",gx0).attr("y",gy-4).attr("width",X(j)-gx0).attr("height",8)
+     .attr("rx",4).attr("fill",PAL.copper).attr("opacity",.85);
+  // reference ticks for real agent pairs
+  [[0.001,"model Δ","start"],[0.16,"scaffold Δ","middle"]].forEach(([v,lab,anchor])=>{
+    svg.append("line").attr("x1",X(v)).attr("x2",X(v)).attr("y1",gy-9).attr("y2",gy+9)
+       .attr("stroke",PAL.olive).attr("stroke-dasharray","2 2");
+    svg.append("text").attr("x",X(v)).attr("y",gy+20).attr("text-anchor",anchor)
+       .attr("font-size",9).attr("fill",PAL.olive).text(lab);
+  });
+  [0,0.5,1].forEach(v=>svg.append("text").attr("x",X(v)).attr("y",gy-12)
+     .attr("text-anchor","middle").attr("font-size",9).attr("fill",PAL.gray).text(v.toFixed(1)));
+  // live marker
+  svg.append("circle").attr("cx",X(j)).attr("cy",gy).attr("r",5).attr("fill",PAL.ink);
+}
+
+function render(){
+  drawDist("#pA",A,COL.A,true);  wireDrag("#pA",A,COL.A,render);
+  drawDist("#pB",B,COL.B,true);  wireDrag("#pB",B,COL.B,render);
+  const m=norm(A).map((v,i)=>(v+norm(B)[i])/2);
+  drawDist("#pM",m.map(v=>v),COL.M,false);
+  const j=jsd(norm(A),norm(B));
+  d3.select("#jval").text(j.toFixed(2));
+  gauge(j);
+}
+
+const pbox=d3.select("#presets");
+Object.keys(PRESETS).forEach(name=>{
+  pbox.append("button").text(name).on("click",()=>{
+    A=PRESETS[name].A.slice(); B=PRESETS[name].B.slice(); render();
+  });
+});
+render();
+</script>
+</div></body></html>

@@ -376,6 +376,8 @@ border-radius:3px;padding:12px 16px;margin:22px 0;font-family:var(--mono);font-s
 math{font-family:var(--serif)}
 /* interactive figures */
 .interactive{margin:30px 0;padding:16px;border:1px solid var(--rule);border-radius:3px;background:#fff}
+.jsd-explainer{margin:30px 0}
+.jsd-explainer iframe{width:100%;height:620px;border:1px solid var(--rule);border-radius:3px;background:#fff;display:block}
 .interactive svg text{font-family:var(--mono)}
 .jc{cursor:crosshair}
 .jtip{font-family:var(--mono);font-size:13px;color:var(--ink);min-height:38px;margin:2px 0 6px;line-height:1.5}
@@ -459,6 +461,8 @@ def inject_interactive(body: str) -> tuple[str, str]:
     dist = (ROOT / "data" / "distillation_entropy.json").read_text()
     body = re.sub(
         r"<img[^>]*fig_jsd_matrix_full_canonical\.png[^>]*>",
+        '<div class="jsd-explainer"><iframe src="figures/jsd_explainer.html" '
+        'title="Interactive: Jensen-Shannon divergence, by hand" loading="lazy"></iframe></div>'
         '<div id="fig-jsd" class="interactive"></div>',
         body,
     )
