@@ -150,6 +150,18 @@ $("q").addEventListener("input", () => {
   QTIMER = setTimeout(() => run(v), 250);
 });
 $("ds").addEventListener("change", () => { setSource($("ds").value); run($("q").value || SAMPLES[0].pat); });
+// Free-text: query any HF dataset id (live-ingested on the server, slower first load).
+$("dsfree").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  const v = e.target.value.trim();
+  if (!v) return;
+  if (![...$("ds").options].some((o) => o.value === v)) {
+    const o = document.createElement("option");
+    o.value = v; o.textContent = v + " · live"; $("ds").appendChild(o);
+  }
+  $("ds").value = v; setSource(v); e.target.value = "";
+  run($("q").value || SAMPLES[0].pat);
+});
 
 // Comparator.
 // A trail-as-thread: collapse think/other runs into fold lines, render signal

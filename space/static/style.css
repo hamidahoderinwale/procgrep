@@ -11,6 +11,7 @@ h1{font-family:Georgia,serif;font-weight:400;font-size:27px;margin:0 0 6px}
 .sub{color:var(--olive);max-width:64ch;margin:0 0 22px}
 .dsbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px;color:var(--olive)}
 select,input{font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px solid var(--rule);background:#fff;color:var(--ink)}
+.dsfree{width:240px}
 .qbar{display:flex;gap:0;margin:6px 0 10px;border:2px solid var(--ink);background:#fff}
 .qbar .mag{padding:9px 4px 9px 12px;color:var(--olive)}
 #q{flex:1;border:none;font-size:16px;padding:10px 12px 10px 4px;background:transparent}
