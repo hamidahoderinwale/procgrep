@@ -50,7 +50,10 @@ def run_pandoc() -> str:
 
 def delatex(s: str) -> str:
     """Light LaTeX -> HTML for the abstract (pandoc drops it as metadata)."""
-    s = re.sub(r"\\footnote\{.*?\}", "", s, flags=re.S)
+    # Unwrap footnotes (keep their text inline); the naive .*? form stopped at
+    # the first nested brace (e.g. \texttt{ProcGrep}), which dropped the subject
+    # and left a dangling "is available at ...".
+    s = re.sub(r"\\footnote\{((?:[^{}]|\{[^{}]*\})*)\}", r" \1", s, flags=re.S)
     s = re.sub(r"\\texttt\{(.*?)\}", r"<code>\1</code>", s)
     s = re.sub(r"\\emph\{(.*?)\}", r"<em>\1</em>", s)
     s = re.sub(r"\\textbf\{(.*?)\}", r"<strong>\1</strong>", s)
@@ -773,12 +776,12 @@ def main() -> None:
 <div class="hero">
   <h1>{html.escape(TITLE)}</h1>
   <div class="sub">{html.escape(SUBTITLE)}</div>
-  <div class="byline"><span>{html.escape(AUTHOR)}</span><span>Taste Labs</span>
+  <div class="byline"><span>{html.escape(AUTHOR)}</span>
     <a href="https://github.com/hamidahoderinwale/procgrep">ProcGrep on GitHub ↗</a></div>
 </div>
 
 <div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p>
-<p class="avail">Procgrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
+<p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
 
 {SHOWCASE}
 
