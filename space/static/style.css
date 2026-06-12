@@ -67,6 +67,8 @@ a{color:var(--copper)}
 .trow{display:flex;align-items:center;gap:6px;padding:2px 0;cursor:pointer;border-bottom:1px solid #efeae2}
 .trow:hover{background:#fff}
 .trow .tlen{width:54px;color:var(--olive);font-size:10px;text-align:right;flex:none}
+.trow .tname{width:92px;font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:none}
+.trow .bc{flex:1;min-width:0}
 .bc{display:inline-flex;gap:0;flex-wrap:nowrap;overflow:hidden}
 .bc i{width:3px;height:13px;flex:none}
 .diffstrip{border:1px solid var(--rule);background:#fff;padding:14px 16px;margin-bottom:18px}

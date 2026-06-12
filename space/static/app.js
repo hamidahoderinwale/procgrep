@@ -340,7 +340,7 @@ function trailStack(side) {
   return `<div class="cmpcol">
     <div class="cmphead">${prettyModel(col.label)} <a class="dim src" href="https://huggingface.co/datasets/${ds}" target="_blank" rel="noopener">source ↗</a></div>
     <div class="cmpstat">${col.n.toLocaleString()} traces · median ${s.median_len} steps · ${s.median_cot} reasoning · diversity ${s.diversity_bits} bits</div>
-    ${col.trails.map((t, i) => `<div class="trow" onclick="openTrace('${side}',${i})"><span class="tlen">${t.steps} st</span>${barcode(t.atoms, c)}</div>`).join("")}</div>`;
+    ${col.trails.map((t, i) => { const prob = t.task || t.trace_id || ""; return `<div class="trow" onclick="openTrace('${side}',${i})"><span class="tlen">${t.steps} st</span><span class="tname dim" title="${prob}">${prettyTask(prob)}</span>${barcode(t.atoms, c)}</div>`; }).join("")}</div>`;
 }
 
 function diffStrip() {
