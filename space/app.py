@@ -39,12 +39,19 @@ Design decisions (benefit / price):
     means, and the heavy step stays bounded for interactive latency.
     Price: the discriminative-procedure ranking sees a sample, not all traces,
     on very large groups; the rendered trail stack is a further CMP_STACK cap.
+ 7. Cache /compare results by their key, and pre-warm the default landing pair
+    in a background thread at startup.
+    Benefit: the comparator's landing view answers instantly instead of paying
+    the first BPE pass live; repeat toggles are free.
+    Price: a bounded amount of memory for the cache, and the warm-up does one
+    BPE pass at startup off the request path.
 """
 
 from __future__ import annotations
 
 import math
 import re
+import threading
 import time
 from collections import Counter, OrderedDict
 from dataclasses import dataclass
@@ -78,6 +85,7 @@ CMP_SAMPLE = 1500  # traces per side fed to BPE + discriminative_procedures (des
 CMP_STACK = 30  # trails rendered per side in the comparator
 CMP_VOCAB = 200  # BPE procedure-vocabulary size for the diff
 CMP_TRAIL_CAP = 140  # atoms per rendered trail (fits the column at 3px/cell)
+COMPARE_CACHE_MAX = 24  # cached /compare results before LRU eviction (design decision 7)
 
 # A short, curated starting set; the client may query any dataset id.
 SUGGESTED = (
@@ -123,6 +131,9 @@ _META: dict[str, dict] = {}  # dataset id -> {adapter, n_traces, truncated, n_mo
 # the first load attempt; an empty dict means "tried, nothing usable" so every
 # dataset falls through to live ingest.
 _STORE: dict[str, list[CachedTrace]] | None = None
+
+# Cached /compare payloads keyed by (axis, dataset, left, right) (design decision 7).
+_COMPARE_CACHE: OrderedDict[tuple[str, str, str, str], dict] = OrderedDict()
 
 
 def _load_store() -> dict[str, list[CachedTrace]]:
@@ -329,6 +340,7 @@ def query(req: QueryRequest) -> JSONResponse:
                     "trace_id": t.trace_id,
                     "model": t.agent,
                     "task": t.task,
+                    "outcome": t.outcome,
                     "atoms": list(t.atoms[:200]),
                 }
                 for t in hits[:HIT_SAMPLE]
@@ -403,25 +415,23 @@ def _side_summary(traces: list[CachedTrace], label: str) -> dict:
     }
 
 
-@app.post("/compare")
-def compare(req: CompareRequest) -> JSONResponse:
-    """Side-by-side procedural diff of two trace groups.
+def _compute_compare(axis: str, dataset: str, left_value: str, right_value: str) -> dict:
+    """Build the side-by-side diff payload, or an ``{"error": ...}`` dict.
 
-    Returns a trail stack and quick stats for each side, plus a diff strip: the
-    top procedures that distinguish them (signed log-odds, positive favors the
-    left side), the action-mix JSD, and median length/CoT deltas. Reuses the
-    library's BPE + discriminative_procedures (design decision 6).
+    Trail stacks plus a diff strip: the top procedures distinguishing the two
+    sides (signed log-odds, positive favors the left), the action-mix JSD, and
+    median length/CoT deltas. Reuses the library's BPE + discriminative_procedures
+    (design decision 6).
     """
     try:
-        left, left_label = _side_traces(req.axis, req.dataset, req.left)
-        right, right_label = _side_traces(req.axis, req.dataset, req.right)
+        left, left_label = _side_traces(axis, dataset, left_value)
+        right, right_label = _side_traces(axis, dataset, right_value)
     except Exception as exc:
-        return JSONResponse({"error": f"{type(exc).__name__}: {exc}"}, status_code=200)
+        return {"error": f"{type(exc).__name__}: {exc}"}
     if left_label == right_label:
-        return JSONResponse({"error": "pick two different groups"}, status_code=200)
+        return {"error": "pick two different groups"}
     if not left or not right:
-        empty = left_label if not left else right_label
-        return JSONResponse({"error": f"no traces for {empty!r}"}, status_code=200)
+        return {"error": f"no traces for {(left_label if not left else right_label)!r}"}
 
     t0 = time.perf_counter()
     # Build labeled Traces (group = side) for a sampled BPE + discriminative pass.
@@ -450,23 +460,61 @@ def compare(req: CompareRequest) -> JSONResponse:
     lsum, rsum = _side_summary(left, left_label), _side_summary(right, right_label)
     pl, pr = _mix_vector(lsum["mix"], rsum["mix"])
     elapsed_ms = (time.perf_counter() - t0) * 1e3
-    return JSONResponse(
-        {
-            "axis": req.axis,
-            "left": lsum,
-            "right": rsum,
-            "diff": {
-                "procedures": procedures,
-                "jsd": round(jsd(pl, pr), 4) if pl else None,
-                "len_delta": lsum["stats"].get("median_len", 0)
-                - rsum["stats"].get("median_len", 0),
-                "cot_delta": lsum["stats"].get("median_cot", 0)
-                - rsum["stats"].get("median_cot", 0),
-            },
-            "atom_color": ATOM_COLOR,
-            "elapsed_ms": round(elapsed_ms, 2),
-        }
-    )
+    return {
+        "axis": axis,
+        "left": lsum,
+        "right": rsum,
+        "diff": {
+            "procedures": procedures,
+            "jsd": round(jsd(pl, pr), 4) if pl else None,
+            "len_delta": lsum["stats"].get("median_len", 0) - rsum["stats"].get("median_len", 0),
+            "cot_delta": lsum["stats"].get("median_cot", 0) - rsum["stats"].get("median_cot", 0),
+        },
+        "atom_color": ATOM_COLOR,
+        "elapsed_ms": round(elapsed_ms, 2),
+    }
+
+
+@app.post("/compare")
+def compare(req: CompareRequest) -> JSONResponse:
+    """Cached side-by-side diff. Cache key is (axis, dataset, left, right).
+
+    The default landing pair is pre-warmed at startup (design decision 7) so the
+    comparator answers instantly rather than paying the first BPE pass live.
+    """
+    key = (req.axis, req.dataset, req.left, req.right)
+    cached = _COMPARE_CACHE.get(key)
+    if cached is not None:
+        _COMPARE_CACHE.move_to_end(key)
+        return JSONResponse({**cached, "cached": True})
+    payload = _compute_compare(req.axis, req.dataset, req.left, req.right)
+    if "error" not in payload:
+        _COMPARE_CACHE[key] = payload
+        while len(_COMPARE_CACHE) > COMPARE_CACHE_MAX:
+            _COMPARE_CACHE.popitem(last=False)
+    return JSONResponse(payload)
+
+
+def _warm_default_compare() -> None:
+    """Cache the comparator's default landing pair: first store dataset, its two
+    most common agents. Runs in a background thread so it never blocks startup.
+    """
+    try:
+        store = _load_store()
+        datasets = list(store.keys()) or list(SUGGESTED)
+        dataset = datasets[0]
+        agents = [a for a, _ in Counter(t.agent for t in _load(dataset)).most_common()]
+        if len(agents) >= 2:
+            _COMPARE_CACHE[("agent", dataset, agents[0], agents[1])] = _compute_compare(
+                "agent", dataset, agents[0], agents[1]
+            )
+    except Exception:
+        pass
+
+
+@app.on_event("startup")
+def _warm_on_startup() -> None:
+    threading.Thread(target=_warm_default_compare, daemon=True).start()
 
 
 @app.get("/groups")

@@ -112,7 +112,11 @@ async function run(pattern) {
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
      <div class="eyebrow">matching traces · matched span outlined</div>
-     ${r.hits.map((h) => `<div class="qhit"><span class="hit-model">${prettyModel(h.model)}</span>${h.task ? `<span class="hit-task dim" title="${prettyTask(h.task)}">${prettyTask(h.task)}</span>` : ""}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col, matchSpan(h.atoms, r.pattern))}</div>`).join("")}
+     ${r.hits.map((h) => {
+        const prob = h.task || h.trace_id || "";
+        const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
+        return `<div class="qhit"><span class="hit-model">${prettyModel(h.model)}</span><span class="hit-task dim" title="${prob}">${prettyTask(prob)}</span>${oc}<span class="dim">${h.atoms.length} steps</span>${spine(h.atoms, col, matchSpan(h.atoms, r.pattern))}</div>`;
+      }).join("")}
      ${r.n_hits > r.hits.length ? `<div class="note">showing ${r.hits.length} of ${r.n_hits} matches</div>` : ""}`;
 }
 
