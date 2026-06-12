@@ -98,16 +98,20 @@ def fix_figures(body: str) -> str:
 
 SHOWCASE = """
 <aside class="showcase" id="showcase">
-  <div class="sc-head"><span class="sc-eyebrow">procgrep demo · try it live</span>
-    <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">query ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">compare ↗</a></span></div>
+  <div class="sc-head"><span class="sc-eyebrow">procgrep demo · live</span>
+    <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">open full screen ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="explorer/index.html#why" target="_blank" rel="noopener">structural vs LLM ↗</a></span></div>
   <div class="sc-frame">
-    <iframe id="scframe" src="explorer/index.html#query" title="ProcGrep query playground" loading="lazy"></iframe>
+    <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
   </div>
-  <p class="caption">Embedded above: ask a structural question over a whole dataset, answered in milliseconds with no model call. The live tool also sets two agents side by side, and compares two evals or resolved versus unresolved runs, with a diff strip that names the procedures separating them.</p>
+  <p class="caption">The live explorer, embedded. Ask a structural question over the whole store, set two agents, evals, or resolved versus unresolved runs side by side, and replay any trajectory step by step. No model call. If it is cold it takes a moment to wake; the snapshots below show the same tool.</p>
 </aside>
 <figure class="exfig" id="compare-fig">
-  <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two agents side by side" loading="lazy">
+  <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
   <figcaption class="caption">The compare view, here splitting one dataset's runs into resolved and unresolved. Each row is one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid. The diff strip shows the unresolved runs are longer and reason more, the shape of getting stuck. Toggle also by agent or by eval. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
+</figure>
+<figure class="exfig" id="replay-fig">
+  <img src="figures/replay.gif" alt="Replaying one trajectory step by step with a live structural query firing" loading="lazy">
+  <figcaption class="caption">One trajectory, replayed step by step. Reasoning folds, actions print in order, and a structural query fires the instant it matches, here at the first test right after an edit. Fed by procgrep watch, the same view follows a running agent live.</figcaption>
 </figure>
 """
 

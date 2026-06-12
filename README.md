@@ -2,6 +2,10 @@
 
 `procgrep` reads agent trace logs and tells you how agents differ in *how they work*, not just whether they passed.
 
+[**Live explorer**](https://midah-procgrep-explorer.hf.space) · [**Interactive essay**](https://hamidah.me/procgrep)
+
+![Replaying one agent trajectory step by step; a structural query fires the instant it matches](docs/figures/replay.gif)
+
 It does not run agents. It does not call any model. It reads files and produces numbers and comparisons.
 
 ---
