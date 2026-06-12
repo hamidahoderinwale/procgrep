@@ -50,3 +50,6 @@ case-studies/interface/
 
 # precomputed spine store lives in HF dataset midah/procgrep-spines, not git
 data/*.parquet
+
+# Claude Code internal (agent worktrees, etc.)
+.claude/
