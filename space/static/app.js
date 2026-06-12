@@ -114,7 +114,17 @@ async function run(pattern) {
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
      <div class="eyebrow">matching traces · click to open · matched span outlined</div>
-     <input id="qfilter" class="qfilter" placeholder="filter these by author or repo, e.g. Azure" oninput="renderHits()">
+     <div class="qctl">
+       <input id="qfilter" class="qfilter" placeholder="filter by author or repo, e.g. Azure" oninput="renderHits()">
+       <select id="qsort" class="qsort" onchange="renderHits()">
+         <option value="found">order found</option>
+         <option value="len-desc">most steps</option>
+         <option value="len-asc">fewest steps</option>
+         <option value="prob">author / repo</option>
+         <option value="model">model</option>
+         <option value="outcome">outcome</option>
+       </select>
+     </div>
      <div id="qhits"></div>
      <div id="qmore"></div>`;
   renderHits();
@@ -290,8 +300,16 @@ function openQHit(i) { openTraceData(QHITS[i], $("ds").value, QCOLOR); }
 // set is browsable, not just the first server page.
 function renderHits() {
   const f = ($("qfilter") && $("qfilter").value || "").trim().toLowerCase();
+  const s = ($("qsort") && $("qsort").value) || "found";
   const rows = QHITS.map((h, i) => [h, i]).filter(([h]) =>
     !f || (h.task || h.trace_id || "").toLowerCase().includes(f));
+  const len = (h) => h.steps ?? h.atoms.length;
+  const prob = (h) => h.task || h.trace_id || "";
+  if (s === "len-desc") rows.sort((a, b) => len(b[0]) - len(a[0]));
+  else if (s === "len-asc") rows.sort((a, b) => len(a[0]) - len(b[0]));
+  else if (s === "model") rows.sort((a, b) => prettyModel(a[0].model).localeCompare(prettyModel(b[0].model)));
+  else if (s === "outcome") rows.sort((a, b) => (a[0].outcome || "~").localeCompare(b[0].outcome || "~"));
+  else if (s === "prob") rows.sort((a, b) => prob(a[0]).localeCompare(prob(b[0])));
   $("qhits").innerHTML = rows.map(([h, i]) => {
     const prob = h.task || h.trace_id || "";
     const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
