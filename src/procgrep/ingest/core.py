@@ -149,7 +149,7 @@ class IngestionPlan:
         return "\n".join(lines)
 
 
-# ── introspection ────────────────────────────────────────────────────────────
+# introspection.
 
 
 def _get_json(url: str, *, timeout: float) -> dict[str, Any]:
@@ -251,7 +251,7 @@ def _introspect_via_server(
     return DatasetSchema(dataset, cfg, spl, columns, sample_rows)
 
 
-# ── sniffers ─────────────────────────────────────────────────────────────────
+# sniffers.
 
 
 def _assistant_messages(schema: DatasetSchema) -> list[Mapping[str, Any]]:
@@ -358,7 +358,7 @@ def _probe_full_rows(dataset: str, config: str, split: str, *, n: int = 3) -> li
         return []
 
 
-# ── plan + ingest ────────────────────────────────────────────────────────────
+# plan + ingest.
 
 
 def plan(

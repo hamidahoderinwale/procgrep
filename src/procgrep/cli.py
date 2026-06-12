@@ -265,7 +265,7 @@ def compare(
 
         return (kl(p, m) + kl(q, m)) / 2
 
-    # ── 1. Unigram JSD ────────────────────────────────────────────────────────
+    # 1. Unigram JSD.
     pa, _canon_v = _dist(rows_a, "atoms_canonical")
     pb, _ = _dist(rows_b, "atoms_canonical")
     canon_jsd = _jsd_val(pa, pb)
@@ -289,7 +289,7 @@ def compare(
     typer.echo(f"\n  Canonical JSD : {canon_jsd:.4f}  (atom-level composition)")
     typer.echo(f"  Native JSD    : {native_jsd:.4f}  (scaffold-specific tool usage)")
 
-    # ── 2. Pass rates ─────────────────────────────────────────────────────────
+    # 2. Pass rates.
     def _pass_rate(rows: list[dict[str, Any]]) -> str:
         labeled = [r for r in rows if r.get("resolved") is not None]
         if not labeled:
@@ -299,7 +299,7 @@ def compare(
     typer.echo(f"\n  Pass rate  {label_a}: {_pass_rate(rows_a)}")
     typer.echo(f"  Pass rate  {label_b}: {_pass_rate(rows_b)}")
 
-    # ── 3. Trajectory length ──────────────────────────────────────────────────
+    # 3. Trajectory length.
     def _median_len(rows: list[dict[str, Any]]) -> float:
         lens = [len(r.get("atoms_canonical", [])) for r in rows]
         return float(_np.median(lens)) if lens else 0
@@ -307,7 +307,7 @@ def compare(
     typer.echo(f"\n  Median steps  {label_a}: {_median_len(rows_a):.0f}")
     typer.echo(f"  Median steps  {label_b}: {_median_len(rows_b):.0f}")
 
-    # ── 4. Discriminative bigrams ─────────────────────────────────────────────
+    # 4. Discriminative bigrams.
     def _bigram_dist(rows: list[dict[str, Any]]) -> tuple[_np.ndarray, list[str]]:
         cnt: _Counter[str] = _Counter()
         for r in rows:
@@ -354,7 +354,7 @@ def compare(
         src, tgt = bg.split("|")
         typer.echo(f"    {src:14s}→ {tgt:14s}  Δp={-d:+.4f}")
 
-    # ── 5. Positional divergence ──────────────────────────────────────────────
+    # 5. Positional divergence.
     seqs_a: list[list[str]] = [list(r.get("atoms_canonical", [])) for r in rows_a]
     seqs_b: list[list[str]] = [list(r.get("atoms_canonical", [])) for r in rows_b]
     peak_k, peak_jsd = 0, 0.0
@@ -403,7 +403,7 @@ def compare(
 
     typer.echo(f"\n{'=' * 64}\n")
 
-    # ── 6. Optional JSON output ───────────────────────────────────────────────
+    # 6. Optional JSON output.
     if output:
         report = {
             "agent_a": label_a,

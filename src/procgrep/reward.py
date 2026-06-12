@@ -56,7 +56,7 @@ except ImportError:
     _YAML_AVAILABLE = False
 
 
-# ── Data classes ──────────────────────────────────────────────────────────────
+# Data classes.
 
 
 @dataclass(frozen=True)
@@ -82,7 +82,7 @@ class RewardResult:
     triggered_bonuses: list[str]
 
 
-# ── Spec loading ──────────────────────────────────────────────────────────────
+# Spec loading.
 
 
 def load_spec(path: str | Path) -> dict[str, Any]:
@@ -104,7 +104,7 @@ def load_spec(path: str | Path) -> dict[str, Any]:
     return result
 
 
-# ── Pattern matching ──────────────────────────────────────────────────────────
+# Pattern matching.
 
 
 def _first_occurrence(atoms: list[str], atom: str) -> int:
@@ -141,7 +141,7 @@ def _has_sequence_within_gap(atoms: list[str], seq: list[str], max_gap: int = 99
     return False
 
 
-# ── Phase / penalty / bonus evaluation ───────────────────────────────────────
+# Phase / penalty / bonus evaluation.
 
 
 def _eval_phase(atoms: list[str], phase: dict[str, Any]) -> bool:
@@ -197,7 +197,7 @@ def _eval_bonus(atoms: list[str], bonus: dict[str, Any]) -> bool:
     return False
 
 
-# ── Main scoring function ─────────────────────────────────────────────────────
+# Main scoring function.
 
 
 def score(atoms: list[str], spec: dict[str, Any]) -> RewardResult:
