@@ -1,0 +1,40 @@
+<svg viewBox="0 0 660 320" class="lqplot" role="img" aria-label="retrieval F1 by representation">
+<line x1="210.0" y1="18" x2="210.0" y2="264" stroke="#ece7df"/>
+<text x="210.0" y="280" text-anchor="middle" class="ax">0.0</text>
+<line x1="307.5" y1="18" x2="307.5" y2="264" stroke="#ece7df"/>
+<text x="307.5" y="280" text-anchor="middle" class="ax">0.1</text>
+<line x1="405.0" y1="18" x2="405.0" y2="264" stroke="#ece7df"/>
+<text x="405.0" y="280" text-anchor="middle" class="ax">0.2</text>
+<line x1="502.5" y1="18" x2="502.5" y2="264" stroke="#ece7df"/>
+<text x="502.5" y="280" text-anchor="middle" class="ax">0.3</text>
+<line x1="600.0" y1="18" x2="600.0" y2="264" stroke="#ece7df"/>
+<text x="600.0" y="280" text-anchor="middle" class="ax">0.4</text>
+<text x="600" y="298" text-anchor="end" class="ax">retrieval F1 at k = 1, n = 289</text>
+<text x="200" y="38.6" text-anchor="end" class="ax" fill="#14110E">Structural pattern overlap</text>
+<rect x="210" y="25.9" width="338.3" height="19.3" fill="#CB4D20"><title>Structural pattern overlap: F1 0.347</title></rect>
+<text x="556.3" y="38.6" class="ax" fill="#CB4D20">0.347</text>
+<text x="200" y="73.7" text-anchor="end" class="ax" fill="#14110E">Action sequence distance</text>
+<rect x="210" y="61.0" width="267.2" height="19.3" fill="#CB4D20"><title>Action sequence distance: F1 0.274</title></rect>
+<text x="485.2" y="73.7" class="ax" fill="#CB4D20">0.274</text>
+<text x="200" y="108.9" text-anchor="end" class="ax" fill="#14110E">Edit action overlap</text>
+<rect x="210" y="96.2" width="249.6" height="19.3" fill="#CB4D20"><title>Edit action overlap: F1 0.256</title></rect>
+<text x="467.6" y="108.9" class="ax" fill="#CB4D20">0.256</text>
+<text x="200" y="144.0" text-anchor="end" class="ax" fill="#14110E">Narrative description</text>
+<rect x="210" y="131.3" width="172.6" height="19.3" fill="#585E53"><title>Narrative description: F1 0.177</title></rect>
+<text x="390.6" y="144.0" class="ax" fill="#585E53">0.177</text>
+<text x="200" y="179.1" text-anchor="end" class="ax" fill="#14110E">Agent plan description</text>
+<rect x="210" y="166.5" width="151.1" height="19.3" fill="#585E53"><title>Agent plan description: F1 0.155</title></rect>
+<text x="369.1" y="179.1" class="ax" fill="#585E53">0.155</text>
+<text x="200" y="214.3" text-anchor="end" class="ax" fill="#14110E">Divergence classifier</text>
+<rect x="210.0" y="201.6" width="353.9" height="19.3" fill="#b7b1a7" opacity="0.5"><title>Divergence classifier: F1 0.000 to 0.363</title></rect>
+<text x="571.9" y="214.3" class="ax" fill="#585E53">0.00 to 0.36</text>
+<text x="200" y="249.4" text-anchor="end" class="ax" fill="#14110E">Random retrieval</text>
+<rect x="336.8" y="236.8" width="107.2" height="19.3" fill="#d9d4cc" opacity="0.5"><title>Random retrieval: F1 0.130 to 0.240</title></rect>
+<text x="452.0" y="249.4" class="ax" fill="#585E53">0.13 to 0.24</text>
+<rect x="210" y="304" width="10" height="10" fill="#CB4D20"/>
+<text x="225" y="313" class="ax">deterministic</text>
+<rect x="360" y="304" width="10" height="10" fill="#585E53"/>
+<text x="375" y="313" class="ax">varies by model</text>
+<rect x="510" y="304" width="10" height="10" fill="#b7b1a7"/>
+<text x="525" y="313" class="ax">LLM, unstable</text>
+</svg>
