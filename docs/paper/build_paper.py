@@ -268,6 +268,8 @@ font-family:var(--mono);font-size:13px}
 .abstract{max-width:var(--col);margin:30px auto 0;padding:0 var(--gutter) 0 32px}
 .abstract .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
+.abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
+.abstract .avail a{color:var(--copper)}
 /* showcase */
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
@@ -711,7 +713,8 @@ def main() -> None:
     <a href="https://github.com/hamidahoderinwale/procgrep">ProcGrep on GitHub ↗</a></div>
 </div>
 
-<div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p></div>
+<div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p>
+<p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>.</p></div>
 
 {SHOWCASE}
 
