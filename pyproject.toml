@@ -67,6 +67,24 @@ Issues = "https://github.com/hamidahoderinwale/procgrep/issues"
 [tool.hatch.build.targets.wheel]
 packages = ["src/procgrep"]
 
+[tool.hatch.build.targets.sdist]
+# Ship the library, its tests, runnable examples, and the markdown docs; keep
+# the rendered essay/figures (docs/), case studies, data stores, and the HF
+# Space app out of the source distribution (pyproject.toml is always included).
+include = [
+    "src/procgrep",
+    "tests",
+    "examples",
+    "README.md",
+    "CHANGELOG.md",
+    "NOTES.md",
+    "FAQ.md",
+    "METRICS.md",
+    "STUDIES.md",
+    "CITATION.cff",
+    "LICENSE",
+]
+
 [tool.ruff]
 line-length = 100
 target-version = "py310"
