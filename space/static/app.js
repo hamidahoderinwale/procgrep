@@ -315,7 +315,7 @@ function showView(name, axis) {
   $("tab-query").classList.toggle("act", name === "query");
   $("tab-compare").classList.toggle("act", name === "compare");
   if (name === "compare") {
-    if (!CMP_INIT) { CMP_INIT = true; setAxis(axis || "agent"); }
+    if (!CMP_INIT) { CMP_INIT = true; setAxis(axis || "outcome"); }
     else if (axis) setAxis(axis);
   }
 }

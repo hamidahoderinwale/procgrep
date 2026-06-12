@@ -99,7 +99,7 @@ def fix_figures(body: str) -> str:
 SHOWCASE = """
 <aside class="showcase" id="showcase">
   <div class="sc-head"><span class="sc-eyebrow">procgrep demo · try it live</span>
-    <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">query ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">compare agents ↗</a></span></div>
+    <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">query ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">compare ↗</a></span></div>
   <div class="sc-frame">
     <iframe id="scframe" src="explorer/index.html#query" title="ProcGrep query playground" loading="lazy"></iframe>
   </div>
@@ -107,7 +107,7 @@ SHOWCASE = """
 </aside>
 <figure class="exfig" id="compare-fig">
   <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two agents side by side" loading="lazy">
-  <figcaption class="caption">The compare view. Two groups side by side, each row one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid, with a diff strip that names the procedures most separating them and the gaps in length and reasoning. Toggle by agent, by eval, or by resolved versus unresolved runs. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
+  <figcaption class="caption">The compare view, here splitting one dataset's runs into resolved and unresolved. Each row is one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid. The diff strip shows the unresolved runs are longer and reason more, the shape of getting stuck. Toggle also by agent or by eval. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
 </figure>
 """
 
