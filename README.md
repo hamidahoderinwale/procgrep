@@ -181,8 +181,8 @@ pip install procgrep[dev]      # development dependencies
 ## Notes
 
 - Python 3.10+. No LLM SDK required.
-- Built-in adapters for SWE-agent, Agentless, DARS, and Moatless.
+- Built-in adapters for SWE-agent, mini-swe-agent, OpenHands, Agentless, DARS, Moatless, SWE-smith, GumTree, and ReAct-text trajectories.
 - All random operations take a `seed` argument; default is `0`.
 - `ruff` and `mypy --strict` clean.
 
-See [METRICS.md](METRICS.md) for the full list of measurements. See [STUDIES.md](STUDIES.md) for worked case studies.
+See [METRICS.md](METRICS.md) for the full list of measurements, [STUDIES.md](STUDIES.md) for worked case studies, and [FAQ.md](FAQ.md) for common questions. Runnable demos are in [`examples/`](examples/); the live-explorer backend is in [`space/`](space/); the essay, figures, and reference pages are in [`docs/`](docs/).

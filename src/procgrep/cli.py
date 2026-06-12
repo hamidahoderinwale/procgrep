@@ -293,7 +293,7 @@ def compare(
     def _pass_rate(rows: list[dict[str, Any]]) -> str:
         labeled = [r for r in rows if r.get("resolved") is not None]
         if not labeled:
-            return "—"
+            return "n/a"
         return f"{sum(bool(r['resolved']) for r in labeled) / len(labeled):.1%} ({len(labeled)} labeled)"
 
     typer.echo(f"\n  Pass rate  {label_a}: {_pass_rate(rows_a)}")
