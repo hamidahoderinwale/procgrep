@@ -114,6 +114,7 @@ async function run(pattern) {
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
      <div class="eyebrow">matching traces · click to open · matched span outlined</div>
+     <input id="qfilter" class="qfilter" placeholder="filter these by author or repo, e.g. Azure" oninput="renderHits()">
      <div id="qhits"></div>
      <div id="qmore"></div>`;
   renderHits();
@@ -166,31 +167,117 @@ function threadHTML(atoms, color) {
 // A contiguous trajectory barcode: one cell per atom, reasoning pale and
 // actions vivid, so trail length is proportional and behavior reads as color
 // density. Used by the comparator (vs the collapsing spine() the query uses).
-function barcode(atoms, color) {
-  return '<span class="bc">' + atoms.map((a) => {
+// hi (optional) is an [start,end] atom range; cells outside it dim so the
+// matched span pops. Noise cells get class nz so "hide think/other" can drop them.
+function barcode(atoms, color, hi) {
+  return '<span class="bc">' + atoms.map((a, idx) => {
     const noise = a === "think" || a === "other";
-    return `<i title="${a}" style="background:${noise ? "#e6e1d8" : (color[a] || "#ccc")}"></i>`;
+    const dim = hi && (idx < hi[0] || idx > hi[1]) ? ";opacity:.3" : "";
+    return `<i class="${noise ? "nz" : ""}" title="${a}" style="background:${noise ? "#e6e1d8" : (color[a] || "#ccc")}${dim}"></i>`;
   }).join("") + "</span>";
 }
 
 // Open any trace as a thread sheet. Shared by the comparator trails and the
 // query hits, so "select a trace to inspect" works the same everywhere.
+// Present-tense phrase per atom, for the terminal-style replay lines.
+const ATOM_PHRASE = {
+  search_repo: "grepped the repo", read_file: "opened a file", edit: "edited code",
+  create_file: "created a file", delete_file: "deleted a file", run_test: "ran the tests",
+  submit: "submitted the patch", localize: "localized the fault", error: "hit an error",
+  think: "reasoning", other: "other",
+};
+// Active replay state for the open sheet. One sheet at a time.
+let RP = null;
+
+function rpMini(atoms, n, color) {
+  return '<span class="bc">' + atoms.map((a, idx) => {
+    const noise = a === "think" || a === "other";
+    return `<i style="background:${noise ? "#e6e1d8" : (color[a] || "#ccc")};opacity:${idx <= n ? 1 : 0.16}"></i>`;
+  }).join("") + "</span>";
+}
+function rpTerminal(atoms, n, color) {
+  const out = [];
+  let i = 0;
+  while (i <= n && i < atoms.length) {
+    const a = atoms[i];
+    if (a === "think" || a === "other") {
+      let k = 0;
+      while (i <= n && i < atoms.length && (atoms[i] === "think" || atoms[i] === "other")) { k++; i++; }
+      out.push(`<div class="tstep fold">┄ ${k} reasoning ${k > 1 ? "steps" : "step"}</div>`);
+    } else {
+      const now = i === n ? " rpnow" : "";
+      out.push(`<div class="tstep${now}"><span class="ti">${i + 1}</span><span class="dot" style="background:${color[a] || "#ccc"}"></span>${ATOM_PHRASE[a] || a}${now ? ' <span class="cur">▍</span>' : ""}</div>`);
+      i++;
+    }
+  }
+  return out.join("");
+}
+function rpFire() {
+  if (!RP) return;
+  const pat = $("rp-q").value.trim(), el = $("rp-fire");
+  if (!pat) { el.textContent = ""; return; }
+  let rx; try { rx = new RegExp(pat); } catch { el.innerHTML = '<span class="dim">…</span>'; return; }
+  const sp = RP.atoms.slice(0, RP.n + 1).join(" ") + " ";
+  const m = rx.exec(sp);
+  el.innerHTML = m
+    ? `<span class="fire">● fired at step ${sp.slice(0, m.index).split(" ").length}</span>`
+    : '<span class="dim">no match yet</span>';
+}
+function rpDraw() {
+  $("rp-mini").innerHTML = rpMini(RP.atoms, RP.n, RP.color);
+  $("rp-term").innerHTML = rpTerminal(RP.atoms, RP.n, RP.color);
+  $("rp-seek").value = RP.n;
+  $("rp-step").textContent = `${RP.n + 1} / ${RP.max + 1}`;
+  rpFire();
+  const tm = $("rp-term"); if (tm) tm.scrollTop = tm.scrollHeight;
+}
+function rpPause() {
+  if (!RP) return;
+  RP.playing = false;
+  if (RP.timer) { clearInterval(RP.timer); RP.timer = null; }
+  const b = $("rp-play"); if (b) b.textContent = "▶ play";
+}
+function rpToggle() {
+  if (!RP) return;
+  if (RP.playing) { rpPause(); return; }
+  if (RP.n >= RP.max) RP.n = 0;
+  RP.playing = true; $("rp-play").textContent = "❚❚ pause";
+  RP.timer = setInterval(() => { if (RP.n < RP.max) { RP.n++; rpDraw(); } else { rpPause(); } }, RP.speed);
+}
+function rpSeek(v) { rpPause(); RP.n = +v; rpDraw(); }
+function rpSpeed(ms) {
+  if (ms === 0) { rpPause(); RP.n = RP.max; rpDraw(); return; }  // instant: jump to end
+  const was = RP.playing; RP.speed = ms; rpPause(); if (was) rpToggle();
+}
+function rpClose() { rpPause(); RP = null; const s = document.querySelector(".sheet"); if (s) s.remove(); }
+
 function openTraceData(t, ds, color) {
+  rpPause();
   const src = `https://huggingface.co/datasets/${ds}`;
   const prob = t.task || t.trace_id || "";
   const oc = t.outcome ? ` <span class="oc ${t.outcome}">${t.outcome}</span>` : "";
+  const max = t.atoms.length - 1;
+  RP = { atoms: t.atoms, color, n: max, max, playing: false, timer: null, speed: 380 };
   const sheet = document.createElement("div");
   sheet.className = "sheet";
-  sheet.onclick = (e) => { if (e.target === sheet) sheet.remove(); };
+  sheet.onclick = (e) => { if (e.target === sheet) rpClose(); };
   sheet.innerHTML =
-    `<div class="card"><span class="x" onclick="this.closest('.sheet').remove()">close ✕</span>
+    `<div class="card"><span class="x" onclick="rpClose()">close ✕</span>
      <div style="font-size:15px"><b>${prettyModel(t.model)}</b>${prob ? ` · ${prettyTask(prob)}` : ""}${oc}</div>
-     <div class="dim" style="margin:2px 0 4px">${t.steps ?? t.atoms.length} steps · structural trail, no raw text stored</div>
-     <div style="margin:6px 0 12px">${barcode(t.atoms, color)}</div>
-     <div class="thread">${threadHTML(t.atoms, color)}</div>
+     <div class="dim" style="margin:2px 0 6px">${t.steps ?? t.atoms.length} steps · structural trail, no raw text stored · press play to replay</div>
+     <div id="rp-mini" style="margin:2px 0 8px"></div>
+     <div class="rpbar">
+       <span class="rpbtn" id="rp-play" onclick="rpToggle()">▶ play</span>
+       <input id="rp-seek" type="range" min="0" max="${max}" value="${max}" oninput="rpSeek(this.value)">
+       <span class="rpspd"><span onclick="rpSpeed(380)">1x</span> <span onclick="rpSpeed(100)">4x</span> <span onclick="rpSpeed(0)">end</span></span>
+       <span class="dim" id="rp-step"></span>
+     </div>
+     <div class="thread" id="rp-term"></div>
+     <div class="rpq"><span class="dim">live query</span> <input id="rp-q" placeholder="(edit ){3,}" oninput="rpFire()"> <span id="rp-fire" class="dim"></span></div>
      <div class="note" style="margin-top:12px"><a href="${src}" target="_blank" rel="noopener">view full trace at source ↗</a> · ${ds}</div>
      </div>`;
   document.body.appendChild(sheet);
+  rpDraw();
 }
 function openTrace(side, i) {
   const r = CMP.data; if (!r) return;
@@ -202,15 +289,20 @@ function openQHit(i) { openTraceData(QHITS[i], $("ds").value, QCOLOR); }
 // Render the matched-trace list with a "show more" control so the full match
 // set is browsable, not just the first server page.
 function renderHits() {
-  $("qhits").innerHTML = QHITS.map((h, i) => {
+  const f = ($("qfilter") && $("qfilter").value || "").trim().toLowerCase();
+  const rows = QHITS.map((h, i) => [h, i]).filter(([h]) =>
+    !f || (h.task || h.trace_id || "").toLowerCase().includes(f));
+  $("qhits").innerHTML = rows.map(([h, i]) => {
     const prob = h.task || h.trace_id || "";
     const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
-    return `<div class="qhit" onclick="openQHit(${i})"><span class="hit-model">${prettyModel(h.model)}</span><span class="hit-task dim" title="${prob}">${prettyTask(prob)}</span>${oc}<span class="dim">${h.steps ?? h.atoms.length} steps</span>${spine(h.atoms, QCOLOR, matchSpan(h.atoms, QPAT))}</div>`;
+    return `<div class="qhit" onclick="openQHit(${i})"><span class="hit-model">${prettyModel(h.model)}</span><span class="hit-task dim" title="${prob}">${prettyTask(prob)}</span>${oc}<span class="dim">${h.steps ?? h.atoms.length} steps</span>${barcode(h.atoms, QCOLOR, matchSpan(h.atoms, QPAT))}</div>`;
   }).join("");
   const left = QNH - QHITS.length;
-  $("qmore").innerHTML = left > 0
-    ? `<span class="chip" onclick="moreHits()">show more · ${QHITS.length} of ${QNH}</span>`
-    : (QNH ? `<div class="note">showing all ${QNH}</div>` : "");
+  let more = "";
+  if (f) more += `<div class="note">${rows.length} of ${QHITS.length} loaded match "${f}"</div>`;
+  if (left > 0) more += `<span class="chip" onclick="moreHits()">show more · ${QHITS.length} of ${QNH}</span>`;
+  else if (QNH && !f) more += `<div class="note">showing all ${QNH}</div>`;
+  $("qmore").innerHTML = more;
 }
 async function moreHits() {
   let r;

@@ -28,6 +28,9 @@ select,input{font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px s
 .speed{color:var(--copper)}
 .qhit{padding:5px 2px;border-bottom:1px solid var(--rule);display:flex;align-items:center;gap:8px;cursor:pointer}
 .qhit:hover{background:#fff}
+.qhit .bc{flex:1;min-width:0}
+.qfilter{font-family:var(--mono);font-size:12px;padding:5px 8px;border:1px solid var(--rule);background:#fff;color:var(--ink);width:300px;margin:2px 0 10px}
+body.hide-noise .bc i.nz{display:none}
 .hit-model{min-width:96px}
 .hit-task{min-width:130px;max-width:220px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px}
 .oc{font-size:10px;padding:1px 6px;border-radius:2px;flex:none}
@@ -83,6 +86,19 @@ a{color:var(--copper)}
 .tstep .ti{width:14px;color:var(--gray);text-align:right;flex:none}
 .tstep .dot{width:8px;height:8px;border-radius:2px;flex:none;align-self:center}
 .tstep.fold{color:var(--olive);font-style:italic}
+.tstep.rpnow{background:#fff4ee}
+.cur{color:var(--copper);animation:blink 1s step-end infinite}
+@keyframes blink{50%{opacity:0}}
+.rpbar{display:flex;align-items:center;gap:10px;margin:4px 0 10px}
+.rpbtn{cursor:pointer;border:1px solid var(--ink);padding:2px 10px;font-size:11px;flex:none}
+.rpbar input[type=range]{flex:1;accent-color:var(--copper)}
+.rpspd{font-size:11px;color:var(--olive);flex:none}
+.rpspd span{cursor:pointer;padding:0 2px}
+.rpspd span:hover{color:var(--ink)}
+.thread#rp-term{max-height:300px;overflow:auto}
+.rpq{display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px}
+.rpq input{flex:none;width:200px}
+.fire{color:var(--copper)}
 
 /* provenance */
 .src{font-size:11px;text-decoration:none}
