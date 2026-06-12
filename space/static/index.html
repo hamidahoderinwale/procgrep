@@ -19,7 +19,10 @@ into an action vocabulary, and scans every trace. No model call.</p>
 <div class="dsbar">dataset:
   <select id="ds"></select>
   <span id="dsmeta" class="dim"></span>
+  <a id="dsource" class="dim src" target="_blank" rel="noopener"></a>
 </div>
+<p class="note prov">These are public agent-rollout corpora on Hugging Face (SWE-agent and OpenHands
+scaffolds solving SWE-bench-family GitHub issues). ProcGrep canonicalizes each trajectory into an action spine; nothing is re-hosted.</p>
 <div class="qbar"><span class="mag">⌕</span>
   <input id="q" placeholder="atom pattern, e.g.  (edit ){5,}   or pick one below" autocomplete="off"></div>
 <div class="tryline">try: <span id="trychips"></span> <span class="chip" id="noisetog">hide think/other</span></div>
@@ -27,14 +30,16 @@ into an action vocabulary, and scans every trace. No model call.</p>
 </section>
 
 <section id="view-compare" class="hidden">
-<h1>Two agents, side by side.</h1>
-<p class="sub">Different agents leave different procedural fingerprints. Put two of them next to each other,
-read the trails top to bottom, and the diff strip names what the eye is seeing: the procedures that most
-separate them, how far apart their action mixes are, and the length and reasoning gaps. No model call.</p>
+<h1>Two groups, side by side.</h1>
+<p class="sub">Agents, evals, and resolved versus unresolved runs leave different procedural fingerprints. Put two
+groups next to each other, read the trails top to bottom, and the diff strip names what the eye is seeing:
+the procedures that most separate them, how far apart their action mixes are, and the length and reasoning
+gaps. No model call.</p>
 
 <div class="cmpbar">
   <span class="seg" id="seg-agent" onclick="setAxis('agent')">by agent</span>
   <span class="seg" id="seg-eval" onclick="setAxis('eval')">by eval</span>
+  <span class="seg" id="seg-outcome" onclick="setAxis('outcome')">by outcome</span>
   <span id="cmp-controls"></span>
 </div>
 <div id="cmp-res"></div>

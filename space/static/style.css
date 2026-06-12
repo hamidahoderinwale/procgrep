@@ -78,3 +78,14 @@ a{color:var(--copper)}
 .tstep .ti{width:14px;color:var(--gray);text-align:right;flex:none}
 .tstep .dot{width:8px;height:8px;border-radius:2px;flex:none;align-self:center}
 .tstep.fold{color:var(--olive);font-style:italic}
+
+/* provenance */
+.src{font-size:11px;text-decoration:none}
+.prov{max-width:70ch;margin:-6px 0 18px;line-height:1.5}
+
+/* narrow screens: stack the comparator columns */
+@media (max-width:680px){
+  .cmp{grid-template-columns:1fr}
+  .diffstrip .dnums{gap:16px}
+  .wrap{padding:28px 18px 70px}
+}

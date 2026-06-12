@@ -66,7 +66,7 @@ from procgrep import (
 from procgrep.ingest import ingest
 from procgrep.types import PROCEDURE_SEPARATOR
 
-# ── configuration ────────────────────────────────────────────────────────────
+# Configuration.
 MAX_TRACES = 20000  # per-dataset ingest cap (design decision 3); raise as memory allows
 MAX_DATASETS = 6  # cached datasets before LRU eviction (design decision 2)
 INGEST_TIMEOUT_S = 60.0
@@ -112,6 +112,7 @@ class CachedTrace:
     atoms: tuple[str, ...]
     spine: str  # " ".join(atoms) + " ", so `(edit ){5,}` style regexes match
     task: str = ""  # the task/instance the trajectory solved (trace.group), if known
+    outcome: str = ""  # "resolved"/"unresolved"/"" from a genuine resolution label, when present
 
 
 # dataset id -> traces. OrderedDict gives us LRU order cheaply.
@@ -144,8 +145,10 @@ def _load_store() -> dict[str, list[CachedTrace]]:
         for row in df.itertuples(index=False):
             spine = str(row.spine)
             atoms = tuple(spine.split())
+            # outcome column is optional: older stores lack it, so read defensively.
+            outcome = str(getattr(row, "outcome", "") or "")
             store.setdefault(str(row.dataset), []).append(
-                CachedTrace(str(row.trace_id), str(row.agent), atoms, spine, str(row.task))
+                CachedTrace(str(row.trace_id), str(row.agent), atoms, spine, str(row.task), outcome)
             )
         _STORE = store
     except Exception:
@@ -232,7 +235,7 @@ def _action_mix(traces: list[CachedTrace]) -> dict[str, float]:
     return {a: round(n / total, 4) for a, n in counts.most_common()}
 
 
-# ── API ──────────────────────────────────────────────────────────────────────
+# API.
 app = FastAPI(title="ProcGrep explorer", docs_url="/api")
 
 
@@ -248,9 +251,21 @@ def datasets() -> JSONResponse:
     Store-backed datasets are surfaced first (they answer instantly), followed
     by the curated suggestions, deduped in that order.
     """
-    store_ids = list(_load_store().keys())
+    store = _load_store()
+    store_ids = list(store.keys())
     suggested = list(dict.fromkeys([*store_ids, *SUGGESTED]))
-    return JSONResponse({"suggested": suggested, "cached": list(_CACHE.keys()), "meta": _META})
+    # datasets that carry a genuine resolution label, so the outcome axis applies.
+    outcome_datasets = [
+        d for d, ts in store.items() if any(t.outcome in ("resolved", "unresolved") for t in ts)
+    ]
+    return JSONResponse(
+        {
+            "suggested": suggested,
+            "cached": list(_CACHE.keys()),
+            "meta": _META,
+            "outcome_datasets": outcome_datasets,
+        }
+    )
 
 
 @app.post("/query")
@@ -342,6 +357,10 @@ def _side_traces(axis: str, dataset: str, value: str) -> tuple[list[CachedTrace]
         return _load(value), value.split("/")[-1]
     if axis == "agent":
         return [t for t in _load(dataset) if t.agent == value], value
+    if axis == "outcome":
+        # value is "resolved" or "unresolved"; only datasets carrying a genuine
+        # resolution label have these, so other datasets yield empty sides.
+        return [t for t in _load(dataset) if t.outcome == value], value
     raise ValueError(f"unsupported axis: {axis}")
 
 

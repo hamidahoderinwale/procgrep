@@ -1,12 +1,14 @@
 // ProcGrep explorer frontend. Talks to the FastAPI backend (/datasets, /query);
 // no embedded data, so it queries whole datasets server-side rather than a sample.
+// Default (index 0) is a high-hit, behaviorally interesting pattern so first
+// contact is not an empty result. Patterns run over the raw spine, which keeps
+// think/other, so literally-consecutive action patterns are rare.
 const SAMPLES = [
-  { label: "edit-streak ≥5", pat: "(edit ){5,}" },
   { label: "submitted without testing", pat: "^(?:(?!run_test).)*submit" },
   { label: "never searched the repo", pat: "^(?:(?!search_repo).)*$" },
   { label: "stuck reading", pat: "(read_file (?:think )?){4,}" },
-  { label: "canonical resolve loop", pat: "search_repo read_file edit run_test" },
-  { label: "recovered from an error", pat: "error edit" },
+  { label: "edit-streak ≥5", pat: "(edit (?:think |other )?){5,}" },
+  { label: "recovered from an error", pat: "error (?:think |other )?edit" },
 ];
 const $ = (id) => document.getElementById(id);
 function prettyModel(a){let m=String(a).replace(/^(swe-agent|agentless|moatless|dars|mini-swe-agent)[-+]/i,'');
@@ -17,14 +19,25 @@ function prettyModel(a){let m=String(a).replace(/^(swe-agent|agentless|moatless|
 function prettyTask(t){if(!t)return '';const m=String(t).match(/^(.+?)__(.+?)-(\d+)$/);return m?`${m[1]}/${m[2]} #${m[3]}`:String(t);}
 let HIDE_NOISE = false;
 let DSETS = [];                 // store-backed dataset ids (shared by query + compare)
+let OUTCOME_DS = [];            // datasets that carry a genuine resolution label
 const CMP = { axis: "agent", ds: null, left: null, right: null, data: null };
+
+// Brief provenance: link the selected dataset to its Hugging Face source page.
+function setSource(ds) {
+  const a = $("dsource");
+  if (!a) return;
+  a.href = "https://huggingface.co/datasets/" + ds;
+  a.textContent = "source: " + ds + " ↗";
+}
 
 async function loadDatasets() {
   const d = await (await fetch("datasets")).json();
   DSETS = d.suggested;
+  OUTCOME_DS = d.outcome_datasets || [];
   CMP.ds = DSETS[0];
   $("ds").innerHTML = d.suggested.map((s) => `<option>${s}</option>`).join("");
   $("trychips").innerHTML = SAMPLES.map((s, i) => `<span class="chip" data-i="${i}">${s.label}</span>`).join("");
+  setSource(DSETS[0]);
 }
 
 // Collapse runs of think/other into a gap marker; run-length the signal atoms.
@@ -94,9 +107,9 @@ document.addEventListener("click", (e) => {
   }
 });
 $("q").addEventListener("keydown", (e) => { if (e.key === "Enter") run($("q").value); });
-$("ds").addEventListener("change", () => run($("q").value || SAMPLES[0].pat));
+$("ds").addEventListener("change", () => { setSource($("ds").value); run($("q").value || SAMPLES[0].pat); });
 
-// ── comparator ────────────────────────────────────────────────────────────
+// Comparator.
 // A trail-as-thread: collapse think/other runs into fold lines, render signal
 // atoms as labeled colored steps. The same skeleton the spine() bars draw,
 // expanded into a readable column. This is how we show a "conversation":
@@ -152,8 +165,9 @@ function openTrace(side, i) {
 function trailStack(side) {
   const r = CMP.data, col = r[side], c = r.atom_color;
   const s = col.stats;
+  const ds = CMP.axis === "eval" ? (side === "left" ? CMP.left : CMP.right) : CMP.ds;
   return `<div class="cmpcol">
-    <div class="cmphead">${prettyModel(col.label)}</div>
+    <div class="cmphead">${prettyModel(col.label)} <a class="dim src" href="https://huggingface.co/datasets/${ds}" target="_blank" rel="noopener">source ↗</a></div>
     <div class="cmpstat">${col.n.toLocaleString()} traces · median ${s.median_len} steps · ${s.median_cot} reasoning · diversity ${s.diversity_bits} bits</div>
     ${col.trails.map((t, i) => `<div class="trow" onclick="openTrace('${side}',${i})"><span class="tlen">${t.steps} st</span>${barcode(t.atoms, c)}</div>`).join("")}</div>`;
 }
@@ -202,6 +216,17 @@ async function renderCmpControls() {
     if (!DSETS.includes(CMP.left) || CMP.left === CMP.right) { CMP.left = DSETS[0]; CMP.right = DSETS[1]; }
     box.innerHTML = `${opt("CMP.left=this.value;runCompare()", DSETS, CMP.left)}
       <span class="dim">vs</span>${opt("CMP.right=this.value;runCompare()", DSETS, CMP.right)}`;
+    runCompare();
+  } else if (CMP.axis === "outcome") {
+    if (!OUTCOME_DS.length) {
+      box.innerHTML = '<span class="err">no dataset in the store carries a resolved label</span>';
+      $("cmp-res").innerHTML = '<span class="dim">The outcome axis needs a genuine resolved/unresolved label, which only some datasets provide.</span>';
+      return;
+    }
+    if (!OUTCOME_DS.includes(CMP.ds)) CMP.ds = OUTCOME_DS[0];
+    CMP.left = "resolved"; CMP.right = "unresolved";
+    box.innerHTML = `${opt("CMP.ds=this.value;renderCmpControls()", OUTCOME_DS, CMP.ds)} <span class="dim">· resolved vs unresolved</span>`;
+    runCompare();
   } else {
     box.innerHTML = `${opt("CMP.ds=this.value;renderCmpControls()", DSETS, CMP.ds)} <span class="dim">·</span> <span id="agentpick" class="dim">loading agents…</span>`;
     const g = await (await fetch(`groups?dataset=${encodeURIComponent(CMP.ds)}`)).json();
@@ -210,27 +235,33 @@ async function renderCmpControls() {
     CMP.left = agents[0]; CMP.right = agents[1];
     $("agentpick").innerHTML = `${opt("CMP.left=this.value;runCompare()", agents, CMP.left)}
       <span class="dim">vs</span>${opt("CMP.right=this.value;runCompare()", agents, CMP.right)}`;
+    runCompare();
   }
-  runCompare();
 }
 
 function setAxis(axis) {
   CMP.axis = axis;
   $("seg-agent").classList.toggle("act", axis === "agent");
   $("seg-eval").classList.toggle("act", axis === "eval");
+  $("seg-outcome").classList.toggle("act", axis === "outcome");
   renderCmpControls();
 }
 
 let CMP_INIT = false;
-function showView(name) {
+function showView(name, axis) {
   $("view-query").classList.toggle("hidden", name !== "query");
   $("view-compare").classList.toggle("hidden", name !== "compare");
   $("tab-query").classList.toggle("act", name === "query");
   $("tab-compare").classList.toggle("act", name === "compare");
-  if (name === "compare" && !CMP_INIT) { CMP_INIT = true; setAxis("agent"); }
+  if (name === "compare") {
+    if (!CMP_INIT) { CMP_INIT = true; setAxis(axis || "agent"); }
+    else if (axis) setAxis(axis);
+  }
 }
 
 loadDatasets().then(() => {
   run(SAMPLES[0].pat);
-  if ((location.hash || "").replace("#", "") === "compare") showView("compare");
+  // deep-link: #compare or #compare:agent|eval|outcome
+  const h = (location.hash || "").replace("#", "");
+  if (h.startsWith("compare")) showView("compare", h.split(":")[1]);
 });

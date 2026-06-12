@@ -7,8 +7,8 @@ every dataset on demand.
 
 Design decisions (each with its benefit and its price):
 
-1. Single flat parquet with a fixed 5-column schema
-   (dataset, trace_id, agent, task, spine).
+1. Single flat parquet with a fixed 6-column schema
+   (dataset, trace_id, agent, task, spine, outcome).
    Benefit: a stable contract the Space loader can read with one
    pandas/pyarrow call; columnar + typed so spine scans are fast and the file
    stays small.
@@ -70,7 +70,33 @@ DEFAULT_DATASETS: list[str] = list(
 )
 
 HF_REPO_ID: str = "midah/procgrep-spines"
-SPINE_COLUMNS: list[str] = ["dataset", "trace_id", "agent", "task", "spine"]
+SPINE_COLUMNS: list[str] = ["dataset", "trace_id", "agent", "task", "spine", "outcome"]
+
+# Metadata keys that hold a genuine task-resolution label (gold pass/fail). We do
+# not treat exit_status as outcome: "submitted" means the agent produced a patch,
+# not that the task was resolved, so conflating them would mislabel the axis.
+_RESOLVED_FIELDS: tuple[str, ...] = ("resolved", "is_resolved", "solved", "passed")
+_RESOLVED_TRUE: frozenset[str] = frozenset({"1", "true", "yes", "resolved", "pass", "passed"})
+
+
+def _outcome(metadata: object) -> str:
+    """Map a trace's metadata to "resolved" / "unresolved" / "" (unknown).
+
+    Returns "" when no genuine resolution field is present, so the comparator's
+    outcome axis stays disabled for datasets that do not carry one.
+    """
+    if not isinstance(metadata, dict):
+        return ""
+    for field in _RESOLVED_FIELDS:
+        value = metadata.get(field)
+        if value is None:
+            continue
+        if isinstance(value, str):
+            resolved = value.strip().lower() in _RESOLVED_TRUE
+        else:
+            resolved = bool(value)
+        return "resolved" if resolved else "unresolved"
+    return ""
 
 
 def _discover_datasets() -> list[str]:
@@ -112,6 +138,7 @@ def build_rows(datasets: list[str], cap: int, timeout: float) -> list[dict[str, 
                     "agent": str(t.agent),
                     "task": str(t.group or ""),
                     "spine": " ".join(t.atoms) + " ",
+                    "outcome": _outcome(t.metadata),
                 }
             )
         print(f"[build_spines] {dataset}: {len(traces)} traces", file=sys.stderr)

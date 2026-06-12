@@ -90,7 +90,7 @@ a.plain{color:var(--copper);cursor:pointer}
 <!-- QUERY (hero / default) -->
 <div id="query">
 <h1>Grep for agent traces.</h1>
-<p class="sub">Ask a structural question about how an agent worked — "did it edit five times with no test?", "did it submit without testing?" — and get an exact answer instantly, over real trajectory datasets. No model call, deterministic, free. <a class="plain" onclick="show('why')">Why not just ask an LLM? →</a></p>
+<p class="sub">Ask a structural question about how an agent worked, like "did it edit five times with no test?" or "did it submit without testing?", and get an exact answer instantly, over real trajectory datasets. No model call, deterministic, free. <a class="plain" onclick="show('why')">Why not just ask an LLM? →</a></p>
 <div class="dsbar" id="dsbar"></div>
 <div class="qbar"><span class="mag">⌕</span>
   <input id="q" placeholder="atom pattern, e.g.  (edit ){5,}   or pick one below" autocomplete="off"></div>
@@ -101,7 +101,7 @@ a.plain{color:var(--copper);cursor:pointer}
 <!-- CURATE -->
 <div id="curate" class="hidden">
 <h1>Trim to a budget, keep the variety.</h1>
-<p class="sub">When you shrink a trajectory set to a fixed budget, the common move is to keep the shortest runs. But short traces are the least diverse — you throw away procedural variety. procgrep selects for diversity instead, preserving far more of the dataset's distinct procedures at the same budget.</p>
+<p class="sub">When you shrink a trajectory set to a fixed budget, the common move is to keep the shortest runs. But short traces are the least diverse: you throw away procedural variety. procgrep selects for diversity instead, preserving far more of the dataset's distinct procedures at the same budget.</p>
 <div class="dsbar" id="dsbar-c"></div>
 <div id="curbody"></div>
 </div>
@@ -124,7 +124,7 @@ a.plain{color:var(--copper);cursor:pointer}
 <div id="browse" class="hidden">
 <span class="back" onclick="show('query')">← query</span>
 <h1 style="font-size:23px">The agent-trace ecosystem.</h1>
-<p class="sub">Every public trajectory dataset procgrep discovered on Hugging Face, and what it can parse today. Most non-parseable entries aren't failures — they're benchmarks (task definitions, no trajectories), corpora, or out-of-scope domains.</p>
+<p class="sub">Every public trajectory dataset procgrep discovered on Hugging Face, and what it can parse today. Most non-parseable entries aren't failures. They're benchmarks (task definitions, no trajectories), corpora, or out-of-scope domains.</p>
 <div class="cards" id="findings"></div>
 <div class="eyebrow">benchmarks (click to filter)</div>
 <div class="bstrip" id="benchstrip"></div>
@@ -148,7 +148,7 @@ const D=JSON.parse(document.getElementById('data').textContent);
 const CAT=D.catalog, DS=CAT.datasets, PROF=D.profiles;
 const ATOM={search_repo:'#585E53',read_file:'#5692E5',edit:'#CB4D20',create_file:'#3D7AD8',
 run_test:'#20A380',submit:'#14110E',think:'#b7b1a7',localize:'#8C1040',delete_file:'#A03D18',error:'#B4184F',other:'#d9d4cc'};
-const pct=x=>x==null?'—':(x*100).toFixed(0)+'%';
+const pct=x=>x==null?'n/a':(x*100).toFixed(0)+'%';
 const fmt=n=>n>=1000?(n/1000).toFixed(n>=10000?0:1)+'k':String(n);
 const LOGOS=D.logos||{};
 const PROFIDS=Object.keys(PROF);
@@ -209,7 +209,7 @@ function runQ(custom,id){
   const pool=PROF[CURDS].atoms_pool||[]; let f,label;
   const box=document.getElementById('q');
   if(id){const q=QUERIES.find(x=>x.id===id);f=q.f;label=q.label;if(box)box.value=q.id==='streak'?'(edit ){5,}':'';}
-  else if(custom){let rx;try{rx=new RegExp(custom);}catch(e){document.getElementById('qres').innerHTML='<span class="dim">…keep typing — invalid pattern</span>';return;}
+  else if(custom){let rx;try{rx=new RegExp(custom);}catch(e){document.getElementById('qres').innerHTML='<span class="dim">…keep typing, invalid pattern</span>';return;}
     f=a=>rx.test(a.join(' ')+' ');label='/'+custom+'/';}
   else{document.getElementById('qres').innerHTML='<span class="dim">type an action pattern, or pick a sample query above</span>';return;}
   const t=performance.now();const hits=pool.filter(x=>f(x.atoms));const ms=performance.now()-t;
@@ -226,8 +226,8 @@ function runQ(custom,id){
   const allMix=mixOf(pool), hitMix=hits.length?mixOf(hits):{mix:{},n:0};
   document.getElementById('qres').innerHTML=
    `<div style="font-size:15px;margin:4px 0"><b>${hits.length}</b> / ${pool.length} traces match <b>${label}</b></div>
-    <div class="dim" style="margin-bottom:12px"><span class="speed">scanned in ${ms.toFixed(1)} ms — no model call, $0</span> · ${affected}</div>
-    <div class="eyebrow">which models</div>${modelBars||'<span class="dim">—</span>'}
+    <div class="dim" style="margin-bottom:12px"><span class="speed">scanned in ${ms.toFixed(1)} ms, no model call, $0</span> · ${affected}</div>
+    <div class="eyebrow">which models</div>${modelBars||'<span class="dim">none</span>'}
     <div class="eyebrow">action mix · matched vs. all</div>
     <div class="rrow"><span class="rlab">matched</span>${hits.length?mixbar(hitMix.mix):'<span class="dim">no matches</span>'}</div>
     <div class="rrow"><span class="rlab">all traces</span>${mixbar(allMix.mix)}</div>
@@ -252,7 +252,7 @@ function curateView(){
   const s=r.coverage_shortest, d=r.coverage_diverse;
   document.getElementById('curbody').innerHTML=
    `<div class="eyebrow">${p.dataset.split('/').pop()} · ${p.n_traces} traces</div>
-    <p class="note">Shrink the set to a fixed budget — <b>the same number of traces</b>, chosen two ways.
+    <p class="note">Shrink the set to a fixed budget, <b>the same number of traces</b>, chosen two ways.
     <b>Procedural variety</b> = the share of the dataset's distinct procedures (recurring action
     sub-sequences) that still appear in the kept subset.</p>
     <div class="rrow" style="margin:12px 0"><span class="rlab">keep shortest</span>
@@ -262,7 +262,7 @@ function curateView(){
       <span class="barbg" style="width:280px"><span class="fill" style="width:${d*280}px;background:var(--copper)"></span></span>
       <span class="rval" style="width:auto">${pct(d)} ← procgrep</span></div>
     <p class="note" style="margin-top:18px">Same budget, but diversity-selection keeps <b>${pct(d)}</b> of the
-    distinct procedures against <b>${pct(s)}</b> for keep-shortest — a <b>${Math.round((d-s)*100)}-point</b> gain at no
+    distinct procedures against <b>${pct(s)}</b> for keep-shortest, a <b>${Math.round((d-s)*100)}-point</b> gain at no
     extra cost. Short runs cluster in the redundant core (${pct(r.exact_dup_rate)} of traces are exact duplicates,
     ${pct(r.near_dup_rate)} near-duplicates), so keeping the shortest over-samples sameness.</p>`;
 }
@@ -292,7 +292,29 @@ function trace(id,i){const s=PROF[id].samples[i];show('tr');
 const PRED_LABEL={edit_streak_5:'edited 5+ times in a row',submitted_without_test:'submitted without testing',
   tested_before_first_edit:'tested before its first edit',read_streak_4:'read 4+ files in a row',
   never_searched:'never searched the repo'};
-function prettyModel(a){let m=String(a).replace(/^(swe-agent|agentless|moatless|dars|mini-swe-agent)[-+]/i,'');
+function prettyModel(a){let m=String(a);
+  // provider/model judge slugs, e.g. anthropic/claude-sonnet-4-6
+  if(/^(openai|anthropic|deepseek|google|meta)\//i.test(m)){
+    m=m.replace(/^[^/]+\//,'');                         // strip provider prefix
+    const claudeGpt=/^(claude|gpt)/i.test(m);
+    if(claudeGpt)m=m.replace(/(\d)-(\d)$/,'$1.$2');     // 4-6 -> 4.6 only for claude/gpt
+    if(/^claude/i.test(m)){
+      m='Claude '+m.replace(/^claude-?/i,'').split('-').map(w=>
+        /^\d/.test(w)?w:w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+    }else if(/^deepseek/i.test(m)){
+      m='DeepSeek '+m.replace(/^deepseek-?/i,'').split('-').map(w=>
+        w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+    }else if(/^gpt/i.test(m)){
+      // keep the GPT-4o/GPT-4 hyphen, flatten the rest, e.g. gpt-4o-mini -> GPT-4o mini
+      const rest=m.replace(/^gpt-?(4o|4)-?/i,'').replace(/-/g,' ').trim();
+      m='GPT-'+(/4o/i.test(m)?'4o':'4')+(rest?' '+rest:'');
+    }else{
+      m=m.replace(/-/g,' ');
+    }
+    return m.trim()||String(a);
+  }
+  // agent-trace ids, e.g. swe-agent-llama-70b
+  m=m.replace(/^(swe-agent|agentless|moatless|dars|mini-swe-agent)[-+]/i,'');
   m=m.replace(/llama-?(\d+)b/i,(_,n)=>'Llama '+n+'B').replace(/\bgpt-?4o\b/i,'GPT-4o').replace(/\bgpt-?4\b/i,'GPT-4')
      .replace(/claude-?([\d.]+)([a-z-]*)/i,(_,v,s)=>'Claude '+v+(s?' '+s.replace(/-/g,' ').trim():''))
      .replace(/deepseek-?(v?\d+|r\d+)/i,(_,v)=>'DeepSeek '+v.toUpperCase());
@@ -309,7 +331,7 @@ function whyView(){const e=D.experiment;const el=document.getElementById('why');
   const models=Object.keys(struct[0][1].judges);
   const head=`<th>behavioural question</th>${models.map(m=>`<th>${prettyModel(m)}</th>`).join('')}<th>judge agreement κ</th>`;
   const body=struct.map(([k,v])=>`<tr><td>${PRED_LABEL[k]||k}</td>${models.map(m=>{const f=v.judges[m].f1;
-    return `<td style="background:${f1col(f)};text-align:center">${f==null?'—':f.toFixed(2)}</td>`;}).join('')}<td style="text-align:center">${v.pairwise_cohen_kappa==null?'—':v.pairwise_cohen_kappa}</td></tr>`).join('');
+    return `<td style="background:${f1col(f)};text-align:center">${f==null?'n/a':f.toFixed(2)}</td>`;}).join('')}<td style="text-align:center">${v.pairwise_cohen_kappa==null?'n/a':v.pairwise_cohen_kappa}</td></tr>`).join('');
   const fz=Object.entries(e.predicates).find(([k,v])=>v.kind==='fuzzy');
   el.innerHTML=
    `<span class="back" onclick="show('query')">← query</span>
@@ -326,20 +348,20 @@ function whyView(){const e=D.experiment;const el=document.getElementById('why');
     <div class="eyebrow">how often each LLM judge matches the exact structural answer</div>
     <p class="note" style="margin:0 0 10px">Each cell is a judge's F1 against the exact answer: 1.00 is perfect, 0 is useless, chance is about 0.5. Greener is higher. procgrep is 1.00 by construction. κ in the last column is how much the judges agree with one another (near 0 means barely).</p>
     <table><thead><tr>${head}</tr></thead><tbody>${body}</tbody></table>
-    <p class="note">On the one fuzzy question, <b>${fz?(PRED_LABEL[fz[0]]||fz[0]):''}</b>, the judges agree at κ = ${fz?fz[1].pairwise_cohen_kappa:'—'}. procgrep answers all ${struct.length} questions over ${e.corpus} traces in ${e.procgrep_ms_full} ms; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). It took ${e.totals.judge_calls} judge calls and ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
+    <p class="note">On the one fuzzy question, <b>${fz?(PRED_LABEL[fz[0]]||fz[0]):''}</b>, the judges agree at κ = ${fz?fz[1].pairwise_cohen_kappa:'n/a'}. procgrep answers all ${struct.length} questions over ${e.corpus} traces in ${e.procgrep_ms_full} ms; the LLM route is ${ratio.toLocaleString()}× slower, costs per call, and is no more reliable (best mean F1 ${bestF1.toFixed(2)}). It took ${e.totals.judge_calls} judge calls and ${e.totals.total_tokens.toLocaleString()} tokens.</p>`;}
 
 // ---- BROWSE view (ecosystem catalog, demoted) ----
 const ST={q:'',sort:'downloads',dir:-1,group:false,page:1,size:30,fmtFilter:null,statusFilter:null,benchFilter:null,collapsed:new Set(),open:new Set()};
-// Honest classification — never surface a raw exception to the reader.
+// Honest classification: never surface a raw exception to the reader.
 function classify(r){
-  if(r.adapter)return {key:'parseable',label:r.adapter,cls:'fmt',why:`parseable — format <b>${r.adapter}</b> (confidence ${r.confidence})`};
-  if(r.candidate)return {key:'format-gap',label:'format gap',cls:'gap',why:'a trajectory dataset procgrep does not parse yet — on the roadmap'};
+  if(r.adapter)return {key:'parseable',label:r.adapter,cls:'fmt',why:`parseable, format <b>${r.adapter}</b> (confidence ${r.confidence})`};
+  if(r.candidate)return {key:'format-gap',label:'format gap',cls:'gap',why:'a trajectory dataset procgrep does not parse yet, on the roadmap'};
   if(r.out_of_scope)return {key:'out-of-scope',label:'out of scope',cls:'un',why:'a non-tool domain (vision, robotics, math) with no discrete code actions to canonicalize'};
   const e=(r.error||'');
-  if(/gated/i.test(e))return {key:'gated',label:'gated',cls:'un',why:'a gated dataset on the Hub — needs authentication to introspect'};
-  if(/Config name is missing/i.test(e))return {key:'multi-config',label:'multi-config',cls:'un',why:'a multi-config dataset — a config must be selected before introspection'};
-  if(r.benchmark)return {key:'benchmark',label:'benchmark',cls:'un',why:`task definitions for the ${r.benchmark} benchmark — not agent trajectories`};
-  return {key:'not-a-trace',label:'not a trace',cls:'un',why:'no conversation or trajectory column — a corpus or instruction dataset, not agent traces'};
+  if(/gated/i.test(e))return {key:'gated',label:'gated',cls:'un',why:'a gated dataset on the Hub, needs authentication to introspect'};
+  if(/Config name is missing/i.test(e))return {key:'multi-config',label:'multi-config',cls:'un',why:'a multi-config dataset, a config must be selected before introspection'};
+  if(r.benchmark)return {key:'benchmark',label:'benchmark',cls:'un',why:`task definitions for the ${r.benchmark} benchmark, not agent trajectories`};
+  return {key:'not-a-trace',label:'not a trace',cls:'un',why:'no conversation or trajectory column, a corpus or instruction dataset, not agent traces'};
 }
 function dupOf(r){const p=PROF[r.id];return p?p.redundancy.exact_dup_rate:null;}
 function findings(){
@@ -350,11 +372,11 @@ function findings(){
   const fmtChips=Object.entries(byA).sort((a,b)=>b[1]-a[1]).map(([a,n])=>
     `<span class="chip fmt ${ST.fmtFilter===a?'on':''}" onclick="ST.fmtFilter=ST.fmtFilter===\'${a}\'?null:\'${a}\';ST.page=1;renderBrowse()">${a} ${n}</span>`).join('');
   document.getElementById('findings').innerHTML=
-   `<div class="card"><div class="dim">coverage — parseable trace datasets</div><div class="big">${sup.length}/${cand.length}</div>
+   `<div class="card"><div class="dim">coverage, parseable trace datasets</div><div class="big">${sup.length}/${cand.length}</div>
       <div class="dim">${notTrace} benchmarks/corpora &amp; ${oos} out-of-scope excluded · ${CAT.n_discovered} discovered</div></div>
     <div class="card"><div class="dim">formats (click to filter)</div><div style="margin-top:8px">${fmtChips}</div></div>
     <div class="card"><div class="dim">what's excluded, honestly</div>
-      <div class="dim" style="margin-top:8px">non-parseable rows are benchmarks (task definitions), corpora, gated, or out-of-scope domains — not parse failures on real traces</div></div>`;
+      <div class="dim" style="margin-top:8px">non-parseable rows are benchmarks (task definitions), corpora, gated, or out-of-scope domains, not parse failures on real traces</div></div>`;
   const benches={}; DS.forEach(r=>{if(r.benchmark)(benches[r.benchmark]=benches[r.benchmark]||[]).push(r);});
   const bs=document.getElementById('benchstrip');
   if(bs)bs.innerHTML=Object.entries(benches).sort((a,b)=>b[1].length-a[1].length).map(([b,rs])=>{
@@ -377,7 +399,7 @@ function rowHTML(r){
   const c=classify(r);const p=PROF[r.id];
   let h=`<tr class="clk"><td class="idcell" onclick="toggleRow('${r.id}')">${blogo(r.benchmark)} ${r.id}</td>
     <td><span class="chip ${c.cls}">${c.label}</span></td>
-    <td>${fmt(r.downloads)}</td><td>${r.likes||0}</td><td class="dim">${r.last_modified||'—'}</td></tr>`;
+    <td>${fmt(r.downloads)}</td><td>${r.likes||0}</td><td class="dim">${r.last_modified||'n/a'}</td></tr>`;
   if(ST.open.has(r.id)){
     const prof=p?` · <a class="plain" onclick="CURDS='${r.id}';show('query')">query it →</a>`:'';
     h+=`<tr><td colspan="5" class="detail"><a href="https://huggingface.co/datasets/${r.id}" target="_blank">huggingface.co/datasets/${r.id} ↗</a> · ${c.why}${prof}</td></tr>`;}
@@ -407,7 +429,7 @@ function renderBrowse(){
   document.getElementById('filters').innerHTML=
     ['parseable','format-gap','benchmark','not-a-trace','out-of-scope','gated'].map(s=>`<span class="chip ${ST.statusFilter===s?'on':''}" onclick="ST.statusFilter=ST.statusFilter===\'${s}\'?null:\'${s}\';ST.page=1;renderBrowse()">${s}</span>`).join('');
   document.getElementById('foot').textContent=
-    `catalog generated ${CAT.generated||'—'} · ${CAT.n_discovered} datasets discovered · ${DS.length} sniffed · showing ${rows.length} after filters`;
+    `catalog generated ${CAT.generated||'n/a'} · ${CAT.n_discovered} datasets discovered · ${DS.length} sniffed · showing ${rows.length} after filters`;
 }
 document.querySelectorAll('#index th[data-k]').forEach(th=>th.onclick=()=>{
   const k=th.dataset.k;ST.dir=(k===ST.sort)?-ST.dir:-1;ST.sort=k;renderBrowse();});
