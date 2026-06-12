@@ -107,14 +107,12 @@ SHOWCASE = """
 </aside>
 <figure class="exfig" id="compare-fig">
   <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
-  <figcaption class="caption">Compare view from the explorer, resolved versus unresolved runs. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
 </figure>
 <figure class="exfig" id="replay-fig">
   <video autoplay loop muted playsinline poster="figures/replay_poster.png" aria-label="Replaying one trajectory step by step with a live structural query firing">
     <source src="figures/replay.webm" type="video/webm">
     <source src="figures/replay.mp4" type="video/mp4">
   </video>
-  <figcaption class="caption">Sample trajectory replay from the explorer.</figcaption>
 </figure>
 """
 
