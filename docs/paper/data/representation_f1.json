@@ -1,0 +1,46 @@
+[
+  {
+    "label": "Structural pattern overlap",
+    "color": "#CB4D20",
+    "group": "deterministic",
+    "value": 0.347
+  },
+  {
+    "label": "Action sequence distance",
+    "color": "#CB4D20",
+    "group": "deterministic",
+    "value": 0.274
+  },
+  {
+    "label": "Edit action overlap",
+    "color": "#CB4D20",
+    "group": "deterministic",
+    "value": 0.256
+  },
+  {
+    "label": "Narrative description",
+    "color": "#585E53",
+    "group": "narrative",
+    "value": 0.177
+  },
+  {
+    "label": "Agent plan description",
+    "color": "#585E53",
+    "group": "narrative",
+    "value": 0.155
+  },
+  {
+    "label": "Divergence classifier",
+    "color": "#b7b1a7",
+    "group": "llm",
+    "lo": 0.0,
+    "hi": 0.363
+  },
+  {
+    "label": "Random retrieval",
+    "color": "#d9d4cc",
+    "group": "baseline",
+    "lo": 0.13,
+    "hi": 0.24
+  }
+]

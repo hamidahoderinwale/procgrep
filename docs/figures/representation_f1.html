@@ -1,4 +1,14 @@
-/* Shared D3 v7 chart module for the procgrep explorer and essay.
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>retrieval F1 by representation</title>
+<style>body{margin:0;background:#F7F5F2;color:#14110E;
+font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.wrap{max-width:700px;margin:0 auto;padding:24px}</style>
+</head><body><div class="wrap"><div id="representation-f1"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};</script>
+<script>/* Shared D3 v7 chart module for the procgrep explorer and essay.
    Two reusable charts in the editorial palette: a log-x scatter and a log-x
    dot plot. Each is a pure function that mounts into a container element and
    returns nothing; data and options are passed in. Tufte-minimal: thin rules,
@@ -340,3 +350,37 @@
     labelToggle: labelToggle, showTip: showTip, moveTip: moveTip, hideTip: hideTip,
   };
 })(window);
+</script>
+<script id="representation-f1-data" type="application/json">[{"label": "Structural pattern overlap", "color": "#CB4D20", "group": "deterministic", "value": 0.347}, {"label": "Action sequence distance", "color": "#CB4D20", "group": "deterministic", "value": 0.274}, {"label": "Edit action overlap", "color": "#CB4D20", "group": "deterministic", "value": 0.256}, {"label": "Narrative description", "color": "#585E53", "group": "narrative", "value": 0.177}, {"label": "Agent plan description", "color": "#585E53", "group": "narrative", "value": 0.155}, {"label": "Divergence classifier", "color": "#b7b1a7", "group": "llm", "lo": 0.0, "hi": 0.363}, {"label": "Random retrieval", "color": "#d9d4cc", "group": "baseline", "lo": 0.13, "hi": 0.24}]</script>
+<script>
+(function(){
+  var el=document.getElementById('representation-f1-data'); if(!el)return;
+  var mount=document.getElementById('representation-f1'); if(!mount||!window.ProcgrepCharts)return;
+  var rows=JSON.parse(el.textContent).map(function(r){
+    var base={label:r.label,color:r.color};
+    if(r.lo!=null){
+      base.lo=r.lo; base.hi=r.hi;
+      base.valueLabel=r.lo.toFixed(2)+' to '+r.hi.toFixed(2);
+      base.title=r.label+': F1 '+r.lo.toFixed(3)+' to '+r.hi.toFixed(3);
+      base.tipHTML='<b>'+r.label+'</b><br>retrieval F1 <b>'+r.lo.toFixed(3)+
+        '</b> to <b>'+r.hi.toFixed(3)+'</b>';
+    }else{
+      base.value=r.value;
+      base.valueLabel=r.value.toFixed(3);
+      base.title=r.label+': F1 '+r.value.toFixed(3);
+      base.tipHTML='<b>'+r.label+'</b><br>retrieval F1 <b>'+r.value.toFixed(3)+'</b>';
+    }
+    return base;
+  });
+  ProcgrepCharts.barChart(mount,rows,{
+    width:660,rowHeight:34,xMax:0.4,labelWidth:210,
+    ariaLabel:'retrieval F1 by representation',
+    xLabel:'retrieval F1 at k = 1, n = 289',
+    xTicks:[{v:0,label:'0.0'},{v:0.1,label:'0.1'},{v:0.2,label:'0.2'},
+      {v:0.3,label:'0.3'},{v:0.4,label:'0.4'}],
+    legend:[{label:'deterministic',color:'#CB4D20'},
+      {label:'varies by model',color:'#585E53'},
+      {label:'LLM, unstable',color:'#b7b1a7'}]});
+})();
+</script>
+</body></html>
