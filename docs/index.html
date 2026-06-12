@@ -420,7 +420,7 @@ font-family:var(--mono);font-size:12px;color:var(--olive)}
 </div>
 
 <div class="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
-<p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>.</p></div>
+<p class="avail">Procgrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
 
 
 <aside class="showcase" id="showcase">
@@ -433,14 +433,14 @@ font-family:var(--mono);font-size:12px;color:var(--olive)}
 </aside>
 <figure class="exfig" id="compare-fig">
   <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
-  <figcaption class="caption">The compare view, here splitting one dataset's runs into resolved and unresolved. Each row is one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid. The diff strip shows the unresolved runs are longer and reason more, the shape of getting stuck. Toggle also by agent or by eval. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
+  <figcaption class="caption">Compare view from the explorer, resolved versus unresolved runs. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
 </figure>
 <figure class="exfig" id="replay-fig">
   <video autoplay loop muted playsinline poster="figures/replay_poster.png" aria-label="Replaying one trajectory step by step with a live structural query firing">
     <source src="figures/replay.webm" type="video/webm">
     <source src="figures/replay.mp4" type="video/mp4">
   </video>
-  <figcaption class="caption">One trajectory, replayed step by step. Reasoning folds, actions print in order, and a structural query fires the instant it matches, here at the first test right after an edit. Fed by procgrep watch, the same view follows a running agent live.</figcaption>
+  <figcaption class="caption">Sample trajectory replay from the explorer.</figcaption>
 </figure>
 
 

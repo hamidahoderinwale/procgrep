@@ -107,14 +107,14 @@ SHOWCASE = """
 </aside>
 <figure class="exfig" id="compare-fig">
   <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
-  <figcaption class="caption">The compare view, here splitting one dataset's runs into resolved and unresolved. Each row is one trajectory drawn as a barcode of canonical actions, reasoning pale and actions vivid. The diff strip shows the unresolved runs are longer and reason more, the shape of getting stuck. Toggle also by agent or by eval. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
+  <figcaption class="caption">Compare view from the explorer, resolved versus unresolved runs. <a href="https://midah-procgrep-explorer.hf.space/#compare" target="_blank" rel="noopener">Open it live ↗</a></figcaption>
 </figure>
 <figure class="exfig" id="replay-fig">
   <video autoplay loop muted playsinline poster="figures/replay_poster.png" aria-label="Replaying one trajectory step by step with a live structural query firing">
     <source src="figures/replay.webm" type="video/webm">
     <source src="figures/replay.mp4" type="video/mp4">
   </video>
-  <figcaption class="caption">One trajectory, replayed step by step. Reasoning folds, actions print in order, and a structural query fires the instant it matches, here at the first test right after an edit. Fed by procgrep watch, the same view follows a running agent live.</figcaption>
+  <figcaption class="caption">Sample trajectory replay from the explorer.</figcaption>
 </figure>
 """
 
@@ -755,7 +755,7 @@ def main() -> None:
 </div>
 
 <div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p>
-<p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">github.com/hamidahoderinwale/procgrep</a>.</p></div>
+<p class="avail">Procgrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
 
 {SHOWCASE}
 
