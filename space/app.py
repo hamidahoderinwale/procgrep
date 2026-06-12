@@ -25,6 +25,13 @@ Design decisions (benefit / price):
     static essay's query box exactly.
     Benefit: one query language across the paper and the live demo.
     Price: the spine drops argument-level detail, by design in procgrep.
+ 5. Prefer a precomputed spine store (HF dataset midah/procgrep-spines) over
+    live ingest, falling back to live ingest when the store is missing a dataset
+    or cannot be reached.
+    Benefit: warm datasets answer instantly with no per-query streaming or
+    canonicalization, and coverage can grow on CI rather than at request time.
+    Price: store-backed datasets are only as fresh as the last refresh build;
+    the weekly action keeps them current.
 """
 
 from __future__ import annotations
@@ -50,6 +57,8 @@ MAX_DATASETS = 6  # cached datasets before LRU eviction (design decision 2)
 INGEST_TIMEOUT_S = 60.0
 HIT_SAMPLE = 50  # matched traces returned to the client
 STATIC = Path(__file__).parent / "static"
+SPINE_REPO = "midah/procgrep-spines"  # precomputed store (design decision 5)
+SPINE_FILE = "procgrep_spines.parquet"
 
 # A short, curated starting set; the client may query any dataset id.
 SUGGESTED = (
@@ -90,16 +99,66 @@ class CachedTrace:
 _CACHE: OrderedDict[str, list[CachedTrace]] = OrderedDict()
 _META: dict[str, dict] = {}  # dataset id -> {adapter, n_traces, truncated, n_models}
 
+# Precomputed spine store, loaded once and shared (design decision 5). None until
+# the first load attempt; an empty dict means "tried, nothing usable" so every
+# dataset falls through to live ingest.
+_STORE: dict[str, list[CachedTrace]] | None = None
+
+
+def _load_store() -> dict[str, list[CachedTrace]]:
+    """Download and parse the precomputed spine store, grouped by dataset.
+
+    Reconstructs atoms from the space-joined spine (lossless: atoms carry no
+    internal spaces). Any failure (no repo, offline, bad file) yields an empty
+    store so callers transparently fall back to live ingest.
+    """
+    global _STORE
+    if _STORE is not None:
+        return _STORE
+    try:
+        import pandas as pd
+        from huggingface_hub import hf_hub_download
+
+        path = hf_hub_download(SPINE_REPO, SPINE_FILE, repo_type="dataset")
+        df = pd.read_parquet(path)
+        store: dict[str, list[CachedTrace]] = {}
+        for row in df.itertuples(index=False):
+            spine = str(row.spine)
+            atoms = tuple(spine.split())
+            store.setdefault(str(row.dataset), []).append(
+                CachedTrace(str(row.trace_id), str(row.agent), atoms, spine, str(row.task))
+            )
+        _STORE = store
+    except Exception:
+        _STORE = {}
+    return _STORE
+
 
 def _load(dataset: str) -> list[CachedTrace]:
-    """Return cached canonicalized traces for ``dataset``, ingesting on a miss.
+    """Return canonicalized traces for ``dataset``.
 
-    Ingest is bounded by MAX_TRACES and a timeout; results are cached under an
-    LRU of size MAX_DATASETS (design decisions 2 and 3).
+    Prefers the precomputed spine store (design decision 5); on a store miss,
+    ingests live, bounded by MAX_TRACES and a timeout and cached under an LRU of
+    size MAX_DATASETS (design decisions 2 and 3).
     """
     if dataset in _CACHE:
         _CACHE.move_to_end(dataset)
         return _CACHE[dataset]
+
+    store = _load_store()
+    if dataset in store:
+        cached = store[dataset]
+        _CACHE[dataset] = cached
+        _META[dataset] = {
+            "adapter": "spine-store",
+            "n_traces": len(cached),
+            "truncated": False,
+            **_stats(cached),
+        }
+        while len(_CACHE) > MAX_DATASETS:
+            evicted, _ = _CACHE.popitem(last=False)
+            _META.pop(evicted, None)
+        return cached
 
     traces, plan = ingest(dataset, limit=MAX_TRACES, timeout=INGEST_TIMEOUT_S)
     cached = [
@@ -165,10 +224,14 @@ class QueryRequest(BaseModel):
 
 @app.get("/datasets")
 def datasets() -> JSONResponse:
-    """Suggested datasets plus which ones are already warm in the cache."""
-    return JSONResponse(
-        {"suggested": list(SUGGESTED), "cached": list(_CACHE.keys()), "meta": _META}
-    )
+    """Suggested datasets plus which ones are already warm in the cache.
+
+    Store-backed datasets are surfaced first (they answer instantly), followed
+    by the curated suggestions, deduped in that order.
+    """
+    store_ids = list(_load_store().keys())
+    suggested = list(dict.fromkeys([*store_ids, *SUGGESTED]))
+    return JSONResponse({"suggested": suggested, "cached": list(_CACHE.keys()), "meta": _META})
 
 
 @app.post("/query")

@@ -47,3 +47,6 @@ output/
 notebooks/
 *.ipynb_checkpoints/
 case-studies/interface/
+
+# precomputed spine store lives in HF dataset midah/procgrep-spines, not git
+data/*.parquet
