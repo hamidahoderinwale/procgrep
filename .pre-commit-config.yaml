@@ -25,5 +25,6 @@ repos:
           - types-pyyaml
           - numpy>=1.24
           - typer>=0.12
+          - huggingface_hub>=0.23   # match CI's mypy env (discover.py imports it)
         args: ["--config-file=pyproject.toml"]
         files: ^src/procgrep/

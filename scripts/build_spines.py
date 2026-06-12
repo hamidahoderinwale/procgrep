@@ -123,7 +123,7 @@ def write_parquet(rows: list[dict[str, str]], out: str) -> pd.DataFrame:
     import pandas as pd
 
     df = pd.DataFrame(rows, columns=SPINE_COLUMNS)
-    df = df.astype({col: "string" for col in SPINE_COLUMNS})
+    df = df.astype(dict.fromkeys(SPINE_COLUMNS, "string"))
     df.to_parquet(out, index=False)
     print(f"[build_spines] wrote {len(df)} rows to {out}", file=sys.stderr)
     return df

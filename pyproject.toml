@@ -48,6 +48,7 @@ viz = [
 ]
 dev = [
     "umap-learn>=0.5.5",  # so the umap_project test runs in CI
+    "datasets>=2.19",  # so the from_hf tests can patch datasets.load_dataset
     "ruff>=0.6",
     "mypy>=1.11",
     "pre-commit>=3.7",

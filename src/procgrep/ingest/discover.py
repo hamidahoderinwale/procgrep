@@ -73,7 +73,7 @@ def discover(
         ImportError: ``huggingface_hub`` not installed.
     """
     try:
-        from huggingface_hub import list_datasets  # type: ignore[import-not-found]
+        from huggingface_hub import list_datasets
     except ImportError as exc:  # pragma: no cover
         raise ImportError(
             "procgrep.discover requires `huggingface_hub` (ships with `datasets`)."
