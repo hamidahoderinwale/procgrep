@@ -12,6 +12,18 @@ Two ingestion paths share the canonicalization machinery:
 Importing this package also imports the built-in adapters
 (:mod:`procgrep.ingest.adapters`), which self-register their format detectors
 with :mod:`procgrep.canonicalize` as a side effect of import.
+
+Design decisions (benefit / price):
+
+1. Two entry points, ``ingest``/``plan`` (auto-detect) and ``from_hf``
+   (explicit adapter). Benefit: zero-config ingestion of an unknown dataset,
+   plus a fast deterministic path when the format is already known. Price: two
+   surfaces to document, and the auto path can mis-sniff a novel format
+   (mitigated by ``plan(..., dry_run)`` previewing the inferred plan + atoms).
+2. Importing the package self-registers every built-in adapter. Benefit:
+   ``canonicalize`` and ``sniff`` work immediately, with no manual registration.
+   Price: an import-time side effect, and a new adapter is discovered only once
+   it is added to :mod:`procgrep.ingest.adapters` (explicit over autodiscovery).
 """
 
 from __future__ import annotations

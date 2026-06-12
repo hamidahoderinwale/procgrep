@@ -9,6 +9,17 @@ downloads. Feeds the curation catalog:
     curate(...)   -> redundancy stats      (on demand, the expensive step)
 
 The ``huggingface_hub`` library is an optional dependency, imported lazily.
+
+Design decisions (benefit / price):
+
+1. Query the Hub by keyword and author, ranked by downloads, rather than
+   curating a fixed list. Benefit: new trajectory datasets surface without code
+   changes. Price: keyword recall is imperfect, so a dataset that matches none
+   of the query terms is missed (mitigated by a broad ``DEFAULT_QUERIES`` set
+   plus an author crawl).
+2. ``huggingface_hub`` is imported lazily and is an optional dependency.
+   Benefit: the rest of procgrep installs and runs without it. Price: discovery
+   fails only when actually called without the dependency, not at import time.
 """
 
 from __future__ import annotations

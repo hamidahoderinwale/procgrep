@@ -18,6 +18,18 @@ Introspection uses the public datasets-server REST API
 features plus a handful of sample rows without materializing the dataset.
 ``--dry-run`` (see :func:`plan`) surfaces the inferred plan and a sample of
 canonical atoms so a human can verify the auto-detection before a large run.
+
+Design decisions (benefit / price):
+
+1. Sniff the schema instead of a hard-coded dataset to adapter table. Benefit:
+   a new trace format needs one :class:`Sniffer`, not per-dataset wiring, so it
+   generalizes to unseen datasets. Price: sniffing can be wrong or low-confidence,
+   which is why ``plan`` exposes ranked candidates and a dry-run for a human check.
+2. Cheap datasets-server sample first; stream a few untruncated rows only when
+   the sample is truncated or the guess is weak. Benefit: fast and download-free
+   in the common case. Price: the full-row probe needs the optional ``datasets``
+   library, and without it a trajectory stored as one large truncated cell can
+   defeat sniffing.
 """
 
 from __future__ import annotations
