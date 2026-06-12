@@ -122,6 +122,7 @@ class CachedTrace:
     spine: str  # " ".join(atoms) + " ", so `(edit ){5,}` style regexes match
     task: str = ""  # the task/instance the trajectory solved (trace.group), if known
     outcome: str = ""  # "resolved"/"unresolved"/"" from a genuine resolution label, when present
+    cot_tokens: int = 0  # approx tokens the model generated (reasoning volume), chars/4
 
 
 # dataset id -> traces. OrderedDict gives us LRU order cheaply.
@@ -157,10 +158,13 @@ def _load_store() -> dict[str, list[CachedTrace]]:
         for row in df.itertuples(index=False):
             spine = str(row.spine)
             atoms = tuple(spine.split())
-            # outcome column is optional: older stores lack it, so read defensively.
+            # outcome + cot_tokens are optional: older stores lack them, read defensively.
             outcome = str(getattr(row, "outcome", "") or "")
+            cot = int(getattr(row, "cot_tokens", 0) or 0)
             store.setdefault(str(row.dataset), []).append(
-                CachedTrace(str(row.trace_id), str(row.agent), atoms, spine, str(row.task), outcome)
+                CachedTrace(
+                    str(row.trace_id), str(row.agent), atoms, spine, str(row.task), outcome, cot
+                )
             )
         _STORE = store
     except Exception:
@@ -235,6 +239,7 @@ def _stats(traces: list[CachedTrace]) -> dict[str, float | int]:
         "diversity_bits": round(sum(ents) / len(ents), 2),
         "median_len": int(median(lens)),
         "median_cot": int(median(thinks)),
+        "median_cot_tokens": int(median([t.cot_tokens for t in traces])),
         "exact_dup_rate": round(1 - uniq / len(traces), 3),
         "n_models": len({t.agent for t in traces}),
     }
@@ -329,6 +334,7 @@ def query(req: QueryRequest) -> JSONResponse:
                     "diversity_bits",
                     "median_len",
                     "median_cot",
+                    "median_cot_tokens",
                     "exact_dup_rate",
                     "n_models",
                 )
@@ -344,6 +350,7 @@ def query(req: QueryRequest) -> JSONResponse:
                     "model": t.agent,
                     "task": t.task,
                     "outcome": t.outcome,
+                    "cot_tokens": t.cot_tokens,
                     "steps": len(t.atoms),
                     "atoms": list(t.atoms[:200]),
                 }
@@ -415,6 +422,8 @@ def _side_summary(traces: list[CachedTrace], label: str) -> dict:
                 "trace_id": t.trace_id,
                 "model": t.agent,
                 "task": t.task,
+                "outcome": t.outcome,
+                "cot_tokens": t.cot_tokens,
                 "steps": len(t.atoms),  # true length; atoms below are capped for rendering
                 "atoms": list(t.atoms[:CMP_TRAIL_CAP]),
             }

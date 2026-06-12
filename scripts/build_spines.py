@@ -70,7 +70,42 @@ DEFAULT_DATASETS: list[str] = list(
 )
 
 HF_REPO_ID: str = "midah/procgrep-spines"
-SPINE_COLUMNS: list[str] = ["dataset", "trace_id", "agent", "task", "spine", "outcome"]
+SPINE_COLUMNS: list[str] = [
+    "dataset",
+    "trace_id",
+    "agent",
+    "task",
+    "spine",
+    "outcome",
+    "cot_tokens",
+]
+
+# Roles whose turns carry the model's generated text (reasoning + action), across
+# the datasets' varying conventions. Tool/environment turns (user/observation) are
+# excluded; they are inputs, not the model's reasoning.
+_MODEL_ROLES: frozenset[str] = frozenset({"ai", "assistant", "agent", "model"})
+
+
+def _reasoning_tokens(metadata: object) -> int:
+    """Approximate tokens the model generated, summed over its turns.
+
+    chars/4 is a transparent proxy, not a real tokenizer, so it stays
+    dependency-free and is labeled approximate downstream. Returns 0 when no
+    model-role text is present (some datasets name roles differently).
+    """
+    if not isinstance(metadata, dict):
+        return 0
+    turns = metadata.get("messages") or metadata.get("trajectory") or []
+    if not isinstance(turns, list):
+        return 0
+    total = 0
+    for m in turns:
+        if isinstance(m, dict) and m.get("role") in _MODEL_ROLES:
+            txt = m.get("text") or m.get("content") or ""
+            if isinstance(txt, str):
+                total += len(txt) // 4
+    return total
+
 
 # Metadata keys that hold a genuine task-resolution label (gold pass/fail). We do
 # not treat exit_status as outcome: "submitted" means the agent produced a patch,
@@ -139,6 +174,7 @@ def build_rows(datasets: list[str], cap: int, timeout: float) -> list[dict[str, 
                     "task": str(t.group or ""),
                     "spine": " ".join(t.atoms) + " ",
                     "outcome": _outcome(t.metadata),
+                    "cot_tokens": _reasoning_tokens(t.metadata),
                 }
             )
         print(f"[build_spines] {dataset}: {len(traces)} traces", file=sys.stderr)

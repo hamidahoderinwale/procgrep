@@ -18,6 +18,7 @@ function prettyModel(a){let m=String(a).replace(/^(swe-agent|agentless|moatless|
   return (m.replace(/-/g,' ').trim())||String(a);}
 function prettyTask(t){if(!t)return '';const m=String(t).match(/^(.+?)__(.+?)-(\d+)$/);return m?`${m[1]}/${m[2]} #${m[3]}`:String(t);}
 let HIDE_NOISE = false;
+const fmtTok = (n) => (n >= 1000 ? (n / 1000).toFixed(1) + "k" : String(n || 0));
 let DSETS = [];                 // store-backed dataset ids (shared by query + compare)
 let OUTCOME_DS = [];            // datasets that carry a genuine resolution label
 let QTIMER;                     // debounce handle for live-as-you-type
@@ -102,7 +103,7 @@ async function run(pattern) {
   const top = r.by_model[0];
   const s = r.stats || {};
   const statline = s.n_models
-    ? `<div class="dim" style="margin-bottom:14px">diversity ${s.diversity_bits} bits · median ${s.median_len} steps · CoT ${s.median_cot} think-steps · ${(s.exact_dup_rate * 100).toFixed(0)}% exact-duplicate · ${s.n_models} models</div>`
+    ? `<div class="dim" style="margin-bottom:14px">diversity ${s.diversity_bits} bits · median ${s.median_len} steps · CoT ${s.median_cot} steps${s.median_cot_tokens ? `, ~${fmtTok(s.median_cot_tokens)} tokens` : ""} · ${(s.exact_dup_rate * 100).toFixed(0)}% exact-duplicate · ${s.n_models} models</div>`
     : "";
   $("res").innerHTML =
     `<div style="font-size:15px;margin:4px 0"><b>${r.n_hits}</b> / ${r.n_traces} traces match <b>/${r.pattern}/</b></div>
@@ -274,7 +275,7 @@ function openTraceData(t, ds, color) {
   sheet.innerHTML =
     `<div class="card"><span class="x" onclick="rpClose()">close ✕</span>
      <div style="font-size:15px"><b>${prettyModel(t.model)}</b>${prob ? ` · ${prettyTask(prob)}` : ""}${oc}</div>
-     <div class="dim" style="margin:2px 0 6px">${t.steps ?? t.atoms.length} steps · structural trail, no raw text stored · press play to replay</div>
+     <div class="dim" style="margin:2px 0 6px">${t.steps ?? t.atoms.length} steps${t.cot_tokens ? ` · ~${fmtTok(t.cot_tokens)} reasoning tokens` : ""} · structural trail, no raw text stored · press play to replay</div>
      <div id="rp-mini" style="margin:2px 0 8px"></div>
      <div class="rpbar">
        <span class="rpbtn" id="rp-play" onclick="rpToggle()">▶ play</span>
@@ -339,7 +340,7 @@ function trailStack(side) {
   const ds = CMP.axis === "eval" ? (side === "left" ? CMP.left : CMP.right) : CMP.ds;
   return `<div class="cmpcol">
     <div class="cmphead">${prettyModel(col.label)} <a class="dim src" href="https://huggingface.co/datasets/${ds}" target="_blank" rel="noopener">source ↗</a></div>
-    <div class="cmpstat">${col.n.toLocaleString()} traces · median ${s.median_len} steps · ${s.median_cot} reasoning · diversity ${s.diversity_bits} bits</div>
+    <div class="cmpstat">${col.n.toLocaleString()} traces · median ${s.median_len} steps · ${s.median_cot} reasoning${s.median_cot_tokens ? `, ~${fmtTok(s.median_cot_tokens)} tok` : ""} · diversity ${s.diversity_bits} bits</div>
     ${col.trails.map((t, i) => { const prob = t.task || t.trace_id || ""; return `<div class="trow" onclick="openTrace('${side}',${i})"><span class="tlen">${t.steps} st</span><span class="tname dim" title="${prob}">${prettyTask(prob)}</span>${barcode(t.atoms, c)}</div>`; }).join("")}</div>`;
 }
 
