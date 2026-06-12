@@ -49,8 +49,8 @@ viz = [
 dev = [
     "umap-learn>=0.5.5",  # so the umap_project test runs in CI
     "datasets>=2.19",  # so the from_hf tests can patch datasets.load_dataset
-    "ruff>=0.6",
-    "mypy>=1.11",
+    "ruff==0.15.17",  # pinned to match .pre-commit-config so local lint == CI lint
+    "mypy==1.18.2",   # pinned likewise (avoid local/CI linter version skew)
     "pre-commit>=3.7",
     "pytest>=8.0",
     "pytest-cov>=5.0",

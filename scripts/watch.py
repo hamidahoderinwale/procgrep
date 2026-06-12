@@ -143,7 +143,7 @@ def _make_handler(bus: _Bus, args: argparse.Namespace):
         def log_message(self, *a: object) -> None:  # quiet
             return
 
-        def do_GET(self) -> None:  # noqa: N802 (BaseHTTPRequestHandler API)
+        def do_GET(self) -> None:
             if self.path == "/events":
                 if not started.is_set():
                     started.set()
