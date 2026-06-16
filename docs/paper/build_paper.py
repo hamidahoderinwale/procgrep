@@ -261,7 +261,7 @@ PIPE_JS = r"""
   }
   mount.innerHTML=`<div class="ptabs">${stages.map((s,i)=>`<button class="ptab" data-i="${i}">${i+1}. ${s.t}</button>`).join('')}</div>`+
     `<div id="pipe-body" class="pbody"></div><div id="pipe-desc" class="pdim" style="margin-top:10px"></div>`+
-    `<div class="pnav"><button id="pplay">❚❚ pause</button><button id="pprev">‹ prev</button><button id="pnext">next ›</button></div>`;
+    `<div class="pnav"><button id="pplay">❚❚ pause</button></div>`;
   // GIF-like autoplay: loop the stages; any manual control pauses it.
   let timer=null, playing=false;
   function play(){playing=true;mount.querySelector('#pplay').textContent='❚❚ pause';
@@ -269,8 +269,6 @@ PIPE_JS = r"""
   function pause(){playing=false;mount.querySelector('#pplay').textContent='▶ play';
     if(timer){clearInterval(timer);timer=null;}}
   mount.querySelector('.ptabs').addEventListener('click',e=>{const i=e.target.dataset.i;if(i!=null){pause();st=+i;render();}});
-  mount.querySelector('#pprev').onclick=()=>{pause();st=(st+stages.length-1)%stages.length;render();};
-  mount.querySelector('#pnext').onclick=()=>{pause();st=(st+1)%stages.length;render();};
   mount.querySelector('#pplay').onclick=()=>{playing?pause():play();};
   // start playing only when scrolled into view, so it's not spinning off-screen
   render();
@@ -311,8 +309,10 @@ font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
 .topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.92);backdrop-filter:blur(6px);
 font-family:var(--mono);font-size:13px}
 .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
-.topbar .in{max-width:1080px;margin:0 auto;padding:11px 32px;display:flex;justify-content:space-between;align-items:baseline}
-.topbar .mark{font-weight:600}.topbar a{color:var(--olive);text-decoration:none;margin-left:18px}
+.topbar .in{max-width:1080px;margin:0 auto;padding:11px 32px;display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}
+.topbar .mark{font-weight:600}
+.topbar nav{display:flex;flex-wrap:wrap;gap:8px 18px;align-items:baseline}
+.topbar a{color:var(--olive);text-decoration:none}
 .topbar a:hover{color:var(--ink)}
 :root{--col:1020px;--gutter:300px}
 .hero{max-width:var(--col);margin:0 auto;padding:64px var(--gutter) 8px 32px}
@@ -426,7 +426,7 @@ math{font-family:var(--serif)}
 .term .tip-src a{color:#e9b8a6}
 .foot{max-width:var(--col);margin:40px auto 0;padding:24px var(--gutter) 70px 32px;
 font-family:var(--mono);font-size:12px;color:var(--olive)}
-@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}}
+@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}.topbar .in{padding:10px 16px}.topbar nav{gap:6px 14px}}
 /* code cards — light, Cursor-blog style (NOT a dark terminal theme) */
 .codecard{margin:24px 0;border:1px solid var(--rule);border-radius:7px;background:#fff;
   overflow:hidden;box-shadow:0 1px 2px rgba(20,17,14,.04)}
