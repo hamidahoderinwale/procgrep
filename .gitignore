@@ -53,3 +53,7 @@ data/*.parquet
 
 # Claude Code internal (agent worktrees, etc.)
 .claude/
+
+# secrets
+.env
+.env.local
