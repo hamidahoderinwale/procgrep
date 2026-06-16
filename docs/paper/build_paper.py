@@ -260,22 +260,22 @@ PIPE_JS = r"""
     mount.querySelectorAll('.ptab').forEach((x,i)=>x.classList.toggle('on',i===st));
   }
   mount.innerHTML=`<div class="ptabs">${stages.map((s,i)=>`<button class="ptab" data-i="${i}">${i+1}. ${s.t}</button>`).join('')}</div>`+
-    `<div id="pipe-body" class="pbody"></div><div id="pipe-desc" class="pdim" style="margin-top:10px"></div>`+
-    `<div class="pnav"><button id="pplay">❚❚ pause</button></div>`;
-  // GIF-like autoplay: loop the stages; any manual control pauses it.
-  let timer=null, playing=false;
-  function play(){playing=true;mount.querySelector('#pplay').textContent='❚❚ pause';
-    timer=setInterval(()=>{st=(st+1)%stages.length;render();},2000);}
-  function pause(){playing=false;mount.querySelector('#pplay').textContent='▶ play';
-    if(timer){clearInterval(timer);timer=null;}}
-  mount.querySelector('.ptabs').addEventListener('click',e=>{const i=e.target.dataset.i;if(i!=null){pause();st=+i;render();}});
-  mount.querySelector('#pplay').onclick=()=>{playing?pause():play();};
-  // start playing only when scrolled into view, so it's not spinning off-screen
+    `<div id="pipe-body" class="pbody"></div><div id="pipe-desc" class="pdim" style="margin-top:10px"></div>`;
+  // Auto-play through the stages once when scrolled into view, then rest on the
+  // last stage. The stage tabs are the only control; clicking one stops the run
+  // and jumps there, so no transport buttons are needed.
+  let timer=null, hasPlayed=false;
+  function stop(){if(timer){clearInterval(timer);timer=null;}}
+  function playOnce(){
+    hasPlayed=true; stop();
+    timer=setInterval(()=>{if(st>=stages.length-1){stop();return;}st++;render();},2000);
+  }
+  mount.querySelector('.ptabs').addEventListener('click',e=>{const i=e.target.dataset.i;if(i!=null){stop();st=+i;render();}});
   render();
   if('IntersectionObserver' in window){
-    const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!playing&&!timer)play();else if(!e.isIntersecting&&playing)pause();});},{threshold:0.3});
+    const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!hasPlayed)playOnce();});},{threshold:0.3});
     io.observe(mount);
-  } else play();
+  } else playOnce();
 })();
 """
 
@@ -402,9 +402,6 @@ math{font-family:var(--serif)}
 .pwrap{display:inline-block;border:2px solid;border-radius:5px;padding:2px}
 .pvocab{font-family:var(--mono);font-size:14px}.pvrow{margin:7px 0}
 .pdim{font-family:var(--mono);font-size:12px;color:var(--olive);text-align:center}
-.pnav{display:flex;gap:8px;justify-content:center;margin-top:12px}
-.pnav button{font-family:var(--mono);font-size:12px;padding:4px 14px;border:1px solid var(--rule);background:#fff;cursor:pointer;border-radius:2px}
-.pnav button:hover{border-color:var(--ink)}
 /* margin citations (Tufte sidenotes) — float into the right whitespace on wide screens */
 .sidenote{float:right;clear:right;width:250px;margin:.2em -288px 1.2em 0;
   font-family:var(--mono);font-size:10.5px;line-height:1.5;color:var(--olive)}
