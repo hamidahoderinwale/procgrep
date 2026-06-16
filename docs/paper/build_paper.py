@@ -775,12 +775,13 @@ def main() -> None:
 <div class="progress" id="progress"></div>
 <div class="topbar"><div class="in"><span class="mark">procgrep</span>
 <nav><a href="#showcase">demo</a><a href="#refs">references</a>
-<a href="explorer/">explorer ↗</a><a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a></nav></div></div>
+<a href="explorer/">explorer ↗</a><a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a><a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a></nav></div></div>
 
 <div class="hero">
   <h1>{html.escape(TITLE)}</h1>
   <div class="sub">{html.escape(SUBTITLE)}</div>
   <div class="byline"><span>{html.escape(AUTHOR)}</span>
+    <a href="https://arxiv.org/abs/2606.16988">Paper on arXiv ↗</a>
     <a href="https://github.com/hamidahoderinwale/procgrep">ProcGrep on GitHub ↗</a></div>
 </div>
 
