@@ -12,6 +12,7 @@ from procgrep.canonicalize import get_adapter
 from procgrep.ingest.adapters.claude_code import (
     ATOM_PROMPT_AI,
     claude_code_adapter,
+    summarize_transcript,
 )
 from procgrep.types import (
     ATOM_EDIT,
@@ -99,3 +100,25 @@ def test_empty_and_malformed_records_are_lenient() -> None:
 
 def test_adapter_is_registered_under_claude_code() -> None:
     assert get_adapter("claude-code") is claude_code_adapter
+
+
+def test_summarize_counts_turns_words_tools_without_storing_text() -> None:
+    record = {
+        "events": [
+            _user_prompt("fix the bug now"),  # 4 words
+            _assistant(("Read", ""), ("Edit", "")),
+            {"type": "assistant", "message": {"content": [{"type": "text", "text": "I will look"}]}},
+            {"type": "file-history-snapshot"},
+            _tool_result(),  # not a human turn
+        ]
+    }
+    s = summarize_transcript(record)
+    assert s["human_turns"] == 1
+    assert s["prompt_words"] == 4
+    assert s["tool_calls"] == 2
+    assert s["tools"] == {"Read": 1, "Edit": 1}
+    assert s["reasoning_words"] == 3
+    assert s["file_snapshots"] == 1
+    assert s["prompt_words_per_turn"] == 4.0
+    # only counts are retained -- no message text leaks into the summary
+    assert "fix the bug now" not in str(s)

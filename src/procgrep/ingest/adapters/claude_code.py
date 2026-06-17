@@ -47,6 +47,7 @@ Design decisions:
 
 from __future__ import annotations
 
+import collections
 import json
 import re
 from collections.abc import Mapping
@@ -147,6 +148,78 @@ def claude_code_adapter(record: Mapping[str, Any]) -> AtomSequence:
     return _MAP({"events": _flatten(record)})
 
 
+def _words_chars(text: str) -> tuple[int, int]:
+    return len(text.split()), len(text)
+
+
+def summarize_transcript(record: Mapping[str, Any]) -> dict[str, Any]:
+    """Cheaply-gleanable per-session metadata, counts only -- never the text.
+
+    Reads message text solely to *count* it (words/chars of human prompts and of
+    assistant reasoning), then discards it, so a session can be summarized
+    without retaining its content. Also surfaces turn counts, per-tool call
+    counts, file-snapshot count, models used, and verbosity-per-turn -- the
+    raw material for verbosity/groundedness and autonomy reads.
+    """
+    lines = record.get("events")
+    if not isinstance(lines, list):
+        return {}
+    out: dict[str, Any] = {
+        "human_turns": 0,
+        "assistant_turns": 0,
+        "prompt_words": 0,
+        "prompt_chars": 0,
+        "reasoning_words": 0,
+        "reasoning_chars": 0,
+        "tool_calls": 0,
+        "file_snapshots": 0,
+    }
+    tools: collections.Counter[str] = collections.Counter()
+    models: set[str] = set()
+    for line in lines:
+        if not isinstance(line, Mapping):
+            continue
+        kind = line.get("type")
+        message = line.get("message")
+        content = message.get("content") if isinstance(message, Mapping) else None
+        model = message.get("model") if isinstance(message, Mapping) else None
+        if model:
+            models.add(str(model))
+        if kind == "user" and _is_human_prompt(content):
+            out["human_turns"] += 1
+            if isinstance(content, str):
+                text = content
+            elif isinstance(content, list):
+                text = " ".join(str(b.get("text", "")) for b in content if isinstance(b, Mapping))
+            else:
+                text = ""
+            words, chars = _words_chars(text)
+            out["prompt_words"] += words
+            out["prompt_chars"] += chars
+        elif kind == "assistant" and isinstance(content, list):
+            out["assistant_turns"] += 1
+            for block in content:
+                if not isinstance(block, Mapping):
+                    continue
+                btype = block.get("type")
+                if btype in ("text", "thinking"):
+                    words, chars = _words_chars(str(block.get("text") or block.get("thinking") or ""))
+                    out["reasoning_words"] += words
+                    out["reasoning_chars"] += chars
+                elif btype == "tool_use":
+                    out["tool_calls"] += 1
+                    tools[str(block.get("name") or "")] += 1
+        elif kind == "file-history-snapshot":
+            out["file_snapshots"] += 1
+    out["tools"] = dict(tools)
+    out["models"] = sorted(models)
+    if out["human_turns"]:
+        out["prompt_words_per_turn"] = round(out["prompt_words"] / out["human_turns"], 1)
+    if out["assistant_turns"]:
+        out["reasoning_words_per_turn"] = round(out["reasoning_words"] / out["assistant_turns"], 1)
+    return out
+
+
 def load_claude_transcript(path: str | Path) -> dict[str, Any]:
     """Read a ``.jsonl`` transcript into a single session record.
 
@@ -168,7 +241,9 @@ def load_claude_transcript(path: str | Path) -> dict[str, Any]:
     trace_id = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), Path(path).stem)
     cwd = next((str(line["cwd"]) for line in lines if line.get("cwd")), "")
     agent = Path(cwd).name or "unknown"
-    return {"trace_id": trace_id, "agent": agent, "events": lines}
+    record: dict[str, Any] = {"trace_id": trace_id, "agent": agent, "events": lines}
+    record["metadata"] = summarize_transcript(record)
+    return record
 
 
 register_adapter("claude-code", claude_code_adapter, overwrite=True)
@@ -178,4 +253,5 @@ __all__ = [
     "CLAUDE_RULES",
     "claude_code_adapter",
     "load_claude_transcript",
+    "summarize_transcript",
 ]
