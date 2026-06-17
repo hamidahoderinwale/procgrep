@@ -22,6 +22,7 @@ from __future__ import annotations
 
 from procgrep.ingest.adapters import (
     agentless,
+    claude_code,
     cursor_companion,
     dars,
     gumtree,
@@ -35,6 +36,7 @@ from procgrep.ingest.adapters import (
 
 __all__ = [
     "agentless",
+    "claude_code",
     "cursor_companion",
     "dars",
     "gumtree",
