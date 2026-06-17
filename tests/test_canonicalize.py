@@ -5,10 +5,14 @@ from __future__ import annotations
 import pytest
 
 from procgrep.canonicalize import (
+    EventRule,
     canonicalize,
+    field_in,
+    field_truthy,
     get_adapter,
     list_adapters,
     make_action_adapter,
+    make_event_adapter,
     register_adapter,
 )
 from procgrep.types import ATOM_EDIT, ATOM_OTHER, ATOM_RUN_TEST, ATOM_THINK
@@ -87,3 +91,39 @@ def test_canonicalize_end_to_end() -> None:
     assert traces[0].group == "cell-A"
     assert traces[1].group is None
     assert traces[0].atoms == [ATOM_EDIT, ATOM_RUN_TEST]
+
+
+# --- make_event_adapter (feature-based, multi-atom) -------------------------
+
+
+def test_make_event_adapter_decomposes_dedupes_and_falls_back() -> None:
+    rules = [
+        EventRule(field_in("kind", {"ask"}), ("prompt_ai",)),
+        EventRule(field_truthy("changed"), (ATOM_EDIT,)),
+        EventRule(field_truthy("changed"), (ATOM_EDIT,)),  # duplicate -> collapsed
+    ]
+    adapter = make_event_adapter(rules=rules, events_path="steps", default_atom=ATOM_OTHER)
+    record = {
+        "steps": [
+            {"kind": "ask", "changed": True},  # prompt_ai + edit (deduped)
+            {"kind": "noop"},  # no rule -> default
+        ]
+    }
+    assert adapter(record) == ["prompt_ai", ATOM_EDIT, ATOM_OTHER]
+
+
+def test_make_event_adapter_is_lenient_on_malformed_records() -> None:
+    adapter = make_event_adapter(rules=[])
+    assert adapter({"events": "not a list"}) == []
+    assert adapter({}) == []
+    assert adapter({"events": None}) == []
+
+
+def test_make_event_adapter_normalize_hook_flattens_before_rules() -> None:
+    rules = [EventRule(field_in("type", {"edit"}), (ATOM_EDIT,))]
+
+    def lift_inner(event: dict) -> dict:  # type: ignore[type-arg]
+        return {**event.get("inner", {}), **{k: v for k, v in event.items() if k != "inner"}}
+
+    adapter = make_event_adapter(rules=rules, normalize=lift_inner)  # type: ignore[arg-type]
+    assert adapter({"events": [{"inner": {"type": "edit"}}]}) == [ATOM_EDIT]

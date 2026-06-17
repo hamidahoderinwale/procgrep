@@ -156,3 +156,32 @@ def test_parse_details_non_string_non_dict_yields_empty() -> None:
 def test_adapter_is_registered_under_cursor_companion() -> None:
     # Importing the module self-registers the adapter; the registry returns it.
     assert get_adapter("cursor-companion") is cursor_companion_adapter
+
+
+# --- feature-based decomposition (composite events) -------------------------
+
+
+def test_prompt_with_edit_decomposes_into_prompt_then_edit() -> None:
+    record = {"events": [{"type": "prompt_with_edit", "lines_added": 12}]}
+    assert cursor_companion_adapter(record) == [ATOM_PROMPT_AI, ATOM_EDIT]
+
+
+def test_prompt_with_edit_decomposes_without_line_counts() -> None:
+    # the type alone implies an edit, even when the exporter omits line counts
+    record = {"events": [{"type": "prompt_with_edit"}]}
+    assert cursor_companion_adapter(record) == [ATOM_PROMPT_AI, ATOM_EDIT]
+
+
+def test_context_files_imply_read_before_prompt() -> None:
+    record = {"events": [{"type": "prompt", "context_files": ["a.py", "b.py"]}]}
+    assert cursor_companion_adapter(record) == [ATOM_READ_FILE, ATOM_PROMPT_AI]
+
+
+def test_line_counts_imply_edit_on_any_type() -> None:
+    record = {"events": [{"type": "prompt", "lines_removed": 3}]}
+    assert cursor_companion_adapter(record) == [ATOM_PROMPT_AI, ATOM_EDIT]
+
+
+def test_edit_type_with_line_counts_yields_single_edit() -> None:
+    record = {"events": [{"type": "file_save", "lines_added": 4}]}
+    assert cursor_companion_adapter(record) == [ATOM_EDIT]

@@ -1,56 +1,63 @@
 """Cursor companion trace adapter.
 
-Converts traces exported from the bidirect-align-dev companion service
-(https://github.com/Taste-AI/bidirect-align-dev) into procgrep atoms.
+Converts traces exported from the cursor-telemetry companion service
+(https://github.com/hamidahoderinwale/cursor-telemetry) into procgrep atoms.
+Run that companion alongside Cursor and hit its ``/api/export/procgrep``
+endpoint to capture your own human+AI session traces. cursor-companion is a
+separate project woven in only as an ingest adapter -- an exemplar trace
+source, not part of procgrep's core.
 
-The companion captures human+AI sessions from Cursor IDE: code edits,
-prompts sent to the AI, terminal commands, and file reads. This adapter
-maps those event types onto the canonical atom vocabulary, extending it
-with ``prompt_ai`` for AI prompt events — the one action type that has
-no equivalent in autonomous-agent traces.
+The companion captures human+AI Cursor sessions: AI prompts, code edits,
+terminal commands, and file reads/searches. This adapter is defined
+declaratively as feature-based rules over `make_event_adapter`, so a single
+export event decomposes into the atoms its fields imply. A prompt turn that
+also edited code becomes ``prompt_ai`` then ``edit`` -- a decomposition a
+one-type-one-atom mapping cannot express, and the reason the mapping is by
+event *features* rather than a pre-classified type string.
 
 Trace shape produced by the companion's ``/api/export/procgrep`` endpoint::
 
     {
       "trace_id": "session-abc123",
-      "agent": "developer-fingerprint",     # workspace hash or user id
-      "group": "before_ai" | "after_ai",    # optional, for longitudinal splits
+      "agent": "developer-fingerprint",
+      "group": "before_ai" | "after_ai",      # optional, for longitudinal splits
       "events": [
-        {"type": "code_change",  "file_path": "src/utils.ts", "timestamp": 1234567890, "prompt_id": "p1"},
-        {"type": "prompt",       "text": "refactor this function", "timestamp": 1234567891},
-        {"type": "terminal",     "command": "npm test", "timestamp": 1234567892},
-        {"type": "file_open",    "file_path": "src/api.ts", "timestamp": 1234567893},
+        {"type": "prompt_with_edit", "lines_added": 12, "context_files": ["a.ts"]},
+        {"type": "prompt",           "text": "refactor this"},
+        {"type": "terminal",         "command": "npm test"},
+        {"type": "file_open",        "file_path": "src/api.ts"},
         ...
       ]
     }
 
-Atom mapping:
+Atom mapping (by event features, additive, in order):
 
-    Companion event type            → Atom
-    ─────────────────────────────────────────────────────
-    code_change / file_change /
-    entry_created / edit / file_save → edit
-    prompt / ai_prompt / llm_prompt  → prompt_ai  (new atom, human→AI turn)
-    terminal / terminal_command /
-    command_run                      → run_test    (nearest canonical proxy)
-    file_open / file_read            → read_file
-    file_search / search / grep      → search_repo
-    (unknown)                        → other
+    file_search / search / grep            -> search_repo
+    file_open / file_read / context_files  -> read_file
+    prompt / *_prompt / prompt_with_edit   -> prompt_ai   (new atom, human->AI turn)
+    edit types / prompt_with_edit /
+      lines added or removed                -> edit
+    terminal / command_run                  -> run_test    (nearest canonical proxy)
+    (no rule matches)                        -> other
 
 Design decisions:
 
-- ``prompt_ai`` is registered as a first-class atom rather than aliased to
-  ``think`` because it is directionally opposite: ``think`` is the agent
-  reasoning before an action; ``prompt_ai`` is the human handing off to the
-  AI. Keeping them distinct lets fingerprinting separate AI-heavy from
-  manual sessions.
+- ``prompt_ai`` is a first-class atom, not aliased to ``think``: ``think`` is
+  the agent reasoning before an action; ``prompt_ai`` is the human handing off
+  to the AI. Keeping them distinct lets fingerprinting separate AI-heavy from
+  manual work.
 
-- Terminal commands are mapped to ``run_test`` because in practice they are
-  predominantly test/build commands. This matches the SWE-agent convention
-  and keeps the alphabet shared.
+- Edit-ness is derived from event *fields* (``lines_added`` / ``lines_removed``)
+  as well as the type, so the exporter need not pre-classify a turn as an edit;
+  a composite ``prompt_with_edit`` turn yields ``prompt_ai`` then ``edit``.
 
-- ``file_save`` without a content diff maps to ``edit`` (intent is clear
-  even if the change is zero-byte) rather than ``other``.
+- Terminal commands map to ``run_test`` because in practice they are
+  predominantly test/build commands; this matches the SWE-agent convention and
+  keeps the alphabet shared.
+
+- A nested ``details`` blob is flattened into top-level fields by ``_normalize``
+  before the generic rules run, keeping the companion's event shape out of the
+  shared mapping machinery.
 """
 
 from __future__ import annotations
@@ -59,46 +66,55 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
-from procgrep.canonicalize import register_adapter
+from procgrep.canonicalize import (
+    EventRule,
+    any_of,
+    field_in,
+    field_truthy,
+    make_event_adapter,
+    register_adapter,
+)
 from procgrep.types import (
     ATOM_EDIT,
-    ATOM_OTHER,
     ATOM_READ_FILE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
     Atom,
-    AtomSequence,
 )
 
 ATOM_PROMPT_AI: Atom = "prompt_ai"
-"""Human→AI turn — the developer sends a prompt to the Cursor AI."""
+"""Human->AI turn -- the developer sends a prompt to the Cursor AI."""
 
-_EVENT_TYPE_ATOM: dict[str, Atom] = {
-    # edits
-    "code_change": ATOM_EDIT,
-    "file_change": ATOM_EDIT,
-    "entry_created": ATOM_EDIT,
-    "edit": ATOM_EDIT,
-    "file_save": ATOM_EDIT,
-    # AI prompts
-    "prompt": ATOM_PROMPT_AI,
-    "ai_prompt": ATOM_PROMPT_AI,
-    "llm_prompt": ATOM_PROMPT_AI,
-    # terminal
-    "terminal": ATOM_RUN_TEST,
-    "terminal_command": ATOM_RUN_TEST,
-    "command_run": ATOM_RUN_TEST,
-    # file reads / navigation
-    "file_open": ATOM_READ_FILE,
-    "file_read": ATOM_READ_FILE,
-    # search
-    "file_search": ATOM_SEARCH_REPO,
-    "search": ATOM_SEARCH_REPO,
-    "grep": ATOM_SEARCH_REPO,
-}
+_EDIT_TYPES = {"code_change", "file_change", "entry_created", "edit", "file_save"}
+_PROMPT_TYPES = {"prompt", "ai_prompt", "llm_prompt", "prompt_with_edit"}
+_READ_TYPES = {"file_open", "file_read"}
+_SEARCH_TYPES = {"file_search", "search", "grep"}
+_TERMINAL_TYPES = {"terminal", "terminal_command", "command_run"}
+
+# Feature rules, evaluated in order; a composite event fires several of them.
+# Ordered exploration -> handoff -> generation, so an edit-with-context prompt
+# reads as read_file, prompt_ai, edit. prompt_with_edit triggers both the
+# prompt and the edit rule, so it decomposes even when line counts are absent.
+CURSOR_RULES: tuple[EventRule, ...] = (
+    EventRule(field_in("type", _SEARCH_TYPES), (ATOM_SEARCH_REPO,)),
+    EventRule(
+        any_of(field_in("type", _READ_TYPES), field_truthy("context_files")),
+        (ATOM_READ_FILE,),
+    ),
+    EventRule(field_in("type", _PROMPT_TYPES), (ATOM_PROMPT_AI,)),
+    EventRule(
+        any_of(
+            field_in("type", _EDIT_TYPES | {"prompt_with_edit"}),
+            field_truthy("lines_added", "lines_removed"),
+        ),
+        (ATOM_EDIT,),
+    ),
+    EventRule(field_in("type", _TERMINAL_TYPES), (ATOM_RUN_TEST,)),
+)
 
 
 def _parse_details(raw: Any) -> dict[str, Any]:
+    """Parse an event's ``details`` into a dict; tolerate JSON strings and junk."""
     if isinstance(raw, dict):
         return raw
     if isinstance(raw, str):
@@ -110,31 +126,21 @@ def _parse_details(raw: Any) -> dict[str, Any]:
     return {}
 
 
-def cursor_companion_adapter(record: Mapping[str, Any]) -> AtomSequence:
-    """Convert one companion session record into an atom sequence.
+def _normalize(event: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Flatten a nested ``details`` blob into top-level fields.
 
-    Events are emitted in their stored order (the companion persists
-    events in arrival order; callers should sort by timestamp before
-    exporting if strict chronology is required).
+    Top-level non-empty values win; ``details`` fills the gaps, so an event
+    carrying only ``details.type`` still classifies. This keeps the companion's
+    nested shape out of the generic rule machinery.
     """
-    events = record.get("events") or []
-    if not isinstance(events, list):
-        return []
-
-    atoms: AtomSequence = []
-    for event in events:
-        if not isinstance(event, Mapping):
-            continue
-        raw_type = str(event.get("type") or "").lower()
-        details = _parse_details(event.get("details"))
-        # details.type can override top-level type for nested events
-        if not raw_type:
-            raw_type = str(details.get("type") or "").lower()
-        atoms.append(_EVENT_TYPE_ATOM.get(raw_type, ATOM_OTHER))
-
-    return atoms
+    merged: dict[str, Any] = dict(_parse_details(event.get("details")))
+    for key, value in event.items():
+        if value not in (None, ""):
+            merged[key] = value
+    return merged
 
 
+cursor_companion_adapter = make_event_adapter(rules=CURSOR_RULES, normalize=_normalize)
 register_adapter("cursor-companion", cursor_companion_adapter, overwrite=True)
 
-__all__ = ["ATOM_PROMPT_AI", "cursor_companion_adapter"]
+__all__ = ["ATOM_PROMPT_AI", "CURSOR_RULES", "cursor_companion_adapter"]
