@@ -222,11 +222,20 @@ def summarize_transcript(record: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
-def load_claude_transcript(path: str | Path) -> dict[str, Any]:
+def _anon_id(value: str, length: int = 8) -> str:
+    """Stable truncated SHA-256 of *value*. Not reversible."""
+    import hashlib
+    return hashlib.sha256(value.encode()).hexdigest()[:length]
+
+
+def load_claude_transcript(path: str | Path, *, anonymize: bool = True) -> dict[str, Any]:
     """Read a ``.jsonl`` transcript into a single session record.
 
-    The session id and the working directory's basename (a workspace/developer
-    proxy) are pulled from the first line that carries them.
+    Args:
+        anonymize: When True (default), replace the session id and workspace
+            path with stable hashes so neither appears in exported records or
+            published outputs. Set False only for local debugging — never
+            commit or share the result.
     """
     lines: list[dict[str, Any]] = []
     with open(path) as handle:
@@ -240,9 +249,14 @@ def load_claude_transcript(path: str | Path) -> dict[str, Any]:
                 continue
             if isinstance(parsed, dict):
                 lines.append(parsed)
-    trace_id = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), Path(path).stem)
+    raw_id = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), Path(path).stem)
     cwd = next((str(line["cwd"]) for line in lines if line.get("cwd")), "")
-    agent = Path(cwd).name or "unknown"
+    if anonymize:
+        trace_id = _anon_id(raw_id)
+        agent = _anon_id(cwd or raw_id)
+    else:
+        trace_id = raw_id
+        agent = Path(cwd).name or "unknown"
     record: dict[str, Any] = {"trace_id": trace_id, "agent": agent, "events": lines}
     record["metadata"] = summarize_transcript(record)
     return record

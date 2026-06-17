@@ -248,8 +248,9 @@ pip install procgrep[dev]      # development dependencies
 ## Notes
 
 - Python 3.10+. No LLM SDK required.
-- Built-in adapters for SWE-agent, mini-swe-agent, OpenHands, Agentless, DARS, Moatless, SWE-smith, GumTree, and ReAct-text trajectories.
+- Built-in adapters: SWE-agent, mini-swe-agent, OpenHands, Agentless, DARS, Moatless, SWE-smith, GumTree, ReAct-text (autonomous scaffolds); `cursor-companion` and `claude-code` (interactive scaffolds — human+AI sessions).
 - All random operations take a `seed` argument; default is `0`.
 - `ruff` and `mypy --strict` clean.
+- **Privacy model for interactive adapters.** `cursor-companion` and `claude-code` ingest traces that contain personal data (workspace paths, file names, prompt text). Neither adapter reads prompt text. `load_claude_transcript` hashes session ids and workspace paths by default (`anonymize=True`). The companion's export endpoint hashes all identifying fields server-side. Only action structure — atom sequences, turn counts, edit volume — crosses the ingest boundary.
 
 See [METRICS.md](METRICS.md) for the full list of measurements, [STUDIES.md](STUDIES.md) for worked case studies, and [FAQ.md](FAQ.md) for common questions. Runnable demos are in [`examples/`](examples/); the live-explorer backend is in [`space/`](space/); the essay, figures, and reference pages are in [`docs/`](docs/).

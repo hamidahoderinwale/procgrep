@@ -12,8 +12,9 @@ and reports two things:
    means tight, interleaved steering.
 
 Only the action structure is read (tool names, a Bash command, event types) --
-never message text -- so a transcript can be fingerprinted without exposing its
-content.
+never message text. Session ids and workspace paths are hashed before they
+reach the Trace (``load_claude_transcript`` defaults to ``anonymize=True``),
+so neither appears in output or shared results.
 
 Usage:
     python examples/claude_code_fingerprint.py                 # your local transcripts
@@ -71,11 +72,13 @@ def _load_traces(path: str) -> list[Trace]:
     files += sorted(glob.glob(str(Path(path).expanduser() / "*.jsonl")))
     traces: list[Trace] = []
     for file in files:
+        # anonymize=True (default) — workspace paths and session ids are hashed
+        # before they reach the Trace; never raw project names in output.
         record = load_claude_transcript(file)
         atoms = claude_code_adapter(record)
         if len(atoms) >= 10:
             traces.append(
-                Trace(trace_id=record["trace_id"][:8], agent=record["agent"], atoms=atoms, group="claude_code", metadata={})
+                Trace(trace_id=record["trace_id"], agent=record["agent"], atoms=atoms, group="claude_code", metadata={})
             )
     if not traces:
         atoms = claude_code_adapter(_SYNTHETIC)

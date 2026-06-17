@@ -6,8 +6,15 @@ canonical name in `procgrep.canonicalize`.
 Registered: ``swe-agent``, ``swe-smith`` and ``swe-smith-native`` (share the
 swe-agent atom map), ``mini-swe-agent``, ``openhands``, ``react-text``,
 ``agentless``, ``dars``, ``moatless``, ``gumtree`` (fine-grained
-node-typed AST atoms), and ``cursor-companion`` (human+AI sessions from
-Cursor IDE via the bidirect-align-dev companion service).
+node-typed AST atoms), ``cursor-companion`` (human+AI sessions from Cursor
+IDE via the cursor-telemetry companion service), and ``claude-code``
+(Claude Code session transcripts from ``~/.claude/projects/``).
+
+Both interactive adapters (``cursor-companion``, ``claude-code``) extend the
+atom alphabet with ``prompt_ai`` to mark human-to-AI handoffs -- an event
+type absent from autonomous-agent traces. All identifying fields (workspace
+paths, session ids, file names, prompt text) are hashed or dropped before
+they reach the atom sequence; only action structure crosses the boundary.
 
 Design decisions (benefit / price):
 
