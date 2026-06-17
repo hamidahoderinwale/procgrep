@@ -215,6 +215,8 @@ def summarize_transcript(record: Mapping[str, Any]) -> dict[str, Any]:
     out["models"] = sorted(models)
     if out["human_turns"]:
         out["prompt_words_per_turn"] = round(out["prompt_words"] / out["human_turns"], 1)
+        out["autonomy"] = round(out["assistant_turns"] / out["human_turns"], 1)
+        out["actions_per_human_turn"] = round(out["tool_calls"] / out["human_turns"], 1)
     if out["assistant_turns"]:
         out["reasoning_words_per_turn"] = round(out["reasoning_words"] / out["assistant_turns"], 1)
     return out

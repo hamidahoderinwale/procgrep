@@ -74,6 +74,7 @@ from procgrep.stats import (
     effective_vocab_size_per_group,
     entropies_per_group,
 )
+from procgrep.summary import SummaryDiff, summary_diff
 from procgrep.types import Atom, AtomSequence, Trace, TraceAdapter
 from procgrep.umap_project import UmapResult, umap_project
 
@@ -100,6 +101,7 @@ __all__ = [
     "ProcedureVocabulary",
     "RewardArtifact",
     "RewardResult",
+    "SummaryDiff",
     "Trace",
     "TraceAdapter",
     "UmapResult",
@@ -131,6 +133,7 @@ __all__ = [
     "run_jsondiff",
     "save_vocab",
     "score",
+    "summary_diff",
     "to_openhands_skill",
     "to_swe_agent_config",
     "umap_project",
