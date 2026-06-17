@@ -1,0 +1,51 @@
+<!doctype html><html><head><meta charset="utf-8"><title>procgrep · live fingerprint</title>
+<style>
+ body{background:#F7F5F2;color:#14110E;font:14px ui-monospace,Menlo,monospace;margin:0;padding:48px}
+ .panel{max-width:680px;margin:0 auto}
+ h1{font-size:14px;font-weight:600;letter-spacing:.04em;margin:0 0 4px}
+ .sub{color:#585E53;font-size:12px;margin:0 0 28px}
+ .row{display:flex;align-items:center;gap:14px;margin:8px 0}
+ .lab{width:92px;text-align:right;color:#585E53;font-size:12px}
+ .spark{display:flex;align-items:flex-end;gap:2px;height:26px;flex:1}
+ .bar{flex:1;background:#CB4D20;border-radius:1px;min-height:1px;transition:height .28s ease,opacity .28s}
+ .pct{width:42px;text-align:right;font-weight:600}
+ .auto .bar{background:#5692E5}
+ .ctl{margin-top:24px;color:#585E53;font-size:12px}
+ button{font:12px ui-monospace;border:1px solid #d9d4cc;background:#fff;padding:4px 12px;border-radius:3px;cursor:pointer}
+</style></head><body><div class="panel">
+<h1>procgrep · live procedural fingerprint</h1>
+<div class="sub">session ae6d93a7 · atoms only, source not recoverable · sliding window of 40 actions</div>
+<div id="lanes"></div>
+<div class="ctl"><button onclick="play()">▶ replay</button> &nbsp; <span id="status"></span></div>
+</div><script>
+const ATOMS=["edit", "prompt_ai", "other", "other", "other", "read_file", "edit", "prompt_ai", "other", "other", "edit", "prompt_ai", "other", "other", "prompt_ai", "other", "read_file", "edit", "edit", "other", "read_file", "read_file", "read_file", "read_file", "read_file", "other", "prompt_ai", "edit", "read_file", "edit", "read_file", "edit", "read_file", "edit", "other", "other", "edit", "read_file", "read_file", "read_file", "edit", "edit", "edit", "edit", "edit", "read_file", "edit", "other", "read_file", "read_file", "read_file", "other", "prompt_ai", "edit", "read_file", "edit", "other", "read_file", "other", "read_file", "read_file", "read_file", "edit", "other", "read_file", "other", "read_file", "edit", "edit", "other", "other", "other", "other", "other", "other", "read_file", "read_file", "read_file", "other", "prompt_ai", "edit", "other", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "read_file", "edit", "read_file", "edit", "other", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "other", "other", "edit", "prompt_ai", "other", "read_file", "read_file", "read_file", "edit", "edit", "other", "read_file", "edit", "other", "read_file", "prompt_ai", "edit", "edit", "prompt_ai", "other", "other", "other", "read_file", "read_file", "other", "other", "read_file", "read_file", "prompt_ai", "edit", "edit", "prompt_ai", "read_file", "edit", "read_file", "edit", "other", "read_file", "other", "other", "other", "read_file", "prompt_ai", "edit", "edit", "prompt_ai", "other", "other", "edit", "other", "read_file", "prompt_ai", "edit", "read_file", "edit", "edit", "other", "other", "read_file", "other", "prompt_ai", "edit", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "other", "other", "other", "read_file", "edit", "edit", "prompt_ai", "edit", "edit", "prompt_ai", "read_file", "read_file", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "edit", "prompt_ai", "edit", "prompt_ai", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "other", "other", "other", "other", "read_file", "read_file", "edit", "other", "read_file", "other", "prompt_ai", "edit", "edit", "other", "read_file", "other", "prompt_ai", "edit", "edit", "edit", "other", "read_file", "other", "prompt_ai", "edit", "read_file", "edit", "other", "read_file", "other"];
+const ORDER=["read_file","prompt_ai","edit","other"];
+const LAB={read_file:"read_file",prompt_ai:"prompt_ai",edit:"edit",other:"bash/other"};
+const W=40,STRIDE=5,H=16;
+const lanes=document.getElementById("lanes");
+const rows={};
+function mkrow(key,label,cls){
+ const r=document.createElement("div");r.className="row "+(cls||"");
+ const l=document.createElement("div");l.className="lab";l.textContent=label;
+ const s=document.createElement("div");s.className="spark";
+ const bars=[];for(let i=0;i<H;i++){const b=document.createElement("div");b.className="bar";b.style.height="1px";b.style.opacity=.85;s.appendChild(b);bars.push(b);}
+ const p=document.createElement("div");p.className="pct";p.textContent="0%";
+ r.appendChild(l);r.appendChild(s);r.appendChild(p);lanes.appendChild(r);
+ rows[key]={bars,pct:p,hist:[]};
+}
+ORDER.forEach(k=>mkrow(k,LAB[k]));mkrow("auto","autonomy","auto");
+function push(key,val){const o=rows[key];o.hist.push(val);if(o.hist.length>H)o.hist.shift();
+ const mx=Math.max(...o.hist,1e-9);
+ o.bars.forEach((b,i)=>{const v=o.hist[i];b.style.height=(v==null?1:Math.max(1,v/mx*26))+"px";b.style.opacity=v==null?.15:.9;});}
+let timer=null;
+function play(){if(timer)clearInterval(timer);Object.values(rows).forEach(o=>o.hist=[]);
+ let i=0;timer=setInterval(()=>{
+  i+=STRIDE;if(i>=ATOMS.length){i=ATOMS.length;clearInterval(timer);}
+  const win=ATOMS.slice(Math.max(0,i-W),i);const tot=win.length||1;
+  let prompts=0;const c={};win.forEach(a=>{c[a]=(c[a]||0)+1;if(a==="prompt_ai")prompts++;});
+  ORDER.forEach(k=>{const sh=(c[k]||0)/tot;push(k,sh);rows[k].pct.textContent=Math.round(sh*100)+"%";});
+  const au=prompts?(tot-prompts)/prompts:0;push("auto",au/12);rows.auto.pct.textContent=au.toFixed(1);
+  document.getElementById("status").textContent="atom "+i+" / "+ATOMS.length;
+ },180);}
+play();
+</script></body></html>
