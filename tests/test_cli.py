@@ -55,6 +55,19 @@ def test_canonicalize_fit_encode_jsd_pipeline(tmp_path: Path) -> None:
     assert "records" in payload
 
 
+def test_compare_errors_on_empty_input(tmp_path: Path) -> None:
+    # An empty JSONL previously crashed with an IndexError on rows[0];
+    # it should now exit cleanly with a non-zero code and a message.
+    empty = tmp_path / "empty.jsonl"
+    empty.write_text("")
+    nonempty = tmp_path / "rows.jsonl"
+    nonempty.write_text(json.dumps({"atoms_canonical": ["edit", "run_test"]}) + "\n")
+
+    result = runner.invoke(app, ["compare", str(empty), str(nonempty)])
+    assert result.exit_code == 1
+    assert "no trajectories" in result.stdout
+
+
 def test_grep_over_local_canonical_jsonl(tmp_path: Path) -> None:
     canon = tmp_path / "canon.jsonl"
     runner.invoke(app, ["canonicalize", "-i", str(SYNTH), "-o", str(canon), "-a", "swe-agent"])

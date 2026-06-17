@@ -243,8 +243,8 @@ def step3_reward_matched_pairs(parent_traces, child_traces, spec) -> None:
     for iid in matched:
         p_r = reward_score(parent_by_id[iid].atoms, spec)
         c_r = reward_score(child_by_id[iid].atoms, spec)
-        p_scores.append(p_r.proc_score)
-        c_scores.append(c_r.proc_score)
+        p_scores.append(p_r.score)
+        c_scores.append(c_r.score)
         if "stuck_reading" in c_r.triggered_penalties:
             stuck_count += 1
 

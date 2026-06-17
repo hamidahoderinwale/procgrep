@@ -67,6 +67,17 @@ def leave_one_group_out(
     groups = np.array([fp.group for fp in fps])
     labels = _extract_labels(fps, label_field)
 
+    # Validate the design before sklearn so degenerate input fails with a
+    # domain-specific message instead of an opaque sklearn error. The
+    # split needs at least two groups to hold one out, and the classifier
+    # needs at least two classes to learn a decision boundary.
+    n_groups = len(set(groups.tolist()))
+    if n_groups < 2:
+        raise ValueError(f"probe needs >=2 groups; got {n_groups}")
+    n_classes = len(set(labels.tolist()))
+    if n_classes < 2:
+        raise ValueError(f"probe needs >=2 {label_field} classes; got {n_classes}")
+
     factory: ClassifierFactory = classifier if classifier is not None else _default_classifier
 
     confusion: dict[str, dict[str, int]] = {}

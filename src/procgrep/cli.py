@@ -169,7 +169,11 @@ def probe(
 ) -> None:
     """Run a leave-one-group-out predictive-transfer probe."""
     fingerprints = list(records_to_fingerprints(read_jsonl(input_path)))
-    result = leave_one_group_out(fingerprints, label_field=label_field, seed=seed)
+    try:
+        result = leave_one_group_out(fingerprints, label_field=label_field, seed=seed)
+    except ValueError as exc:
+        typer.echo(f"error: {exc}")
+        raise typer.Exit(1) from exc
     write_json(output_path, asdict(result))
     typer.echo(
         f"probe: overall accuracy {result.overall_accuracy:.3f} "
@@ -228,6 +232,15 @@ def compare(
 
     rows_a = _load(agent_a)
     rows_b = _load(agent_b)
+
+    # Guard empty input: the positional-divergence section indexes
+    # ``rows[0]`` and the distribution helpers assume at least one row,
+    # so an empty JSONL would crash with an opaque IndexError.
+    if not rows_a or not rows_b:
+        empty = label_a if not rows_a else label_b
+        typer.echo(f"error: no trajectories in {empty}; both inputs must be non-empty")
+        raise typer.Exit(1)
+
     typer.echo(f"\n{'=' * 64}")
     typer.echo(f"  {label_a}  ({len(rows_a)} trajectories)")
     typer.echo(f"  {label_b}  ({len(rows_b)} trajectories)")
@@ -390,7 +403,7 @@ def compare(
         + "  ".join(f"{canon_atoms[i][:6]:>6s}" for i in range(len(canon_atoms)))
     )
     for label, rows in [(label_a, rows_a), (label_b, rows_b)]:
-        if peak_k < len(rows[0].get("atoms_canonical", [])):
+        if rows and peak_k < len(rows[0].get("atoms_canonical", [])):
             cnt: _Counter[str] = _Counter()
             n = 0
             for r in rows:

@@ -116,7 +116,18 @@ def jsd_matrix(
 
 
 def _normalize(arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:
-    """L1-normalized copy; uniform on the all-zero edge case."""
+    """L1-normalized copy; uniform on the all-zero edge case.
+
+    Validates the distribution contract up front so silent-wrong
+    results cannot reach published figures: a non-finite (NaN/inf) or
+    negative entry would otherwise be masked by the zero-handling in
+    `_kl` and yield a plausible-but-meaningless number. We reject such
+    input loudly rather than coerce it.
+    """
+    if not np.all(np.isfinite(arr)):
+        raise ValueError("distribution must be finite; got NaN or inf")
+    if np.any(arr < 0.0):
+        raise ValueError("distribution must be non-negative")
     total = float(arr.sum())
     if total <= 0.0:
         return np.full_like(arr, 1.0 / max(arr.size, 1))

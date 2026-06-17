@@ -5,8 +5,9 @@ canonical name in `procgrep.canonicalize`.
 
 Registered: ``swe-agent``, ``swe-smith`` and ``swe-smith-native`` (share the
 swe-agent atom map), ``mini-swe-agent``, ``openhands``, ``react-text``,
-``agentless``, ``dars``, ``moatless``, and ``gumtree`` (fine-grained
-node-typed AST atoms).
+``agentless``, ``dars``, ``moatless``, ``gumtree`` (fine-grained
+node-typed AST atoms), and ``cursor-companion`` (human+AI sessions from
+Cursor IDE via the bidirect-align-dev companion service).
 
 Design decisions (benefit / price):
 
@@ -21,6 +22,7 @@ from __future__ import annotations
 
 from procgrep.ingest.adapters import (
     agentless,
+    cursor_companion,
     dars,
     gumtree,
     mini_swe_agent,
@@ -33,6 +35,7 @@ from procgrep.ingest.adapters import (
 
 __all__ = [
     "agentless",
+    "cursor_companion",
     "dars",
     "gumtree",
     "mini_swe_agent",

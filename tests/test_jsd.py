@@ -5,6 +5,7 @@ from __future__ import annotations
 import math
 
 import numpy as np
+import pytest
 
 from procgrep.bpe import fit_bpe
 from procgrep.encode import encode
@@ -35,6 +36,30 @@ def test_jsd_is_bounded_by_log2_unit() -> None:
         q = rng.dirichlet(np.ones(8))
         value = jsd(p, q, base=2.0)
         assert 0.0 <= value <= 1.0 + 1e-12
+
+
+def test_jsd_raises_on_nan_input() -> None:
+    # A NaN entry was previously masked by the zero-handling and yielded 0.0.
+    with pytest.raises(ValueError, match="finite"):
+        jsd([math.nan, 1.0], [0.5, 0.5])
+
+
+def test_jsd_raises_on_negative_input() -> None:
+    # A negative entry passed the total>0 check and gave a meaningless number.
+    with pytest.raises(ValueError, match="non-negative"):
+        jsd([-1.0, 2.0], [0.5, 0.5])
+
+
+def test_jsd_raises_on_infinite_input() -> None:
+    with pytest.raises(ValueError, match="finite"):
+        jsd([math.inf, 1.0], [0.5, 0.5])
+
+
+def test_jsd_valid_input_is_unaffected_by_validation() -> None:
+    p = [0.7, 0.2, 0.1]
+    q = [0.1, 0.4, 0.5]
+    value = jsd(p, q, base=2.0)
+    assert 0.0 < value <= 1.0 + 1e-12
 
 
 def test_jsd_matrix_is_symmetric_with_zero_diagonal(structured_corpus: list) -> None:

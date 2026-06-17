@@ -16,8 +16,10 @@ Modules:
 - ``lineage_diff``: four-axis structural comparison between two agent groups
   (vocabulary, entropy, outcome-quadrant, conditional).
 - ``probe``: leave-one-group-out predictive transfer probe.
-- ``reward``: score trajectories against a YAML procedural reward spec,
-  returning a [0, 1] partial reward signal.
+- ``reward``: declarative ``ProcedureSpec`` (phases, penalties, target) that
+  scores trajectories into a [0, 1] partial reward and derives from winners.
+- ``program``: the programmability loop (enforce / verify / optimize) over a
+  ``ProcedureSpec``. Model-free: emits enforcement artifacts, never runs agents.
 - ``patterns``: YAML rule-based pattern matching over atom sequences.
 - ``stats``: group-level descriptive and discriminative summaries.
 - ``adapters``: trace format adapters (SWE-agent, Agentless, DARS, GumTree).
@@ -42,7 +44,21 @@ from procgrep.jsd import JsdMatrix, jsd, jsd_matrix
 from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
 from procgrep.probe import ProbeResult, leave_one_group_out
-from procgrep.reward import RewardResult, load_spec, score
+from procgrep.program import (
+    GuardArtifact,
+    VerifyReport,
+    enforce,
+    optimize,
+    verify,
+)
+from procgrep.reward import (
+    Penalty,
+    Phase,
+    ProcedureSpec,
+    RewardResult,
+    load_spec,
+    score,
+)
 from procgrep.stats import (
     DiscriminativeProcedure,
     GroupAtomFrequencies,
@@ -65,21 +81,27 @@ __all__ = [
     "Fingerprint",
     "GroupAtomFrequencies",
     "GroupEntropyStats",
+    "GuardArtifact",
     "JsdMatrix",
     "LineageDiff",
     "PatternReport",
+    "Penalty",
+    "Phase",
     "ProbeResult",
+    "ProcedureSpec",
     "ProcedureVocabulary",
     "RewardResult",
     "Trace",
     "TraceAdapter",
     "UmapResult",
+    "VerifyReport",
     "__version__",
     "atom_frequencies_per_group",
     "canonicalize",
     "discriminative_procedures",
     "effective_vocab_size_per_group",
     "encode",
+    "enforce",
     "entropies_per_group",
     "fit_bpe",
     "from_hf",
@@ -93,10 +115,12 @@ __all__ = [
     "load_spec",
     "load_vocab",
     "match_patterns",
+    "optimize",
     "parse_gumtree_jsondiff",
     "register_adapter",
     "run_jsondiff",
     "save_vocab",
     "score",
     "umap_project",
+    "verify",
 ]

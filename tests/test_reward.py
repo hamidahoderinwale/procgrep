@@ -1,4 +1,9 @@
-"""Tests for `procgrep.reward` (procedural reward scoring)."""
+"""Tests for the back-compat dict-spec path of `procgrep.reward`.
+
+These exercise the legacy ``load_spec`` plus ``score(atoms, dict)`` shim
+kept for case-study callers. The typed ``ProcedureSpec`` API is covered
+in ``test_procedure_spec.py``.
+"""
 
 from __future__ import annotations
 
@@ -62,42 +67,43 @@ def test_load_spec_missing_file_raises() -> None:
 def test_score_returns_rewardresult_in_range(inline_spec) -> None:
     result = score(["read_file"], inline_spec)
     assert isinstance(result, RewardResult)
-    assert 0.0 <= result.proc_score <= 1.0
+    assert 0.0 <= result.score <= 1.0
 
 
 def test_phase_satisfied_earns_reward(inline_spec) -> None:
     result = score(["read_file"], inline_spec)
     assert "explore" in result.satisfied_phases
-    assert result.proc_score > 0.0
+    assert result.score > 0.0
 
 
 def test_penalty_fires_on_contiguous_edit_streak(inline_spec) -> None:
     result = score(["edit", "edit", "edit"], inline_spec)
     assert "edit_streak" in result.triggered_penalties
     # no phase satisfied + penalty -> clipped to floor
-    assert result.proc_score == 0.0
+    assert result.score == 0.0
 
 
 def test_bonus_earned_when_test_before_first_edit(inline_spec) -> None:
+    # The shim folds legacy "bonuses" into satisfied positive signals.
     result = score(["run_test", "edit"], inline_spec)
-    assert "test_first" in result.triggered_bonuses
+    assert "test_first" in result.satisfied_phases
 
 
 def test_better_trajectory_scores_at_least_as_high(inline_spec) -> None:
     good = score(["read_file", "run_test", "edit"], inline_spec)
     bad = score(["edit", "edit", "edit"], inline_spec)
-    assert good.proc_score >= bad.proc_score
+    assert good.score >= bad.score
 
 
 def test_score_clipped_to_ceiling(inline_spec) -> None:
     # explore (0.5) + test_first (0.2) stays within the [0, 1] ceiling
     result = score(["read_file", "run_test", "edit"], inline_spec)
-    assert result.proc_score <= 1.0
+    assert result.score <= 1.0
 
 
 def test_empty_trajectory_scores_floor(inline_spec) -> None:
     result = score([], inline_spec)
-    assert result.proc_score == 0.0
+    assert result.score == 0.0
     assert result.satisfied_phases == []
 
 
@@ -106,5 +112,5 @@ def test_example_spec_scores_a_well_formed_trajectory() -> None:
     atoms = ["search_repo", "read_file", "think", "edit", "run_test", "submit"]
     result = score(atoms, spec)
     assert isinstance(result, RewardResult)
-    assert 0.0 <= result.proc_score <= 1.0
+    assert 0.0 <= result.score <= 1.0
     assert result.satisfied_phases  # a structured run satisfies at least one phase
