@@ -15,10 +15,16 @@ dispatch tests in `test_program.py`:
 
 from __future__ import annotations
 
-import pytest
-
 from procgrep.bpe import ProcedureVocabulary, fit_bpe
-from procgrep.program import GuardArtifact, VerifyReport, enforce, optimize, verify
+from procgrep.program import (
+    DecodeArtifact,
+    GuardArtifact,
+    RewardArtifact,
+    VerifyReport,
+    enforce,
+    optimize,
+    verify,
+)
 from procgrep.reward import Penalty, Phase, ProcedureSpec
 from procgrep.types import (
     ATOM_EDIT,
@@ -181,17 +187,22 @@ def test_derive_enforce_verify_round_trip() -> None:
 # --- not-yet-implemented modes ----------------------------------------------
 
 
-def test_enforce_decode_not_implemented() -> None:
-    with pytest.raises(NotImplementedError):
-        enforce(ProcedureSpec(), mode="decode")
+def test_enforce_decode_returns_artifact() -> None:
+    art = enforce(ProcedureSpec(), mode="decode")
+    assert isinstance(art, DecodeArtifact)
+    assert callable(art.allowed)
+    assert art.alphabet
 
 
-def test_enforce_reward_not_implemented() -> None:
-    with pytest.raises(NotImplementedError):
-        enforce(ProcedureSpec(), mode="reward")
+def test_enforce_reward_returns_artifact() -> None:
+    art = enforce(ProcedureSpec(), mode="reward")
+    assert isinstance(art, RewardArtifact)
+    assert callable(art.reward)
+    assert callable(art.step_rewards)
 
 
-def test_optimize_not_implemented() -> None:
-    vocab = _vocab()
-    with pytest.raises(NotImplementedError):
-        optimize(ProcedureSpec(), _losers(1), vocab)
+def test_optimize_returns_tuned_spec_and_report() -> None:
+    spec = ProcedureSpec(phases=(Phase(name="verify", reward=0.5, require_any=(ATOM_RUN_TEST,)),))
+    best, report = optimize(spec, [*_winners(3), *_losers(3)])
+    assert isinstance(best, ProcedureSpec)
+    assert report.best_val_score >= report.seed_val_score

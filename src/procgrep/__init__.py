@@ -47,7 +47,10 @@ from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
 from procgrep.probe import ProbeResult, leave_one_group_out
 from procgrep.program import (
+    DecodeArtifact,
     GuardArtifact,
+    OptimizeReport,
+    RewardArtifact,
     VerifyReport,
     enforce,
     optimize,
@@ -80,6 +83,7 @@ __all__ = [
     "Atom",
     "AtomSequence",
     "AxisResult",
+    "DecodeArtifact",
     "DiscriminativeProcedure",
     "Fingerprint",
     "GroupAtomFrequencies",
@@ -87,12 +91,14 @@ __all__ = [
     "GuardArtifact",
     "JsdMatrix",
     "LineageDiff",
+    "OptimizeReport",
     "PatternReport",
     "Penalty",
     "Phase",
     "ProbeResult",
     "ProcedureSpec",
     "ProcedureVocabulary",
+    "RewardArtifact",
     "RewardResult",
     "Trace",
     "TraceAdapter",

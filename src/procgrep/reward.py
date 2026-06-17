@@ -32,7 +32,7 @@ signatures working for case-study callers that pass a parsed dict.
 from __future__ import annotations
 
 import re
-from collections.abc import Iterable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -40,12 +40,12 @@ from typing import Any
 from procgrep.bpe import ProcedureVocabulary
 from procgrep.encode import Fingerprint, encode
 from procgrep.patterns import Pattern
-from procgrep.stats import discriminative_procedures
 from procgrep.types import (
     ATOM_EDIT,
     ATOM_READ_FILE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
+    ATOM_SUBMIT,
     PROCEDURE_SEPARATOR,
     Trace,
 )
@@ -226,21 +226,20 @@ class ProcedureSpec:
 
         Splits ``traces`` into winners and losers on the boolean
         ``outcome_field`` in each trace's metadata, then builds the spec
-        from two sources:
+        from *discriminative abstracted rules*: a small set of
+        human-readable phases that winners satisfy markedly more often
+        than losers (test-after-edit, validate-before-submit, explore-
+        before-edit), plus an edit-streak penalty whose cap is a robust
+        percentile of the winners' streaks. A rule is included only when
+        it separates the two groups, so the spec stays small and does not
+        memorize the winners' incidental surface procedures.
 
-        * The procedures that separate winners from losers
-          (`discriminative_procedures`, ranked by log-odds). Procedures
-          that favor winners and consist of meaningful atoms become
-          phases.
-        * Simple action-level stats over the winners: the edit-streak cap
-          is set to the longest contiguous edit run seen in any winner
-          (so a penalty fires only beyond the passing distribution), and
-          a test-after-edit phase is required when winners reliably test
-          after editing.
+        The target fingerprint is the population enforcement aims at: the
+        (count-summed) mean of the winners under ``vocab``.
 
-        The target fingerprint is the population we want enforcement to
-        move toward: the (count-summed) mean of the winners under
-        ``vocab``.
+        ``k`` is retained for back-compatibility and is no longer used;
+        the derivation is over action-level rules, not the top-k
+        procedures.
 
         Design note: this derives correlation with passing, not a causal
         recipe. Validate the derived spec before treating it as a lever
@@ -254,30 +253,25 @@ class ProcedureSpec:
                 f"no winners found: no trace has a truthy {outcome_field!r} in metadata"
             )
 
+        # Each candidate rule earns a phase only when winners satisfy it
+        # markedly more than losers, so the spec captures what separates the
+        # groups rather than the winners' incidental habits.
         phases: list[Phase] = []
-
-        winner_disc = _winner_procedures(winners, losers, vocab, k=k)
-        for rank, proc in enumerate(winner_disc):
+        if _discriminates(winners, losers, _did_test_after_edit):
             phases.append(
-                Phase(
-                    name=f"procedure_{rank + 1}_{_safe(proc)}",
-                    reward=round(0.5 / max(len(winner_disc), 1), 4),
-                    require_any=(proc,),
-                    min_count=1,
-                )
+                Phase(name="verification", reward=0.25, require_any=(ATOM_RUN_TEST,), min_count=1)
             )
-
-        if _winners_test_after_edit(winners):
+        if _discriminates(winners, losers, _did_validate_before_submit):
             phases.append(
                 Phase(
-                    name="verification",
-                    reward=0.25,
+                    name="validation_before_submit",
+                    reward=0.15,
                     require_any=(ATOM_RUN_TEST,),
+                    before_first=ATOM_SUBMIT,
                     min_count=1,
                 )
             )
-
-        if _winners_explore_before_edit(winners):
+        if _discriminates(winners, losers, _did_explore_before_edit):
             phases.append(
                 Phase(
                     name="exploration",
@@ -286,6 +280,12 @@ class ProcedureSpec:
                     before_first=ATOM_EDIT,
                     min_count=1,
                 )
+            )
+        # A degenerate corpus may discriminate on nothing; fall back to the
+        # most robust signal so the derived spec is never empty.
+        if not phases:
+            phases.append(
+                Phase(name="verification", reward=0.25, require_any=(ATOM_RUN_TEST,), min_count=1)
             )
 
         penalties: list[Penalty] = []
@@ -473,110 +473,90 @@ def _humanize(atom: str | None) -> str:
     return atom.replace(PROCEDURE_SEPARATOR, " then ").replace("_", " ")
 
 
-def _safe(token: str) -> str:
-    """A token slug safe for a phase name."""
-    return token.replace(PROCEDURE_SEPARATOR, "_").replace(" ", "_")
+def _did_test_after_edit(atoms: list[str]) -> bool | None:
+    """Did a test run at some point after the first edit? None if no edit."""
+    if ATOM_EDIT not in atoms:
+        return None
+    return ATOM_RUN_TEST in atoms[atoms.index(ATOM_EDIT) + 1 :]
 
 
-def _winner_procedures(
+def _did_validate_before_submit(atoms: list[str]) -> bool | None:
+    """Did a test run before the first submit? None if the trace never submits."""
+    if ATOM_SUBMIT not in atoms:
+        return None
+    return ATOM_RUN_TEST in atoms[: atoms.index(ATOM_SUBMIT)]
+
+
+def _did_explore_before_edit(atoms: list[str]) -> bool | None:
+    """Did a search or read precede the first edit? None if no edit."""
+    if ATOM_EDIT not in atoms:
+        return None
+    before = atoms[: atoms.index(ATOM_EDIT)]
+    return ATOM_SEARCH_REPO in before or ATOM_READ_FILE in before
+
+
+def _rate(traces: list[Trace], predicate: Callable[[list[str]], bool | None]) -> float:
+    """Fraction of *eligible* traces satisfying ``predicate`` (None means ineligible)."""
+    hits = eligible = 0
+    for t in traces:
+        verdict = predicate(list(t.atoms))
+        if verdict is None:
+            continue
+        eligible += 1
+        if verdict:
+            hits += 1
+    return hits / eligible if eligible else 0.0
+
+
+def _discriminates(
     winners: list[Trace],
     losers: list[Trace],
-    vocab: ProcedureVocabulary,
+    predicate: Callable[[list[str]], bool | None],
     *,
-    k: int,
-) -> list[str]:
-    """Procedures that favor winners over losers, most discriminative first.
+    margin: float = 0.15,
+    floor: float = 0.5,
+) -> bool:
+    """True when winners satisfy ``predicate`` reliably and more than losers.
 
-    Returns multi-atom procedures (or meaningful single atoms) whose
-    log-odds favor the winners. Falls back to an empty list when there
-    are no losers to contrast against.
+    Requires the winner rate to clear ``floor`` and to exceed the loser rate
+    by ``margin``. With no losers to contrast against, applies a higher
+    winner-rate bar, since a habit shared by everyone is not a lever even
+    when every winner has it.
     """
+    win_rate = _rate(winners, predicate)
     if not losers:
-        return []
-    tagged = _tag_for_contrast(winners, losers)
-    fps = encode(tagged, vocab=vocab)
-    disc = discriminative_procedures(
-        fps,
-        vocab,
-        group_a="win",
-        group_b="lose",
-        k=max(k * 2, k),
-        ranking="log_odds",
-        group_by="group",
-    )
-    out: list[str] = []
-    for row in disc:
-        if row.log_odds <= 0.0:
-            continue
-        out.append(row.procedure)
-        if len(out) >= k:
-            break
-    return out
+        return win_rate >= floor + margin
+    return win_rate >= floor and (win_rate - _rate(losers, predicate)) >= margin
 
 
-def _tag_for_contrast(winners: list[Trace], losers: list[Trace]) -> list[Trace]:
-    """Copy traces with group set to ``"win"`` / ``"lose"`` for contrast."""
-    tagged: list[Trace] = []
-    for t in winners:
-        tagged.append(
-            Trace(
-                trace_id=t.trace_id, agent=t.agent, atoms=t.atoms, group="win", metadata=t.metadata
-            )
-        )
-    for t in losers:
-        tagged.append(
-            Trace(
-                trace_id=t.trace_id, agent=t.agent, atoms=t.atoms, group="lose", metadata=t.metadata
-            )
-        )
-    return tagged
+def _percentile(values: list[int], q: float) -> float:
+    """Linear-interpolated ``q``-quantile of ``values`` with ``q`` in [0, 1]."""
+    ordered = sorted(values)
+    if not ordered:
+        raise ValueError("percentile of empty sequence")
+    if len(ordered) == 1:
+        return float(ordered[0])
+    pos = q * (len(ordered) - 1)
+    lo = int(pos)
+    if lo + 1 >= len(ordered):
+        return float(ordered[-1])
+    return ordered[lo] + (ordered[lo + 1] - ordered[lo]) * (pos - lo)
 
 
 def _winner_edit_streak_cap(winners: list[Trace]) -> int | None:
-    """Longest contiguous edit run seen across winners, or None.
+    """A robust cap on contiguous edit runs, or None when winners never edit.
 
-    The penalty cap is set here so a streak penalty only fires beyond
-    the passing distribution.
+    Uses the 90th percentile of winners' longest edit runs, not the maximum:
+    one passing trajectory with a 50-edit streak should not license 50-edit
+    streaks for everyone. Clamped to ``[3, 10]`` so a degenerate corpus cannot
+    drive the cap so low it penalizes ordinary editing, or so high it never
+    fires.
     """
     runs = [_max_contiguous_run(list(t.atoms), ATOM_EDIT) for t in winners]
     runs = [r for r in runs if r > 0]
     if not runs:
         return None
-    return max(runs)
-
-
-def _winners_test_after_edit(winners: list[Trace], *, fraction: float = 0.5) -> bool:
-    """True when most winners run a test at some point after an edit."""
-    hits = 0
-    eligible = 0
-    for t in winners:
-        atoms = list(t.atoms)
-        if ATOM_EDIT not in atoms:
-            continue
-        eligible += 1
-        first_edit = atoms.index(ATOM_EDIT)
-        if ATOM_RUN_TEST in atoms[first_edit + 1 :]:
-            hits += 1
-    if eligible == 0:
-        return False
-    return hits / eligible >= fraction
-
-
-def _winners_explore_before_edit(winners: list[Trace], *, fraction: float = 0.5) -> bool:
-    """True when most winners search or read before their first edit."""
-    hits = 0
-    eligible = 0
-    for t in winners:
-        atoms = list(t.atoms)
-        if ATOM_EDIT not in atoms:
-            continue
-        eligible += 1
-        before = atoms[: atoms.index(ATOM_EDIT)]
-        if ATOM_SEARCH_REPO in before or ATOM_READ_FILE in before:
-            hits += 1
-    if eligible == 0:
-        return False
-    return hits / eligible >= fraction
+    return max(3, min(10, round(_percentile(runs, 0.90))))
 
 
 def _winner_target(winners: list[Trace], vocab: ProcedureVocabulary) -> Fingerprint:

@@ -79,8 +79,9 @@ def test_from_winners_caps_edit_streak_at_passing_distribution() -> None:
 
     streak = next((p for p in spec.penalties if p.name == "edit_streak"), None)
     assert streak is not None
-    # winners' longest edit run is 1, so the cap is 1 and the 5-edit loser fires it
-    assert streak.max_run == 1
+    # winners never streak edits, so the percentile cap is clamped to its floor
+    # of 3; the 5-edit loser still trips it
+    assert streak.max_run == 3
     loser_atoms = [ATOM_EDIT, ATOM_EDIT, ATOM_EDIT, ATOM_EDIT, ATOM_EDIT]
     assert "edit_streak" in spec.score(loser_atoms).triggered_penalties
 

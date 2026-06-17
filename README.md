@@ -159,7 +159,7 @@ Beyond reading traces, procgrep can turn a target procedure into something you s
 A `ProcedureSpec` is the unit: a declarative, validated description of the procedure you want, learnable from the trajectories that passed.
 
 ```python
-from procgrep import ProcedureSpec, enforce, verify, fit_bpe
+from procgrep import ProcedureSpec, enforce, verify, optimize, fit_bpe
 
 # Derive a spec from the winning trajectories (e.g. test-after-edit, no long edit streaks)
 vocab = fit_bpe([t.atoms for t in traces], vocab_size=64, seed=0)
@@ -169,9 +169,14 @@ spec = ProcedureSpec.from_winners(traces, vocab)
 swe_cfg = enforce(spec, mode="prompt", scaffold="swe-agent")   # a SWE-agent config fragment
 skill   = enforce(spec, mode="prompt", scaffold="openhands")   # an OpenHands SKILL.md
 guard   = enforce(spec, mode="guard")                          # patterns + a streaming check
+reward  = enforce(spec, mode="reward")                         # a dense per-step process reward for RL
+decode  = enforce(spec, mode="decode")                         # an allowed(prefix) mask for constrained decoding
 
 # Score any trajectory against the spec
 result = spec.score(trajectory.atoms)   # result.score, result.satisfied_phases, ...
+
+# Tune the spec's caps and phase set to better separate winners from losers (offline, model-free)
+best_spec, opt_report = optimize(spec, traces)
 
 # After running an agent under the spec, check whether behavior (and outcome) moved
 report = verify(before_traces, after_traces, spec, vocab)
@@ -180,7 +185,9 @@ print(report.behavior_moved, report.outcome_delta, report.verdict)
 
 `verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result — so a null result is located, not just observed.
 
-Roadmap: `enforce(mode="decode")` (grammar-constrained decoding) and `enforce(mode="reward")` (a deterministic process reward for RL), plus `optimize` (search a spec against a metric), are planned and currently raise `NotImplementedError`.
+`enforce` supports four modes — `prompt`, `guard`, `reward` (a deterministic dense process reward, with per-step increments that sum to the full-trajectory score), and `decode` (an `allowed(prefix)` mask over the action grammar for constrained decoding) — and `optimize` searches a spec's penalty caps and phase set offline against a discrimination metric, returning a tuned spec and a report. All of these are model-free: they emit artifacts or score traces; none runs an agent.
+
+Roadmap: a `Runner` that executes agents under a spec in sandboxes and feeds the resulting traces back to `verify`. It is kept outside the core on purpose — procgrep emits and measures, the scaffold runs the model — which is what keeps the measurements exactly reproducible.
 
 ---
 
