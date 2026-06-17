@@ -248,6 +248,7 @@ pip install procgrep[dev]      # development dependencies
 - All random operations take a `seed` argument; default is `0`.
 - `ruff` and `mypy --strict` clean.
 - **Privacy model for interactive adapters.** The interactive adapters never retain prompt text (word counts only) and hash identifiers like session ids and workspace paths by default (`anonymize=True`). Only abstract action structure crosses the ingest boundary.
+- **Procedural library.** `ProcedureLibrary("dir/")` saves derived or authored specs as YAML — reusable, git-versioned procedural memory. `spec.to_yaml()` round-trips with `from_yaml`, and library entries plug into `enforce` / `verify` / `score` unchanged (no new object model).
 - **Task clustering uses a pluggable embedder.** `cluster_tasks(texts, embedder)` takes any `Callable[[list[str]], ndarray]`, so the embedding model is yours to choose. `hf_embedder("<model>")` is a local default (`pip install procgrep[embed]`); a lighter local backend (fastembed, model2vec) is a drop-in via the same callable. A local embedder keeps text on-machine and only cluster labels need to be retained; an API embedder sends text off-machine, so reserve it for non-sensitive corpora.
 
 See [METRICS.md](METRICS.md) for the full list of measurements, [STUDIES.md](STUDIES.md) for worked case studies, and [FAQ.md](FAQ.md) for common questions. Runnable demos are in [`examples/`](examples/); the live-explorer backend is in [`space/`](space/); the essay, figures, and reference pages are in [`docs/`](docs/).

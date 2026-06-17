@@ -44,6 +44,7 @@ from procgrep.ingest.adapters.gumtree import (
 )
 from procgrep.ingest.hf import from_hf
 from procgrep.jsd import JsdMatrix, jsd, jsd_matrix
+from procgrep.library import ProcedureLibrary
 from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
 from procgrep.probe import ProbeResult, leave_one_group_out
@@ -99,6 +100,7 @@ __all__ = [
     "Penalty",
     "Phase",
     "ProbeResult",
+    "ProcedureLibrary",
     "ProcedureSpec",
     "ProcedureVocabulary",
     "RewardArtifact",

@@ -339,6 +339,26 @@ class ProcedureSpec:
             name=str(raw.get("name", "procedure_spec")),
         )
 
+    def to_dict(self) -> dict[str, Any]:
+        """Serialize to the `from_dict` schema; round-trips via `from_dict`.
+
+        The declarative spec only -- phases, penalties, clip range, name. The
+        target fingerprint is a runtime artifact, not part of the saved spec,
+        so it is omitted; re-derive it from winners when a target is needed.
+        """
+        out: dict[str, Any] = {"name": self.name, "floor": self.floor, "ceiling": self.ceiling}
+        if self.phases:
+            out["phases"] = [_phase_to_dict(p) for p in self.phases]
+        if self.penalties:
+            out["penalties"] = [_penalty_to_dict(p) for p in self.penalties]
+        return out
+
+    def to_yaml(self, path: str | Path) -> None:
+        """Write the spec to ``path`` as YAML (re-loadable with `from_yaml`)."""
+        if not _YAML_AVAILABLE:
+            raise ImportError("PyYAML is required: pip install pyyaml")
+        Path(path).write_text(_yaml.safe_dump(self.to_dict(), sort_keys=False))
+
 
 _SPEC_KEYS = frozenset({"name", "description", "phases", "penalties", "floor", "ceiling"})
 _PHASE_KEYS = frozenset({"name", "reward", "require_any", "before_first", "min_count"})
@@ -363,6 +383,26 @@ def _require(entry: dict[str, Any], key: str, *, where: str) -> Any:
     if key not in entry:
         raise ValueError(f"{where} is missing required key {key!r}")
     return entry[key]
+
+
+def _phase_to_dict(phase: Phase) -> dict[str, Any]:
+    out: dict[str, Any] = {"name": phase.name, "reward": phase.reward}
+    if phase.require_any:
+        out["require_any"] = list(phase.require_any)
+    if phase.before_first is not None:
+        out["before_first"] = phase.before_first
+    if phase.min_count != 1:
+        out["min_count"] = phase.min_count
+    return out
+
+
+def _penalty_to_dict(penalty: Penalty) -> dict[str, Any]:
+    out: dict[str, Any] = {"name": penalty.name, "reward": penalty.reward}
+    if penalty.max_run is not None:
+        out["max_run"] = penalty.max_run
+    if penalty.forbid_sequence:
+        out["forbid_sequence"] = list(penalty.forbid_sequence)
+    return out
 
 
 def _phase_from_dict(entry: Any, *, source: str) -> Phase:
