@@ -210,11 +210,7 @@ procgrep vocab-tree --vocab vocab.json          # or --input traces/canonical.js
 
 ### The procedure hierarchy
 
-BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged
-procedure decomposes into the two tokens it was glued from, down to atoms.
-`vocab-tree` (and `procgrep.render_vocab_tree`) renders it, so you can see which
-small procedures recur and what they compose into. On real Claude Code sessions,
-for example, `prompt_ai → edit` shows up as a building block of larger procedures:
+BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged procedure decomposes into the two tokens it was glued from, down to atoms. `vocab-tree` (and `procgrep.render_vocab_tree`) renders it. On real Claude Code sessions, for example, `prompt_ai → edit` shows up as a building block of larger procedures:
 
 ```text
 6 atoms: edit, other, prompt_ai, read_file, run_test, search_repo
@@ -251,6 +247,6 @@ pip install procgrep[dev]      # development dependencies
 - Built-in adapters: SWE-agent, mini-swe-agent, OpenHands, Agentless, DARS, Moatless, SWE-smith, GumTree, ReAct-text (autonomous scaffolds); `cursor-companion` and `claude-code` (interactive scaffolds — human+AI sessions).
 - All random operations take a `seed` argument; default is `0`.
 - `ruff` and `mypy --strict` clean.
-- **Privacy model for interactive adapters.** `cursor-companion` and `claude-code` ingest traces that contain personal data (workspace paths, file names, prompt text). Neither adapter reads prompt text. `load_claude_transcript` hashes session ids and workspace paths by default (`anonymize=True`). The companion's export endpoint hashes all identifying fields server-side. Only action structure — atom sequences, turn counts, edit volume — crosses the ingest boundary.
+- **Privacy model for interactive adapters.** The interactive adapters never retain prompt text (word counts only) and hash identifiers like session ids and workspace paths by default (`anonymize=True`). Only abstract action structure crosses the ingest boundary.
 
 See [METRICS.md](METRICS.md) for the full list of measurements, [STUDIES.md](STUDIES.md) for worked case studies, and [FAQ.md](FAQ.md) for common questions. Runnable demos are in [`examples/`](examples/); the live-explorer backend is in [`space/`](space/); the essay, figures, and reference pages are in [`docs/`](docs/).
