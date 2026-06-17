@@ -46,6 +46,9 @@ reward = [
 viz = [
     "umap-learn>=0.5.5",  # only needed for umap_project / the `umap` CLI
 ]
+embed = [
+    "sentence-transformers>=2.2",  # only needed for the default hf_embedder; any callable works
+]
 dev = [
     "umap-learn>=0.5.5",  # so the umap_project test runs in CI
     "datasets>=2.19",  # so the from_hf tests can patch datasets.load_dataset

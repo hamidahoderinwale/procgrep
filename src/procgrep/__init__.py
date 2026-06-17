@@ -33,6 +33,7 @@ from __future__ import annotations
 
 from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, render_vocab_tree, save_vocab
 from procgrep.canonicalize import canonicalize, register_adapter
+from procgrep.cluster import Embedder, cluster_tasks, hf_embedder
 from procgrep.encode import Fingerprint, encode
 from procgrep.ingest import adapters as adapters
 from procgrep.ingest.adapters.gumtree import (
@@ -86,6 +87,7 @@ __all__ = [
     "AxisResult",
     "DecodeArtifact",
     "DiscriminativeProcedure",
+    "Embedder",
     "Fingerprint",
     "GroupAtomFrequencies",
     "GroupEntropyStats",
@@ -109,6 +111,7 @@ __all__ = [
     "__version__",
     "atom_frequencies_per_group",
     "canonicalize",
+    "cluster_tasks",
     "discriminative_procedures",
     "effective_vocab_size_per_group",
     "encode",
@@ -118,6 +121,7 @@ __all__ = [
     "from_hf",
     "gumtree_adapter",
     "gumtree_atom",
+    "hf_embedder",
     "jsd",
     "jsd_matrix",
     "leave_one_group_out",
