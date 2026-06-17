@@ -128,7 +128,7 @@ from procgrep.reward import load_spec, score
 spec = load_spec("examples/rules/reward_spec_swe_agent.yaml")
 result = score(trajectory.atoms, spec)
 
-print(result.proc_score)           # e.g. 0.75
+print(result.score)                # e.g. 0.75
 print(result.satisfied_phases)     # ["exploration", "implementation", "test_verification"]
 print(result.triggered_penalties)  # ["stuck_reading"]
 ```
@@ -149,6 +149,38 @@ print(diff.summary())
 ```
 
 This tells you: did the child preserve the parent's action repertoire? Did the distribution concentrate (mode collapse)? Do failing child trajectories look less like the parent than passing ones? Where in the sequence does the child diverge?
+
+---
+
+## Programming procedures (experimental)
+
+Beyond reading traces, procgrep can turn a target procedure into something you specify, hand to a scaffold, and verify — with no model in the loop.
+
+A `ProcedureSpec` is the unit: a declarative, validated description of the procedure you want, learnable from the trajectories that passed.
+
+```python
+from procgrep import ProcedureSpec, enforce, verify, fit_bpe
+
+# Derive a spec from the winning trajectories (e.g. test-after-edit, no long edit streaks)
+vocab = fit_bpe([t.atoms for t in traces], vocab_size=64, seed=0)
+spec = ProcedureSpec.from_winners(traces, vocab)
+
+# Render it for a scaffold to apply. procgrep emits the artifact; it never runs the agent.
+swe_cfg = enforce(spec, mode="prompt", scaffold="swe-agent")   # a SWE-agent config fragment
+skill   = enforce(spec, mode="prompt", scaffold="openhands")   # an OpenHands SKILL.md
+guard   = enforce(spec, mode="guard")                          # patterns + a streaming check
+
+# Score any trajectory against the spec
+result = spec.score(trajectory.atoms)   # result.score, result.satisfied_phases, ...
+
+# After running an agent under the spec, check whether behavior (and outcome) moved
+report = verify(before_traces, after_traces, spec, vocab)
+print(report.behavior_moved, report.outcome_delta, report.verdict)
+```
+
+`verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result — so a null result is located, not just observed.
+
+Roadmap: `enforce(mode="decode")` (grammar-constrained decoding) and `enforce(mode="reward")` (a deterministic process reward for RL), plus `optimize` (search a spec against a metric), are planned and currently raise `NotImplementedError`.
 
 ---
 
