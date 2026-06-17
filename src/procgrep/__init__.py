@@ -20,6 +20,8 @@ Modules:
   scores trajectories into a [0, 1] partial reward and derives from winners.
 - ``program``: the programmability loop (enforce / verify / optimize) over a
   ``ProcedureSpec``. Model-free: emits enforcement artifacts, never runs agents.
+- ``scaffolds``: render a ``ProcedureSpec`` into a coding agent harness's own
+  customization format (SWE-agent config fragment, OpenHands Skill markdown).
 - ``patterns``: YAML rule-based pattern matching over atom sequences.
 - ``stats``: group-level descriptive and discriminative summaries.
 - ``adapters``: trace format adapters (SWE-agent, Agentless, DARS, GumTree).
@@ -59,6 +61,7 @@ from procgrep.reward import (
     load_spec,
     score,
 )
+from procgrep.scaffolds import to_openhands_skill, to_swe_agent_config
 from procgrep.stats import (
     DiscriminativeProcedure,
     GroupAtomFrequencies,
@@ -121,6 +124,8 @@ __all__ = [
     "run_jsondiff",
     "save_vocab",
     "score",
+    "to_openhands_skill",
+    "to_swe_agent_config",
     "umap_project",
     "verify",
 ]

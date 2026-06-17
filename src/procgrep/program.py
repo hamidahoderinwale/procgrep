@@ -37,9 +37,11 @@ from procgrep.encode import encode
 from procgrep.jsd import jsd
 from procgrep.patterns import Pattern
 from procgrep.reward import ProcedureSpec
+from procgrep.scaffolds import to_openhands_skill, to_swe_agent_config
 from procgrep.types import Trace
 
 EnforceMode = Literal["prompt", "guard", "decode", "reward"]
+Scaffold = Literal["swe-agent", "openhands"]
 Verdict = Literal["lever", "epiphenomenal", "weak_enforcement"]
 
 
@@ -81,24 +83,40 @@ class VerifyReport:
 def enforce(
     spec: ProcedureSpec,
     mode: EnforceMode = "prompt",
+    scaffold: Scaffold | None = None,
 ) -> str | GuardArtifact:
     """Emit the rendered enforcement artifact for an external scaffold.
 
     This does not run an agent. procgrep is model-free; the caller wires
     the returned artifact into their own runner.
 
-    * ``"prompt"`` returns the system-prompt text (`spec.to_prompt`).
+    * ``"prompt"`` returns system-prompt text. With ``scaffold=None`` it is
+      the generic ruleset (`spec.to_prompt`). With ``scaffold="swe-agent"`` it
+      is a SWE-agent config fragment (`scaffolds.to_swe_agent_config`); with
+      ``scaffold="openhands"`` it is an OpenHands Skill markdown file
+      (`scaffolds.to_openhands_skill`). The scaffold rendering wraps the same
+      rule prose in that harness's native customization format.
     * ``"guard"`` returns a `GuardArtifact`: the guard patterns plus a
       streaming check callable that reports which guards a given atom
-      prefix has already violated.
+      prefix has already violated. ``scaffold`` does not change the artifact;
+      see `scaffolds.to_swe_agent_config` for how the patterns map to a
+      scaffold's control-flow / history-processing hook.
     * ``"decode"`` and ``"reward"`` are not implemented yet.
 
     Raises:
         NotImplementedError: For ``"decode"`` and ``"reward"``.
-        ValueError: For an unknown mode.
+        ValueError: For an unknown mode or an unknown scaffold.
     """
     if mode == "prompt":
-        return spec.to_prompt()
+        if scaffold is None:
+            return spec.to_prompt()
+        if scaffold == "swe-agent":
+            return to_swe_agent_config(spec)
+        if scaffold == "openhands":
+            return to_openhands_skill(spec)
+        raise ValueError(
+            f"unknown scaffold {scaffold!r}; expected swe-agent, openhands, or None"
+        )
     if mode == "guard":
         patterns = tuple(spec.to_patterns())
 
@@ -256,6 +274,7 @@ def _resolved_rate(traces: list[Trace], outcome_field: str) -> float:
 __all__ = [
     "EnforceMode",
     "GuardArtifact",
+    "Scaffold",
     "Verdict",
     "VerifyReport",
     "enforce",
