@@ -203,6 +203,34 @@ procgrep fit-bpe --input traces/canonical.jsonl --vocab-size 64 --output vocab.j
 # Encode and compare
 procgrep encode --input traces/canonical.jsonl --vocab vocab.json --output fingerprints.jsonl
 procgrep jsd --input fingerprints.jsonl --group-by agent --output jsd_matrix.json
+
+# Inspect the procedure hierarchy: see which sub-procedures recur and compose
+procgrep vocab-tree --vocab vocab.json          # or --input traces/canonical.jsonl
+```
+
+### The procedure hierarchy
+
+BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged
+procedure decomposes into the two tokens it was glued from, down to atoms.
+`vocab-tree` (and `procgrep.render_vocab_tree`) renders it, so you can see which
+small procedures recur and what they compose into. On real Claude Code sessions,
+for example, `prompt_ai → edit` shows up as a building block of larger procedures:
+
+```text
+6 atoms: edit, other, prompt_ai, read_file, run_test, search_repo
+14 merges, 9 maximal procedures:
+
+prompt_ai -> edit -> prompt_ai -> edit
+  prompt_ai -> edit
+    prompt_ai
+    edit
+  prompt_ai -> edit
+    prompt_ai
+    edit
+
+edit -> edit -> edit -> edit -> edit -> edit -> edit -> edit
+  edit -> edit -> edit -> edit
+    ...
 ```
 
 ---

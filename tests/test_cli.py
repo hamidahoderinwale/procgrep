@@ -90,3 +90,19 @@ def test_canonicalize_unknown_adapter_errors(tmp_path: Path) -> None:
         ],
     )
     assert result.exit_code != 0
+
+
+def test_vocab_tree_from_existing_vocab(tmp_path: Path) -> None:
+    canon = tmp_path / "canon.jsonl"
+    vocab = tmp_path / "vocab.json"
+    runner.invoke(app, ["canonicalize", "-i", str(SYNTH), "-o", str(canon), "-a", "swe-agent"])
+    runner.invoke(app, ["fit-bpe", "-i", str(canon), "-o", str(vocab), "-V", "30"])
+    result = runner.invoke(app, ["vocab-tree", "-v", str(vocab)])
+    assert result.exit_code == 0, result.stdout
+    assert "atoms:" in result.stdout
+    assert "maximal procedures" in result.stdout
+
+
+def test_vocab_tree_requires_input_or_vocab() -> None:
+    result = runner.invoke(app, ["vocab-tree"])
+    assert result.exit_code != 0

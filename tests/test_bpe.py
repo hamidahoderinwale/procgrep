@@ -11,6 +11,7 @@ from procgrep.bpe import (
     apply_vocab,
     fit_bpe,
     load_vocab,
+    render_vocab_tree,
     save_vocab,
 )
 from procgrep.types import ATOM_EDIT, ATOM_RUN_TEST, PROCEDURE_SEPARATOR
@@ -70,3 +71,22 @@ def test_vocab_round_trips_through_disk(tmp_path: Path, small_corpus: list) -> N
     assert loaded.merges == vocab.merges
     assert loaded.seed == vocab.seed
     assert loaded.min_pair_frequency == vocab.min_pair_frequency
+
+
+def test_render_vocab_tree_shows_decomposition() -> None:
+    # 'a b c' repeats, so a/b/c merge into a procedure that decomposes to atoms
+    sequences = [["a", "b", "c"] * 4, ["a", "b"] * 3]
+    vocab = fit_bpe(sequences, vocab_size=8, seed=0)
+    tree = render_vocab_tree(vocab)
+    assert tree.startswith(f"{len(vocab.atoms)} atoms:")
+    assert "maximal procedures" in tree
+    assert " -> " in tree  # at least one merged procedure rendered
+    for atom in vocab.atoms:
+        assert atom in tree  # every atom appears as a leaf
+
+
+def test_render_vocab_tree_handles_no_merges() -> None:
+    # vocab_size == #atoms means no merges; tree is just the atom line + header
+    vocab = fit_bpe([["a", "b"]], vocab_size=2, seed=0)
+    tree = render_vocab_tree(vocab)
+    assert "0 merges, 0 maximal procedures" in tree

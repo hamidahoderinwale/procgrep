@@ -31,7 +31,7 @@ Public API is re-exported here; see README and METRICS.md for usage.
 
 from __future__ import annotations
 
-from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, save_vocab
+from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, render_vocab_tree, save_vocab
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.encode import Fingerprint, encode
 from procgrep.ingest import adapters as adapters
@@ -123,6 +123,7 @@ __all__ = [
     "load_patterns",
     "load_spec",
     "load_vocab",
+    "render_vocab_tree",
     "match_patterns",
     "optimize",
     "parse_gumtree_jsondiff",

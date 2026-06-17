@@ -17,7 +17,14 @@ from typing import Annotated, Any
 import typer
 
 from procgrep import canonicalize as canonicalize_fn
-from procgrep import fit_bpe, jsd_matrix, leave_one_group_out, load_vocab, umap_project
+from procgrep import (
+    fit_bpe,
+    jsd_matrix,
+    leave_one_group_out,
+    load_vocab,
+    render_vocab_tree,
+    umap_project,
+)
 from procgrep import save_vocab as save_vocab_fn
 from procgrep.canonicalize import list_adapters
 from procgrep.encode import encode as encode_fn
@@ -93,6 +100,32 @@ def fit_bpe_cmd(
         f"learned vocabulary: {len(vocab.atoms)} atoms + {len(vocab.merges)} merges "
         f"= {vocab.size} tokens; wrote {output_path}"
     )
+
+
+@app.command(name="vocab-tree")
+def vocab_tree_cmd(
+    vocab_path: Annotated[
+        Path | None, typer.Option("--vocab", "-v", help="Existing vocabulary JSON.")
+    ] = None,
+    input_path: Annotated[
+        Path | None,
+        typer.Option("--input", "-i", help="Canonical trace JSONL to fit a vocab from instead."),
+    ] = None,
+    vocab_size: Annotated[
+        int, typer.Option("--vocab-size", "-V", help="Target size when fitting from --input.")
+    ] = 64,
+    seed: Annotated[int, typer.Option(help="Provenance seed when fitting.")] = 0,
+) -> None:
+    """Print the BPE procedure vocabulary as merge trees (the procedure hierarchy)."""
+    if vocab_path is not None:
+        vocab = load_vocab(vocab_path)
+    elif input_path is not None:
+        traces = list(records_to_traces(read_jsonl(input_path)))
+        vocab = fit_bpe((t.atoms for t in traces), vocab_size=vocab_size, seed=seed)
+    else:
+        typer.echo("provide --vocab or --input", err=True)
+        raise typer.Exit(1)
+    typer.echo(render_vocab_tree(vocab))
 
 
 @app.command()

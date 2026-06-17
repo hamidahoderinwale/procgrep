@@ -180,10 +180,51 @@ def _apply_merge(seq: list[str], pair: tuple[str, str]) -> list[str]:
     return out
 
 
+def render_vocab_tree(vocab: ProcedureVocabulary) -> str:
+    """Render the vocabulary as merge trees: the procedure hierarchy.
+
+    BPE builds procedures bottom-up, gluing the most frequent adjacent pair
+    into a new token, so every merged procedure decomposes into the two tokens
+    it came from -- recursively, down to atoms. This renders that derivation:
+    atoms are the leaves, and the *maximal* procedures (those never merged into
+    a larger token) are the roots, so you can see which sub-procedures recur and
+    what they compose into. Indentation is merge depth.
+    """
+    atoms = set(vocab.atoms)
+    children: dict[str, tuple[str, str]] = {}
+    used: set[str] = set()
+    for left, right in vocab.merges:
+        children[_join(left, right)] = (left, right)
+        used.add(left)
+        used.add(right)
+    roots = [token for token in (_join(left, right) for left, right in vocab.merges) if token not in used]
+
+    lines: list[str] = [
+        f"{len(vocab.atoms)} atoms: {', '.join(sorted(vocab.atoms))}",
+        f"{len(vocab.merges)} merges, {len(roots)} maximal procedures:",
+    ]
+
+    def walk(token: str, depth: int) -> None:
+        indent = "  " * depth
+        if token in atoms:
+            lines.append(f"{indent}{token}")
+            return
+        lines.append(f"{indent}{token.replace(PROCEDURE_SEPARATOR, ' -> ')}")
+        left, right = children[token]
+        walk(left, depth + 1)
+        walk(right, depth + 1)
+
+    for root in roots:
+        lines.append("")
+        walk(root, 0)
+    return "\n".join(lines)
+
+
 __all__ = [
     "ProcedureVocabulary",
     "apply_vocab",
     "fit_bpe",
     "load_vocab",
+    "render_vocab_tree",
     "save_vocab",
 ]
