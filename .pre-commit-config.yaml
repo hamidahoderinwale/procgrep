@@ -28,3 +28,8 @@ repos:
           - huggingface_hub>=0.23   # match CI's mypy env (discover.py imports it)
         args: ["--config-file=pyproject.toml"]
         files: ^src/procgrep/
+
+  - repo: https://github.com/gitleaks/gitleaks
+    rev: v8.21.2
+    hooks:
+      - id: gitleaks
