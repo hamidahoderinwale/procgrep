@@ -17,8 +17,8 @@ reach the Trace (``load_claude_transcript`` defaults to ``anonymize=True``),
 so neither appears in output or shared results.
 
 Usage:
-    python examples/claude_code_fingerprint.py                 # your local transcripts
-    python examples/claude_code_fingerprint.py --path DIR      # a directory of .jsonl
+    python examples/claude_code_fingerprint.py                 # bundled atoms-only exemplar
+    python examples/claude_code_fingerprint.py --path DIR      # your own local transcripts
     python examples/claude_code_fingerprint.py --cursor export.jsonl   # contrast vs Cursor
 """
 
@@ -67,7 +67,24 @@ def _autonomy_runs(atoms: list[str]) -> list[int]:
     return [r for r in runs if r > 0]
 
 
-def _load_traces(path: str) -> list[Trace]:
+def _load_traces(path: str | None) -> list[Trace]:
+    if path is None:
+        # Default: the bundled atoms-only exemplar. No private data is read; the
+        # reduction to atoms is the obfuscation. Pass --path to run on your own
+        # local transcripts (output stays atoms-only either way).
+        import json
+
+        bundled = Path(__file__).resolve().parent / "python" / "data" / "live_demo.jsonl"
+        record = json.loads(bundled.read_text().splitlines()[0])
+        return [
+            Trace(
+                trace_id=str(record.get("trace_id", "exemplar")),
+                agent="exemplar",
+                atoms=list(record["atoms"]),
+                group="claude_code",
+                metadata={},
+            )
+        ]
     files = sorted(glob.glob(str(Path(path).expanduser() / "*" / "*.jsonl")))
     files += sorted(glob.glob(str(Path(path).expanduser() / "*.jsonl")))
     traces: list[Trace] = []
@@ -114,7 +131,7 @@ def _report(label: str, traces: list[Trace]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", default="~/.claude/projects", help="dir of Claude Code transcripts")
+    parser.add_argument("--path", default=None, help="dir of your own Claude Code transcripts (default: bundled atoms-only exemplar)")
     parser.add_argument("--cursor", default=None, help="optional cursor-companion export.jsonl to contrast")
     args = parser.parse_args()
 
