@@ -121,6 +121,13 @@
   .winmark{position:relative;padding:0 0 14px 24px;color:var(--mut);font-size:10px}
   .winmark::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--line)}
   code{font-size:11px}
+  .hidden{display:none}
+  #autonomy .chart{background:#fff;border-radius:6px;padding:18px 20px 10px}
+  #autonomy .cap2{color:var(--mut);font-size:12px;margin:10px 2px 0}
+  #autonomy .astats{display:flex;flex-wrap:wrap;gap:26px;margin:18px 2px 0}
+  #autonomy .astats .sv{font-size:20px;font-weight:600;color:var(--ink)}
+  #autonomy .astats .sl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .nav #overviewNav button .nmeta{color:var(--mut)}
   @media(max-width:720px){
     body{padding:22px 16px 40px}
     .panel{max-width:none}
@@ -139,6 +146,7 @@
 </head>
 <body class="pmode-counts">
 <nav class="nav">
+  <div id="overviewNav"></div>
   <h2>sessions</h2>
   <div id="switch"></div>
 </nav>
@@ -147,11 +155,11 @@
   <header class="topbar">
     <a class="mark" href="index.html">procgrep</a>
     <nav class="topnav">
-      <a href="index.html">home</a>
       <a href="explorer/index.html">explorer</a>
     </nav>
   </header>
 
+  <div id="detail">
   <div class="topgrid">
     <div class="idcard">
       <div id="ident"></div>
@@ -188,7 +196,9 @@
     <li><span class="bluedot"></span><span id="winLeg"></span></li>
   </ul>
   <div class="tl" id="tl"></div>
+  </div>
 
+  <div id="autonomy" class="hidden"></div>
 </div>
 <script>
 // Synthetic, self-consistent sessions. Everything below is COMPUTED from this
@@ -247,7 +257,8 @@ const DEMO_SESSIONS=[
   ]},
 ];
 
-const SESSIONS=(typeof window!=="undefined"&&Array.isArray(window.PROCGREP_SESSIONS)&&window.PROCGREP_SESSIONS.length)?window.PROCGREP_SESSIONS:DEMO_SESSIONS;
+const IS_LOCAL=(typeof window!=="undefined"&&Array.isArray(window.PROCGREP_SESSIONS)&&window.PROCGREP_SESSIONS.length>0);
+const SESSIONS=IS_LOCAL?window.PROCGREP_SESSIONS:DEMO_SESSIONS;
 const ORDER=["read_file","search_repo","prompt_ai","edit","lint","run_test","package","version_control","other"];
 const LAB={read_file:"read_file",search_repo:"search_repo",prompt_ai:"prompt_ai",edit:"edit",lint:"lint",run_test:"run_test",package:"package",version_control:"version_control",other:"bash/other"};
 const COLOR={read_file:"var(--read)",search_repo:"var(--search)",prompt_ai:"var(--prompt)",edit:"var(--edit)",lint:"var(--lint)",run_test:"var(--test)",package:"var(--package)",version_control:"var(--vcs)",other:"var(--other)"};
@@ -471,6 +482,15 @@ const TAGS={
   debug:"repeated edit then run_test loops, often failing before a pass",
 };
 function renderSwitcher(){
+  const ov=document.getElementById("overviewNav");
+  if(ov){ov.innerHTML="";
+    if(IS_LOCAL){
+      const b=document.createElement("button");
+      b.innerHTML='<span class="nnm">overview</span><span class="nmeta">run-length across sessions</span>';
+      b.onclick=()=>{if(playing)pause(false);setView("overview");};
+      ov.appendChild(b);
+    }
+  }
   const el=document.getElementById("switch");el.innerHTML="";
   SESSIONS.forEach((s,i)=>{
     const b=document.createElement("button");
@@ -486,8 +506,54 @@ function renderSwitcher(){
   });
 }
 
+// Aggregate view: run-length is the agent actions after each human prompt, i.e.
+// the length of each turn's seq. The histogram is computed from the same
+// injected sessions that power the per-session replay; no extra data path.
+function renderAutonomy(){
+  const runs=[];
+  SESSIONS.forEach(s=>s.turns.forEach(t=>{if(Array.isArray(t.seq))runs.push(t.seq.length);}));
+  if(!runs.length)return;
+  const W=5, top=Math.max(...runs), nb=Math.floor(top/W)+1, counts=new Array(nb).fill(0);
+  runs.forEach(r=>counts[Math.min(Math.floor(r/W),nb-1)]++);
+  const sorted=[...runs].sort((a,b)=>a-b);
+  const median=sorted[Math.floor((sorted.length-1)/2)];
+  const mean=runs.reduce((a,b)=>a+b,0)/runs.length;
+  const SW=720,SH=300,ml=44,mr=14,mt=20,mb=44, pw=SW-ml-mr, ph=SH-mt-mb;
+  const xmax=nb*W, bw=pw/nb, ymax=Math.max(...counts);
+  const xpx=v=>ml+(v/xmax)*pw, ypx=c=>mt+ph-(c/ymax)*ph;
+  let bars="";
+  counts.forEach((c,i)=>{if(!c)return;const x=ml+i*bw,h=(c/ymax)*ph;
+    bars+=`<rect x="${x.toFixed(1)}" y="${(mt+ph-h).toFixed(1)}" width="${(bw-0.6).toFixed(1)}" height="${h.toFixed(1)}" fill="var(--edit)"/>`;});
+  let yt="";
+  const stepY=[1,2,5,10,20,50,100,200,500,1000].find(s=>ymax/s<=4)||2000;
+  for(let v=0;v<=ymax;v+=stepY){const y=ypx(v);
+    yt+=`<text x="${ml-9}" y="${(y+3).toFixed(0)}" text-anchor="end" font-size="10" fill="var(--mut)">${v}</text>`
+      +`<line x1="${ml-5}" y1="${y.toFixed(1)}" x2="${ml}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;}
+  let xt="";const step=xmax<=30?5:25;
+  for(let v=0;v<=xmax;v+=step){const x=xpx(v);
+    xt+=`<text x="${x.toFixed(1)}" y="${(mt+ph+17).toFixed(0)}" text-anchor="middle" font-size="10" fill="var(--mut)">${v}</text>`;}
+  const base=`<line x1="${ml}" y1="${(mt+ph).toFixed(1)}" x2="${SW-mr}" y2="${(mt+ph).toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;
+  const svg=`<svg viewBox="0 0 ${SW} ${SH}" width="100%" role="img" aria-label="Actions per human prompt">${bars}${base}${yt}${xt}`
+    +`<text x="${ml+pw/2}" y="${SH-6}" text-anchor="middle" font-size="11" fill="var(--mut)">actions after one prompt</text></svg>`;
+  const st=(v,l)=>`<div class="stat"><div class="sv">${v}</div><div class="sl">${l}</div></div>`;
+  document.getElementById("autonomy").innerHTML=
+    `<p class="cap">Actions per human prompt <span class="hint">· across ${SESSIONS.length} session${SESSIONS.length>1?"s":""}</span></p>`
+    +`<div class="chart">${svg}</div>`
+    +`<p class="cap2">histogram of agent run lengths between prompts · bin width ${W}</p>`
+    +`<div class="astats">${st(SESSIONS.length,"sessions")}${st(runs.length,"runs")}${st(median,"median")}${st(mean.toFixed(1),"mean")}${st(top,"max")}</div>`;
+}
+
+function setView(v){
+  const det=document.getElementById("detail"), au=document.getElementById("autonomy");
+  const overview=v==="overview";
+  det.classList.toggle("hidden",overview);
+  au.classList.toggle("hidden",!overview);
+  document.querySelectorAll("#overviewNav button").forEach(b=>b.classList.toggle("active",overview));
+}
+
 function load(idx){
   if(timer){clearInterval(timer);timer=null;}
+  setView("detail");
   current=idx;
   META=SESSIONS[idx].meta;
   SESSION=SESSIONS[idx].turns;
@@ -510,6 +576,7 @@ function load(idx){
 if(new URLSearchParams(location.search).has("embed")){
   const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
 }
+if(IS_LOCAL)renderAutonomy();
 load(0);
 </script>
 </body>
