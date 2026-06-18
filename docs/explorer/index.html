@@ -13,6 +13,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);f
 .railnav .ritem{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin:0 0 2px}
 .railnav .ritem:hover{background:#ECE7DF}
 .railnav .ritem.act{background:var(--ink);color:#fff}
+.qtask{color:var(--olive);font-size:11px;line-height:1.4;margin:3px 0;max-width:88ch}
 header{display:flex;justify-content:space-between;align-items:baseline;padding-bottom:10px;margin-bottom:8px}
 .mark{font-weight:600;display:inline-flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none}.mark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}.dim{color:var(--olive)}
 nav span{color:var(--olive);margin-left:18px;cursor:pointer}
@@ -539,7 +540,10 @@ async function liveQ(ds, pattern, label){
     <div class="rrow"><span class="rlab">matched</span>${d.n_hits?mixbar(d.mix_hits):'<span class="dim">no matches</span>'}</div>
     <div class="rrow"><span class="rlab">all traces</span>${mixbar(d.mix_all)}</div>
     <div class="eyebrow">matching traces (sample)</div>
-    ${hits.map(h=>`<div class="qhit"><span class="qhmodel">${prettyModel(h.model)}</span> <span class="dim">${h.steps} steps</span> ${spineMini(h.atoms)}</div>`).join('')}
+    ${hits.map(h=>`<div class="qhit">
+      <div><span class="qhmodel">${prettyModel(h.model)}</span> <span class="dim">${h.steps} steps</span></div>
+      ${h.task?`<div class="qtask">${String(h.task).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').slice(0,160)}${String(h.task).length>160?'…':''}</div>`:''}
+      ${spineMini(h.atoms)}</div>`).join('')}
     ${d.n_hits>hits.length?`<div class="dim" style="margin-top:6px">+ ${d.n_hits-hits.length} more across the dataset</div>`:''}`;
 }
 function poolTrace(tid){const p=PROF[CURDS];const s=(p.samples||[]).find(x=>x.trace_id===tid);
