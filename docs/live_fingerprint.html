@@ -8,50 +8,76 @@
   :root{
     --bg:#F7F5F2; --ink:#14110E; --mut:#585E53; --line:#E2DCD3;
     --edit:#CB4D20; --read:#5692E5; --prompt:#9A6CB4; --test:#4A7C59; --other:#A99B86;
+    --search:#2E8B8B; --package:#C08A2E; --lint:#9A5B4A; --vcs:#4E6A8A;
     --pass:#4A7C59; --fail:#CB4D20;
   }
   *{box-sizing:border-box}
-  body{background:var(--bg);color:var(--ink);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0;padding:40px 20px}
-  .panel{max-width:720px;margin:0 auto}
-  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+  body{background:var(--bg);color:var(--ink);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0;padding:40px 20px 40px 250px}
+  .panel{max-width:760px;margin:0 auto}
+  .nav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:40px 16px;overflow:auto;background:#EFEAE2}
+  .nav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:0 0 12px;font-weight:600}
+  .nav button{display:block;width:100%;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+    border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px}
+  .nav button:hover{background:#ECE7DF}
+  .nav button.active{background:var(--ink);color:#fff}
+  .nav .nnm{display:block;font-weight:600}
+  .nav .nmeta{display:block;font-size:10px;color:var(--mut);margin-top:2px}
+  .nav button.active .nmeta{color:#cfcabf}
+  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
   h1{font-size:13px;font-weight:600;letter-spacing:.04em;margin:0}
   .replay{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;display:inline-flex;align-items:center;gap:7px;
     background:var(--ink);color:#fff;border:0;padding:6px 14px;border-radius:999px;cursor:pointer}
   .replay:hover{opacity:.88}
   .replay .tri{font-size:10px}
 
-  .ident{font-size:13px;font-weight:600;margin:0 0 2px}
-  .ident .id{color:var(--mut);font-weight:400}
-  .intent{color:var(--mut);font-size:12px;margin:0 0 14px}
+  .idcard{background:#fff;border-radius:6px;padding:14px 16px}
+  .idrow{display:flex;gap:12px;margin:3px 0;font-size:12px}
+  .idrow .k{width:76px;flex:0 0 auto;color:var(--mut);font-size:11px}
+  .idrow .v{color:var(--ink);font-weight:600}
+  .idrow .v.hash{font-weight:400;color:var(--mut)}
+  .intent{color:var(--mut);font-size:12px;margin:11px 0 13px}
   .intent .tag{font-size:10px;background:#ECE7DF;color:var(--mut);padding:1px 6px;border-radius:3px;margin-left:6px}
 
-  .stats{font-size:12px;color:var(--mut);line-height:1.75;margin:0 0 26px}
+  .stats{font-size:12px;color:var(--mut);line-height:1.75;margin:0}
+  .topgrid{display:grid;grid-template-columns:1fr 300px;gap:30px;align-items:start;margin-bottom:26px}
   .stats b{color:var(--ink);font-weight:600}
-  .stats .models{display:flex;align-items:center;gap:9px;margin-top:5px}
-  .mbar{display:inline-flex;width:140px;height:8px;border-radius:2px;overflow:hidden;border:1px solid var(--line)}
+  .stats .idrow{align-items:center}
+  .stats .k{width:112px}
+  .stats .models{display:flex;align-items:center;gap:9px;margin-top:0}
+  .mbar{display:inline-flex;width:150px;height:8px;border-radius:2px;overflow:hidden}
   .mbar .seg{height:100%}
   .ml{white-space:nowrap}
   .sw{display:inline-block;width:7px;height:7px;border-radius:1px;margin-right:4px}
 
-  .cols{display:grid;grid-template-columns:1fr 1fr;gap:34px;margin-bottom:24px}
   .cap{font-size:11px;letter-spacing:.06em;color:var(--mut);text-transform:uppercase;margin:0 0 10px}
+  .tlhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
   .cap .hint{text-transform:none;letter-spacing:0;font-size:10px;opacity:.85}
+
+  .atomsec{max-width:540px;margin-bottom:24px}
+  .procline{font-size:12px;color:var(--mut);margin:16px 0 0}
+  .procline .chain{color:var(--ink);font-weight:600}
 
   .atom{display:flex;align-items:center;gap:9px;margin:6px 0;cursor:pointer;user-select:none}
   .atom .dot{width:7px;height:7px;border-radius:50%;background:transparent;flex:0 0 auto}
   .atom.sel .dot{background:var(--ink)}
-  .atom .nm{width:78px;color:var(--mut)}
+  .atom .nm{width:128px;flex:0 0 auto;color:var(--mut)}
   .atom.sel .nm{color:var(--ink);font-weight:600}
   .track{flex:1;height:11px;background:#ECE7DF;border-radius:2px;overflow:hidden}
   .fill{display:block;height:100%;width:0;border-radius:2px;transition:width .28s ease}
   .atom .pc{width:34px;text-align:right;font-weight:600}
   .fnote{font-size:11px;color:var(--mut);margin-top:8px;min-height:1em}
   .fnote a{color:var(--read);cursor:pointer}
+  .tip{display:inline-flex;align-items:center;gap:10px;background:#fff;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,.06);padding:5px 10px;font-size:11px;color:var(--mut);margin:0 0 12px}
+  .tip .x{cursor:pointer;font-size:10px;opacity:.7}
+  .tip .x:hover{opacity:1}
+  .tip.hidden{display:none}
 
-  .proc{user-select:none}
-  .proc .chain{font-weight:600}
-  .proc .pw{color:var(--mut);font-weight:400;margin-left:6px}
-  .proc .gloss{color:var(--mut);font-size:11px;margin:3px 0 0}
+  .parabox{background:#fff;border-radius:6px;padding:14px 16px;font-size:11px;color:var(--mut)}
+  .parabox .note{margin-bottom:11px;line-height:1.6}
+  .pex{display:flex;gap:12px;margin:4px 0;align-items:baseline}
+  .plab{width:46px;flex:0 0 auto;text-align:right;color:var(--mut)}
+  .praw{color:#A99B86;text-decoration:line-through}
+  .pnorm{color:var(--ink);font-weight:500}
 
   .tlleg{font-size:10px;color:var(--mut);margin:0 0 12px;padding-left:15px;line-height:1.95}
   .tlleg li{margin:0}
@@ -59,255 +85,321 @@
   .badge{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:3px;margin-left:8px;vertical-align:middle;white-space:nowrap}
   .badge.pass{background:#E3EDE6;color:var(--pass)}
   .badge.fail{background:#F6E3DC;color:var(--fail)}
-  .tl{max-height:520px;overflow:auto;background:#fff;border:1px solid var(--line);border-radius:6px;padding:16px 18px}
-  .turn{position:relative;padding:0 0 14px 24px;cursor:pointer;transition:opacity .2s}
-  .turn::before{content:"";position:absolute;left:5px;top:4px;bottom:-4px;width:2px;background:var(--line)}
+
+  .tl{max-height:560px;overflow:auto;background:#fff;border-radius:6px;padding:16px 18px}
+  .turn{position:relative;display:grid;grid-template-columns:1fr 40%;gap:18px;padding:0 0 16px 24px;transition:opacity .2s}
+  .turn::before{content:"";position:absolute;left:5px;top:5px;bottom:-3px;width:2px;background:var(--line)}
   .turn:last-child::before{display:none}
-  .turn .node{position:absolute;left:1px;top:2px;width:10px;height:10px;border-radius:50%;background:#fff;border:2px solid var(--line)}
+  .turn .node{position:absolute;left:0;top:3px;width:11px;height:11px;border-radius:50%;background:var(--other);border:2px solid #fff}
   .turn.inwin::before{background:var(--read)}
   .turn.inwin .node{border-color:var(--read)}
-  .turn.now .node{background:var(--edit);border-color:var(--edit)}
+  .turn.now .node{box-shadow:0 0 0 3px rgba(203,77,32,.30)}
   .turn.future{opacity:.24}
-  .turn.dim{opacity:.2}
+  .turn.dim{opacity:.18}
+  .turnmain{min-width:0}
   .turn .when{color:var(--mut);font-size:11px}
   .turn .when b{color:var(--ink);font-weight:600}
   .turn.now .when b{color:var(--edit)}
+  .turn .mtag{font-size:10px;margin-left:6px}
   .turn .pr{margin:2px 0}
-  .turn .seq{color:var(--mut);font-size:12px;margin-top:2px}
-  .turn .ok{color:var(--pass);font-weight:600}
-  .turn .no{color:var(--fail);font-weight:600}
-  .turn .plan{display:none;color:var(--mut);font-style:italic;font-size:11px;margin-top:5px;padding-left:8px;border-left:1px solid var(--line)}
-  .turn.open .plan{display:block}
-  .winmark{position:relative;padding:0 0 12px 24px;color:var(--mut);font-size:10px}
+  .turn .acts{margin-top:4px;padding-left:13px}
+  .turn .act{font-size:12px;color:var(--mut);line-height:1.7}
+  .turn .act .br{color:#C9C2B6;margin-right:5px}
+  .turn .plan{color:var(--mut);font-style:italic;font-size:11px;line-height:1.5;align-self:start}
+  .winmark{position:relative;padding:0 0 14px 24px;color:var(--mut);font-size:10px}
   .winmark::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--line)}
   code{font-size:11px}
 </style>
 </head>
 <body>
+<nav class="nav">
+  <h2>sessions</h2>
+  <div id="switch"></div>
+</nav>
 <div class="panel">
 
   <div class="head">
-    <h1>procgrep · live procedural fingerprint</h1>
+    <h1>procgrep</h1>
+  </div>
+
+  <div class="topgrid">
+    <div class="idcard">
+      <div id="ident"></div>
+      <p class="intent" id="intent"></p>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="parabox">
+      <div class="note">prompts are normalized locally before display: writing style and identifiers stripped, never stored or exported</div>
+      <div class="pex"><span class="plab">raw</span><span class="praw">"why does our FooBarAuth.validate() still 500 on null sub?"</span></div>
+      <div class="pex"><span class="plab">shown</span><span class="pnorm">"handle the null-subject case in token validation"</span></div>
+    </div>
+  </div>
+
+  <div class="atomsec">
+    <p class="cap">Atoms <span class="hint" id="atomsHint"></span></p>
+    <div class="tip" id="tip"><span>tap an atom to filter the timeline below</span><span class="x" onclick="closeTip()">✕</span></div>
+    <div id="atoms"></div>
+    <div class="fnote" id="fnote"></div>
+    <p class="procline">top procedure · <span class="chain" id="procChain"></span> · <span class="pw" id="procW"></span><span id="procGloss"></span></p>
+  </div>
+
+  <div class="tlhead">
+    <p class="cap" style="margin:0">Timeline <span class="hint">· the session as a thread · each turn's plan on the right</span></p>
     <button class="replay" id="replayBtn" onclick="toggleReplay()"><span class="tri">▶</span> <span id="rlab">Replay session</span></button>
   </div>
-
-  <p class="ident" id="ident"></p>
-  <p class="intent" id="intent"></p>
-  <div class="stats" id="stats"></div>
-
-  <div class="cols">
-    <div>
-      <p class="cap">Atoms <span class="hint">· share of the last 40 actions · tap to filter</span></p>
-      <div id="atoms"></div>
-      <div class="fnote" id="fnote"></div>
-    </div>
-    <div>
-      <p class="cap">Top procedure <span class="hint">· most frequent action pair in the window</span></p>
-      <div class="proc">
-        <div><span class="chain" id="procChain"></span><span class="pw" id="procW"></span></div>
-        <div class="gloss" id="procGloss"></div>
-      </div>
-    </div>
-  </div>
-
-  <p class="cap" style="margin:0 0 6px">Timeline <span class="hint">· the session as a thread · tap a turn for its plan</span></p>
   <ul class="tlleg">
-    <li>each turn is your prompt, then the agent's tool sequence</li>
+    <li>each turn is your prompt, then the agent's tool sequence; the dot is colored by the turn's main action</li>
     <li>the <span class="badge pass">✓ tests pass</span> / <span class="badge fail">✗ tests fail</span> badge is that turn's test result</li>
-    <li><span class="bluedot"></span> = inside the 40-action fingerprint window</li>
+    <li><span class="bluedot"></span><span id="winLeg"></span></li>
   </ul>
   <div class="tl" id="tl"></div>
 
 </div>
 <script>
-// A synthetic, self-consistent session, longer than the window so the window
-// genuinely slides on replay. Everything below is COMPUTED from this data:
-// the panel demonstrates the real logic, exposing nothing real. Its arc is
-// deliberate (read-heavy exploration early, an edit/run_test build loop late)
-// so the live window visibly changes as replay advances.
-const META={
-  client:"Claude Code",
-  project:"learning-from-dev",
-  id:"ae6d93a7",
-  date:"Jun 17",
-  intent:"build a token-validation guard for the auth flow",
-  models:[{name:"claude-opus-4-8", calls:42},{name:"claude-haiku-4-5", calls:7}],
-};
-const SESSION=[
-  {t:"14:08", prompt:"explore the auth package layout",     plan:"Skim the session store, middleware, and token utils.",      seq:["read_file","read_file","read_file","read_file","other"]},
-  {t:"14:11", prompt:"how are tokens issued today",         plan:"Trace the issue path to find where claims are set.",        seq:["read_file","read_file","read_file"]},
-  {t:"14:13", prompt:"scaffold the validation module",      plan:"Create validate.py with a stub and import it.",             seq:["read_file","edit"]},
-  {t:"14:16", prompt:"add a token validation helper",       plan:"validate_token plus a happy-path test.",                    seq:["read_file","edit","run_test"], outcome:"pass"},
-  {t:"14:19", prompt:"handle the expired-token case",       plan:"Branch on expiry and extend the test matrix.",              seq:["edit","run_test","edit","run_test"], outcome:"fail"},
-  {t:"14:22", prompt:"the null-subject case still fails",   plan:"Guard a missing subject claim before decode.",              seq:["read_file","edit","run_test"], outcome:"fail"},
-  {t:"14:25", prompt:"try the library decoder instead",     plan:"Swap the hand-rolled parse for the library decoder.",       seq:["read_file","edit","run_test"], outcome:"pass"},
-  {t:"14:28", prompt:"add error handling to the auth flow", plan:"Wrap the decode path and surface a typed error.",           seq:["read_file","read_file","edit","edit","run_test"], outcome:"fail"},
-  {t:"14:31", prompt:"narrow the caught exception",         plan:"Catch only the decode error.",                              seq:["edit","run_test"], outcome:"fail"},
-  {t:"14:33", prompt:"re-raise as a typed AuthError",       plan:"Map to AuthError at the boundary.",                         seq:["edit","run_test"], outcome:"pass"},
-  {t:"14:36", prompt:"wire the guard into middleware",      plan:"Register the guard and read the call site back.",           seq:["read_file","edit"]},
-  {t:"14:38", prompt:"logout still errors",                plan:"Reproduce the logout failure first.",                       seq:["read_file","edit","run_test"], outcome:"fail"},
-  {t:"14:40", prompt:"patch the logout path",              plan:"Clear the session token on logout.",                        seq:["edit","run_test"], outcome:"pass"},
-  {t:"14:43", prompt:"add a regression test",             plan:"Lock the logout behavior with a test.",                     seq:["edit","run_test"], outcome:"pass"},
-  {t:"14:45", prompt:"tidy the imports",                  plan:"Sort imports and drop the unused decoder.",                 seq:["edit","other"]},
-  {t:"14:47", prompt:"run the full suite",                plan:"Green check across the auth package.",                      seq:["run_test"], outcome:"pass"},
+// Synthetic, self-consistent sessions. Everything below is COMPUTED from this
+// data: the panel demonstrates the real logic, exposing nothing real. The three
+// sessions are deliberately contrasting (build / explore / debug) so switching
+// shows distinct fingerprints, archetypes, and top procedures.
+const O="claude-opus-4-8", H="claude-haiku-4-5";
+const DEMO_SESSIONS=[
+  {meta:{name:"auth-guard", client:"Claude Code", project:"learning-from-dev", id:"ae6d93a7", date:"Jun 17",
+    intent:"build a token-validation guard for the auth flow", models:[{name:O},{name:H}]},
+   turns:[
+    {t:"14:08", model:O, prompt:"explore the auth package layout",     plan:"Skim the session store and middleware, then grep for where claims are set.", seq:["read_file","read_file","read_file","read_file","search_repo"]},
+    {t:"14:11", model:H, prompt:"how are tokens issued today",         plan:"Trace the issue path end to end.",                          seq:["read_file","read_file","read_file"]},
+    {t:"14:13", model:H, prompt:"pull in a jwt library",               plan:"Add the dependency and confirm the import resolves.",       seq:["package","read_file"]},
+    {t:"14:15", model:O, prompt:"scaffold the validation module",      plan:"Create validate.py with a stub and import it.",             seq:["read_file","edit"]},
+    {t:"14:18", model:O, prompt:"add a token validation helper",       plan:"validate_token plus a happy-path test.",                    seq:["read_file","edit","run_test"], outcome:"pass"},
+    {t:"14:21", model:O, prompt:"handle the expired-token case",       plan:"Branch on expiry and extend the test matrix.",              seq:["edit","run_test","edit","run_test"], outcome:"fail"},
+    {t:"14:24", model:O, prompt:"the null-subject case still fails",   plan:"Guard a missing subject claim before decode.",              seq:["read_file","edit","run_test"], outcome:"fail"},
+    {t:"14:27", model:O, prompt:"try the library decoder instead",     plan:"Swap the hand-rolled parse for the library decoder.",       seq:["read_file","edit","run_test"], outcome:"pass"},
+    {t:"14:30", model:O, prompt:"add error handling to the auth flow", plan:"Wrap the decode path and surface a typed error.",           seq:["read_file","read_file","edit","edit","run_test"], outcome:"fail"},
+    {t:"14:33", model:O, prompt:"narrow the caught exception",         plan:"Catch only the decode error.",                              seq:["edit","run_test"], outcome:"fail"},
+    {t:"14:35", model:O, prompt:"re-raise as a typed AuthError",       plan:"Map to AuthError at the boundary.",                         seq:["edit","run_test"], outcome:"pass"},
+    {t:"14:38", model:O, prompt:"wire the guard into middleware",      plan:"Register the guard and read the call site back.",           seq:["read_file","edit"]},
+    {t:"14:40", model:O, prompt:"logout still errors",                plan:"Reproduce the logout failure first.",                       seq:["read_file","edit","run_test"], outcome:"fail"},
+    {t:"14:42", model:O, prompt:"patch the logout path",              plan:"Clear the session token on logout.",                        seq:["edit","run_test"], outcome:"pass"},
+    {t:"14:44", model:H, prompt:"lint and tidy the imports",          plan:"Run ruff and drop the unused decoder.",                     seq:["edit","lint"]},
+    {t:"14:46", model:O, prompt:"commit the fix",                     plan:"Stage and commit with a descriptive message.",              seq:["version_control"]},
+  ]},
+  {meta:{name:"ingestion", client:"Claude Code", project:"data-pipeline", id:"7f2c1b04", date:"Jun 16",
+    intent:"map how the ingestion pipeline fits together", models:[{name:O},{name:H}]},
+   turns:[
+    {t:"09:02", model:O, prompt:"where does ingestion start",        plan:"Find the entrypoint and the first stage.",                  seq:["read_file","read_file","read_file","search_repo"]},
+    {t:"09:05", model:O, prompt:"trace the queue consumer",          plan:"Follow the consumer loop and its handlers.",                seq:["read_file","read_file","read_file","read_file"]},
+    {t:"09:09", model:H, prompt:"how are batches sized",             plan:"Look for the batching policy and limits.",                  seq:["read_file","read_file","search_repo"]},
+    {t:"09:12", model:O, prompt:"find the retry logic",              plan:"Search for backoff and retry decorators.",                  seq:["search_repo","read_file","read_file"]},
+    {t:"09:16", model:O, prompt:"look up the config schema",         plan:"Open the settings and defaults.",                           seq:["read_file","read_file","read_file"]},
+    {t:"09:19", model:H, prompt:"check dead-letter handling",        plan:"Trace where failed messages go.",                           seq:["read_file","read_file","search_repo"]},
+    {t:"09:23", model:O, prompt:"note the backpressure path",        plan:"See how the pipeline slows under load.",                    seq:["read_file","read_file","read_file"]},
+    {t:"09:27", model:O, prompt:"skim the tests for coverage",       plan:"Scan the test suite for the gaps.",                          seq:["read_file","read_file","search_repo"]},
+    {t:"09:30", model:O, prompt:"summarize the data flow",           plan:"Write up the stages end to end.",                           seq:["read_file","read_file"]},
+  ]},
+  {meta:{name:"checkout", client:"Claude Code", project:"api-server", id:"c3915d8e", date:"Jun 15",
+    intent:"fix the flaky checkout test", models:[{name:O},{name:H}]},
+   turns:[
+    {t:"16:40", model:O, prompt:"reproduce the flaky checkout test", plan:"Run it in a loop to see it fail.",                          seq:["read_file","run_test"], outcome:"fail"},
+    {t:"16:43", model:O, prompt:"add logging around the race",       plan:"Instrument the suspicious async call.",                     seq:["edit","run_test"], outcome:"fail"},
+    {t:"16:46", model:O, prompt:"is it the async timing",            plan:"Hypothesize an unawaited settlement.",                      seq:["edit","run_test"], outcome:"fail"},
+    {t:"16:49", model:O, prompt:"await the settlement",              plan:"Await the promise before asserting.",                       seq:["edit","run_test"], outcome:"pass"},
+    {t:"16:51", model:H, prompt:"run it again to be sure",           plan:"Re-run to confirm it is stable.",                           seq:["run_test"], outcome:"fail"},
+    {t:"16:54", model:O, prompt:"mock the clock",                    plan:"The remaining flake is wall-clock dependent.",              seq:["read_file","edit","run_test"], outcome:"fail"},
+    {t:"16:57", model:O, prompt:"freeze time in the fixture",        plan:"Pin the clock in the test fixture.",                        seq:["edit","run_test"], outcome:"pass"},
+    {t:"17:00", model:O, prompt:"run the whole suite",               plan:"Full pass to check nothing regressed.",                     seq:["run_test"], outcome:"pass"},
+    {t:"17:02", model:H, prompt:"remove the debug logging",          plan:"Strip the instrumentation and lint.",                       seq:["edit","lint"]},
+    {t:"17:04", model:O, prompt:"commit the fix",                    plan:"Commit with a note on the root cause.",                     seq:["version_control"]},
+  ]},
 ];
 
-const ORDER=["read_file","prompt_ai","edit","run_test","other"];
-const LAB={read_file:"read_file",prompt_ai:"prompt_ai",edit:"edit",run_test:"run_test",other:"bash/other"};
-const COLOR={read_file:"var(--read)",prompt_ai:"var(--prompt)",edit:"var(--edit)",run_test:"var(--test)",other:"var(--other)"};
+const SESSIONS=(typeof window!=="undefined"&&Array.isArray(window.PROCGREP_SESSIONS)&&window.PROCGREP_SESSIONS.length)?window.PROCGREP_SESSIONS:DEMO_SESSIONS;
+const ORDER=["read_file","search_repo","prompt_ai","edit","lint","run_test","package","version_control","other"];
+const LAB={read_file:"read_file",search_repo:"search_repo",prompt_ai:"prompt_ai",edit:"edit",lint:"lint",run_test:"run_test",package:"package",version_control:"version_control",other:"bash/other"};
+const COLOR={read_file:"var(--read)",search_repo:"var(--search)",prompt_ai:"var(--prompt)",edit:"var(--edit)",lint:"var(--lint)",run_test:"var(--test)",package:"var(--package)",version_control:"var(--vcs)",other:"var(--other)"};
 const WIN=40;
+const modelColors=["#14110E","#A99B86","#5692E5"];
 
-// Flatten to the atom stream and record which turn owns each atom: a turn opens
-// with the human prompt (prompt_ai), then the agent's action sequence.
-const FLAT=[], RANGE=[];
-SESSION.forEach(tn=>{const s=FLAT.length;FLAT.push("prompt_ai");tn.seq.forEach(a=>FLAT.push(a));RANGE.push({s,e:FLAT.length});});
+// Per-session state, rebuilt by load().
+let META, SESSION, FLAT, RANGE, PRESENT, fills, turnEls;
+let current=0, selected=null, lastNow=null;
+let timer=null, playhead=0, playing=false;
+
+const atomsEl=document.getElementById("atoms");
+const tlEl=document.getElementById("tl");
+const divider=document.createElement("div");
+divider.className="winmark";
 
 function shares(atoms){const c={};atoms.forEach(a=>c[a]=(c[a]||0)+1);const n=atoms.length||1;
-  const s={};ORDER.forEach(k=>s[k]=(c[k]||0)/n);return s;}
-
-// Top procedure: the most frequent adjacent atom pair is exactly BPE's first
-// merge. We grow it one step (its most frequent successor and predecessor) for
-// a two-level tree: the dominant compositional pattern, not the whole vocabulary.
+  const s={};PRESENT.forEach(k=>s[k]=(c[k]||0)/n);return s;}
+function dominant(seq){const c={};seq.forEach(a=>c[a]=(c[a]||0)+1);let best="other",bn=-1;
+  ORDER.forEach(k=>{if((c[k]||0)>bn){bn=c[k]||0;best=k;}});return bn>0?best:"other";}
 function topProcedure(atoms){
   const pair={};
   for(let i=0;i<atoms.length-1;i++){const k=atoms[i]+" | "+atoms[i+1];pair[k]=(pair[k]||0)+1;}
   let best=null,bn=0;for(const k in pair)if(pair[k]>bn){bn=pair[k];best=k;}
   if(!best)return null;
   const [l,r]=best.split(" | ");
-  const tri={},pre={};
-  for(let i=0;i<atoms.length-2;i++)if(atoms[i]===l&&atoms[i+1]===r){const k=atoms[i+2];tri[k]=(tri[k]||0)+1;}
-  for(let i=1;i<atoms.length-1;i++)if(atoms[i]===l&&atoms[i+1]===r){const k=atoms[i-1];pre[k]=(pre[k]||0)+1;}
-  const kids=Object.entries(tri).sort((a,b)=>b[1]-a[1]).slice(0,2).map(e=>e[0]);
-  const parents=Object.entries(pre).sort((a,b)=>b[1]-a[1]).slice(0,1).map(e=>e[0]);
-  return {chain:l+" → "+r, weight:bn/Math.max(1,atoms.length-1), kids, parents, l, r};
+  return {chain:l+" → "+r, weight:bn/Math.max(1,atoms.length-1)};
 }
 function gloss(chain){
   if(chain==="edit → run_test"||chain==="run_test → edit") return "build then verify";
   if(chain==="read_file → edit") return "locate then change";
   if(chain==="read_file → read_file") return "exploration sweep";
+  if(chain==="read_file → search_repo"||chain==="search_repo → read_file") return "search and read";
   if(chain==="edit → prompt_ai"||chain==="prompt_ai → edit") return "tight revision loop";
-  return "recurring step";
+  if(chain==="run_test → run_test") return "re-running tests";
+  return "";
 }
+function shortModel(name){return name.replace("claude-","");}
+function primaryModel(turns){
+  const c={};turns.forEach(t=>{c[t.model]=(c[t.model]||0)+t.seq.length;});
+  return Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];
+}
+function durationMin(turns){
+  const [h1,m1]=turns[0].t.split(":").map(Number);
+  const [h2,m2]=turns[turns.length-1].t.split(":").map(Number);
+  return (h2*60+m2)-(h1*60+m1);
+}
+// Stage, EARNED from the session's own procedure mix -- not hand-labeled.
+// No tests + read/search dominant -> explore; high fail-rate tight loop with
+// little reading -> debug; otherwise edit+test feature work -> build.
+function classifyStage(turns){
+  let actions=0,tests=0,fails=0,reads=0;
+  turns.forEach(t=>{
+    t.seq.forEach(a=>{actions++;if(a==="run_test")tests++;if(a==="read_file"||a==="search_repo")reads++;});
+    if(t.outcome==="fail")fails++;
+  });
+  if(tests===0) return "explore";
+  const failRate=turns.length?fails/turns.length:0;
+  const readShare=actions?reads/actions:0;
+  if(failRate>=0.4 && readShare<0.2) return "debug";
+  return "build";
+}
+function colorForModel(name){const i=META.models.findIndex(m=>m.name===name);return modelColors[(i<0?0:i)%modelColors.length];}
 
-// ---- session identity + stats (static, whole-session) ----
 function renderHeader(){
-  document.getElementById("ident").innerHTML=`${META.client} · ${META.project} · <span class="id">${META.id}</span>`;
-  document.getElementById("intent").innerHTML=`${META.intent} <span class="tag">illustrative</span>`;
-  const c={read_file:0,edit:0,run_test:0,other:0};let actions=0;
-  SESSION.forEach(t=>t.seq.forEach(a=>{c[a]=(c[a]||0)+1;actions++;}));
+  document.getElementById("ident").innerHTML=
+    `<div class="idrow"><span class="k">platform</span><span class="v">${META.client}</span></div>`+
+    `<div class="idrow"><span class="k">workspace</span><span class="v">${META.project}</span></div>`+
+    `<div class="idrow"><span class="k">session</span><span class="v hash">${META.id}</span></div>`;
+  const itag = META.illustrative!==false ? " illustrative" : (META.promptsParaphrased ? " paraphrased prompts" : "");
+  document.getElementById("intent").innerHTML=(META.intent||"")+(itag?`<span class="tag">${itag.trim()}</span>`:"");
+  let actions=0;
+  SESSION.forEach(t=>{actions+=t.seq.length;});
   const [h1,m1]=SESSION[0].t.split(":").map(Number);
   const [h2,m2]=SESSION[SESSION.length-1].t.split(":").map(Number);
   const mins=(h2*60+m2)-(h1*60+m1);
   const apx=(actions/SESSION.length).toFixed(1);
-  const tot=META.models.reduce((n,m)=>n+m.calls,0);
-  const mc=["#14110E","#A99B86","#5692E5"];
-  const segs=META.models.map((m,i)=>`<span class="seg" style="width:${(m.calls/tot*100).toFixed(1)}%;background:${mc[i%mc.length]}"></span>`).join("");
-  const leg=META.models.map((m,i)=>`<span class="ml"><span class="sw" style="background:${mc[i%mc.length]}"></span>${m.name} ${Math.round(m.calls/tot*100)}%</span>`).join(" · ");
+  const row=(k,v)=>`<div class="idrow"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   document.getElementById("stats").innerHTML=
-    `<div>${META.date} · ${SESSION[0].t}–${SESSION[SESSION.length-1].t} · ${mins} min · <b>${SESSION.length}</b> turns · <b>${actions}</b> tool calls · <b>${apx}</b> actions / prompt</div>`+
-    `<div>${c.read_file} read · ${c.edit} edit · ${c.run_test} test · ${c.other} bash</div>`+
-    `<div class="models"><span class="mbar">${segs}</span> <span class="mleg">${leg}</span></div>`;
+    row("date",META.date)+
+    row("time",`${SESSION[0].t}–${SESSION[SESSION.length-1].t}`)+
+    row("duration",`${mins} min`)+
+    row("turns",SESSION.length)+
+    row("tool calls",actions)+
+    row("tool calls / prompt",apx);
 }
 
-// ---- atoms (live window) ----
-const fills={};
-const atomsEl=document.getElementById("atoms");
-ORDER.forEach(k=>{
-  const row=document.createElement("div");row.className="atom";row.dataset.k=k;
-  row.innerHTML=`<span class="dot"></span><span class="nm">${LAB[k]}</span>`+
-    `<span class="track"><span class="fill" style="background:${COLOR[k]}"></span></span><span class="pc">0%</span>`;
-  row.onclick=()=>toggleFilter(k);
-  atomsEl.appendChild(row);
-  fills[k]={fill:row.querySelector(".fill"),pc:row.querySelector(".pc")};
-});
-
-// ---- threaded timeline (built once; classes toggle per playhead) ----
-const tlEl=document.getElementById("tl");
-const turnEls=[];
-const divider=document.createElement("div");
-divider.className="winmark";
-divider.textContent="earlier · outside the 40-action window";
-function compress(seq){
-  const out=[];let i=0;
-  while(i<seq.length){let j=i;while(j<seq.length&&seq[j]===seq[i])j++;
-    const a=seq[i],n=j-i,name=a==="other"?"bash":a;
-    out.push(`<span style="color:${COLOR[a]||'inherit'}">${name}${n>1?" × "+n:""}</span>`);i=j;}
-  return out.join(" → ");
+function buildAtoms(){
+  atomsEl.innerHTML="";fills={};
+  PRESENT.forEach(k=>{
+    const row=document.createElement("div");row.className="atom";row.dataset.k=k;
+    row.innerHTML=`<span class="dot"></span><span class="nm">${LAB[k]}</span>`+
+      `<span class="track"><span class="fill" style="background:${COLOR[k]}"></span></span><span class="pc">0%</span>`;
+    row.onclick=()=>toggleFilter(k);
+    atomsEl.appendChild(row);
+    fills[k]={fill:row.querySelector(".fill"),pc:row.querySelector(".pc")};
+  });
 }
-function seqHtml(tn){
-  let s=compress(tn.seq);
-  if(tn.outcome==="pass") s+=` <span class="badge pass">✓ tests pass</span>`;
-  if(tn.outcome==="fail") s+=` <span class="badge fail">✗ tests fail</span>`;
-  return s;
-}
-SESSION.forEach((tn,i)=>{
-  const turnNo=i+1;
-  const d=document.createElement("div");
-  d.className="turn";
-  d.dataset.idx=turnNo-1;
-  d.dataset.atoms=[...new Set(tn.seq)].join(",");
-  d.innerHTML=`<span class="node"></span>`+
-    `<div class="when">Turn ${turnNo} · <b>${tn.t}</b></div>`+
-    `<div class="pr">"${tn.prompt}"</div>`+
-    `<div class="seq">${seqHtml(tn)}</div>`+
-    `<div class="plan">${tn.plan}</div>`;
-  d.onclick=()=>{if(playing)pause(false);d.classList.toggle("open");};
-  tlEl.appendChild(d);
-  turnEls[turnNo-1]=d;
-});
 
-// ---- playhead drives the live window + timeline state ----
-let selected=null, lastNow=null;
+function childrenHtml(tn){
+  const runs=[];let i=0;
+  while(i<tn.seq.length){let j=i;while(j<tn.seq.length&&tn.seq[j]===tn.seq[i])j++;runs.push([tn.seq[i],j-i]);i=j;}
+  return runs.map(([a,n],idx)=>{
+    const last=idx===runs.length-1, name=a==="other"?"bash":a;
+    let badge="";
+    if(last&&tn.outcome==="pass")badge=` <span class="badge pass">✓ tests pass</span>`;
+    if(last&&tn.outcome==="fail")badge=` <span class="badge fail">✗ tests fail</span>`;
+    return `<div class="act"><span class="br">${last?"└─":"├─"}</span><span style="color:${COLOR[a]}">${name}${n>1?" × "+n:""}</span>${badge}</div>`;
+  }).join("");
+}
+function buildTimeline(){
+  tlEl.innerHTML="";turnEls=[];
+  SESSION.forEach((tn,i)=>{
+    const turnNo=i+1;
+    const d=document.createElement("div");
+    d.className="turn";
+    d.dataset.idx=turnNo-1;
+    d.dataset.atoms=[...new Set(tn.seq)].join(",");
+    d.innerHTML=`<span class="node" style="background:${COLOR[dominant(tn.seq)]}"></span>`+
+      `<div class="turnmain">`+
+        `<div class="when">Turn ${turnNo} · <b>${tn.t}</b><span class="mtag" style="color:${colorForModel(tn.model)}">${shortModel(tn.model)}</span></div>`+
+        (tn.prompt?`<div class="pr">"${tn.prompt}"</div>`:"")+
+        `<div class="acts">${childrenHtml(tn)}</div>`+
+      `</div>`+
+      `<div class="plan">${tn.plan}</div>`;
+    d.onclick=()=>{if(playing)pause(false);};
+    tlEl.appendChild(d);
+    turnEls[turnNo-1]=d;
+  });
+}
+
 function setPlayhead(p, scroll){
   const lo=Math.max(0,p-WIN);
   const win=FLAT.slice(lo,p);
   const sh=shares(win);
-  ORDER.forEach(k=>{fills[k].fill.style.width=(sh[k]*100)+"%";fills[k].pc.textContent=Math.round(sh[k]*100)+"%";});
+  PRESENT.forEach(k=>{fills[k].fill.style.width=(sh[k]*100)+"%";fills[k].pc.textContent=Math.round(sh[k]*100)+"%";});
   const proc=topProcedure(win);
   if(proc){
     document.getElementById("procChain").textContent=proc.chain;
-    document.getElementById("procW").textContent=Math.round(proc.weight*100)+"% of window";
-    document.getElementById("procGloss").textContent=gloss(proc.chain);
+    document.getElementById("procW").textContent=Math.round(proc.weight*100)+"% of steps";
+    const g=gloss(proc.chain);
+    document.getElementById("procGloss").textContent=g?` · ${g}`:"";
   }
   let nowEl=null, firstInwin=null, hasPast=false;
   for(let i=0;i<SESSION.length;i++){
-    const {s,e}=RANGE[i], el=turnEls[i], open=el.classList.contains("open")?" open":"";
+    const {s,e}=RANGE[i], el=turnEls[i];
     let zone;
     if(s>=p) zone="future";
     else if(s<p && p<=e) zone="now";
     else if(e>lo && s<p) zone="inwin";
     else zone="past";
-    el.className="turn"+open+(zone==="future"?" future":zone==="now"?" now inwin":zone==="inwin"?" inwin":"");
+    el.className="turn"+(zone==="future"?" future":zone==="now"?" now inwin":zone==="inwin"?" inwin":"");
     if(zone==="now") nowEl=el;
     if((zone==="inwin"||zone==="now") && !firstInwin) firstInwin=el;
     if(zone==="past") hasPast=true;
   }
   if(firstInwin && hasPast) tlEl.insertBefore(divider, firstInwin); else if(divider.parentNode) divider.remove();
-  if(scroll && nowEl && nowEl!==lastNow) nowEl.scrollIntoView({behavior:"smooth",block:"nearest"});
+  // Scroll ONLY the timeline container, never the page, so the reader can
+  // scroll the page freely during replay.
+  if(scroll && nowEl && nowEl!==lastNow){
+    const tr=nowEl.getBoundingClientRect(), cr=tlEl.getBoundingClientRect();
+    if(tr.top < cr.top) tlEl.scrollTop += tr.top - cr.top - 10;
+    else if(tr.bottom > cr.bottom) tlEl.scrollTop += tr.bottom - cr.bottom + 10;
+  }
   lastNow=nowEl;
 }
 
-// ---- atom filter: dim timeline turns that did not use the atom ----
 function toggleFilter(k){if(playing)pause(false);selected=selected===k?null:k;applyFilter();}
 function clearFilter(){selected=null;applyFilter();}
 function applyFilter(){
   document.querySelectorAll(".atom").forEach(r=>r.classList.toggle("sel",r.dataset.k===selected));
   const note=document.getElementById("fnote");
-  if(selected){
-    note.innerHTML=`showing turns that used <b>${LAB[selected]}</b> · <a onclick="clearFilter()">show all</a>`;
-  } else {
-    note.textContent="";
-  }
+  note.innerHTML = selected
+    ? `showing turns that used <b>${LAB[selected]}</b> · <a onclick="clearFilter()">show all</a>` : "";
   let firstMatch=null;
   turnEls.forEach(t=>{
     const has=!selected || (t.dataset.atoms||"").split(",").includes(selected);
     t.classList.toggle("dim",!has);
     if(has && selected && !firstMatch && !t.classList.contains("future")) firstMatch=t;
   });
-  if(firstMatch) firstMatch.scrollIntoView({behavior:"smooth",block:"nearest"});
+  if(firstMatch){
+    const tr=firstMatch.getBoundingClientRect(), cr=tlEl.getBoundingClientRect();
+    tlEl.scrollTop += tr.top - cr.top - 10;
+  }
 }
-// ---- replay: autoplay on load, pausable; any interaction pauses ----
-let timer=null, playhead=FLAT.length, playing=false;
+function closeTip(){document.getElementById("tip").classList.add("hidden");}
+
+// ---- replay ----
 const btn=document.getElementById("replayBtn"), tri=btn.querySelector(".tri"), rlab=document.getElementById("rlab");
 function setBtn(state){
   if(state==="playing"){tri.textContent="⏸";rlab.textContent="Pause";}
@@ -318,19 +410,58 @@ function pause(ended){playing=false;if(timer){clearInterval(timer);timer=null;}s
 function play(){
   if(playing)return;
   clearFilter();
-  if(playhead>=FLAT.length)playhead=1; // finished: restart from the top
+  if(playhead>=FLAT.length)playhead=1;
   playing=true;setBtn("playing");
   if(timer)clearInterval(timer);
   timer=setInterval(()=>{
     setPlayhead(playhead, true);
     if(playhead>=FLAT.length){pause(true);return;}
     playhead++;
-  },130);
+  },150);
 }
 function toggleReplay(){playing?pause(false):play();}
 
-renderHeader();
-play();
+// ---- session switcher ----
+const TAGS={
+  build:"writing then verifying code; edit and run_test dominate",
+  explore:"reading and searching to understand code; few edits, no tests",
+  debug:"repeated edit then run_test loops, often failing before a pass",
+};
+function renderSwitcher(){
+  const el=document.getElementById("switch");el.innerHTML="";
+  SESSIONS.forEach((s,i)=>{
+    const b=document.createElement("button");
+    if(i===current)b.className="active";
+    const stage=classifyStage(s.turns);
+    b.innerHTML=`<span class="nnm">${s.meta.name}</span>`+
+      `<span class="nmeta">${s.meta.project} · ${s.meta.date} · ${durationMin(s.turns)} min</span>`+
+      `<span class="nmeta">${s.meta.client} · ${shortModel(primaryModel(s.turns))}</span>`;
+    if(TAGS[stage]) b.title=`${stage}: ${TAGS[stage]}`;
+    b.onclick=()=>load(i);
+    el.appendChild(b);
+  });
+}
+
+function load(idx){
+  if(timer){clearInterval(timer);timer=null;}
+  current=idx;
+  META=SESSIONS[idx].meta;
+  SESSION=SESSIONS[idx].turns;
+  FLAT=[];RANGE=[];
+  SESSION.forEach(tn=>{const s=FLAT.length;FLAT.push("prompt_ai");tn.seq.forEach(a=>FLAT.push(a));RANGE.push({s,e:FLAT.length});});
+  PRESENT=ORDER.filter(k=>k==="prompt_ai"||SESSION.some(t=>t.seq.includes(k)));
+  selected=null;lastNow=null;playing=false;playhead=FLAT.length;
+  renderSwitcher();
+  renderHeader();
+  buildAtoms();
+  buildTimeline();
+  document.getElementById("atomsHint").textContent= FLAT.length>WIN ? `· last ${WIN} of ${FLAT.length} atoms` : `· ${FLAT.length} atoms`;
+  document.getElementById("winLeg").textContent=` = inside the ${WIN}-atom fingerprint window`;
+  divider.textContent=`earlier · outside the ${WIN}-atom window`;
+  play();
+}
+
+load(0);
 </script>
 </body>
 </html>
