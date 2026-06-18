@@ -6,10 +6,10 @@ session shape (atoms + prompt-anchored turns) with ``build_panel_session``,
 injects them into a copy of ``docs/live_fingerprint.html``, and opens it. Nothing
 leaves the machine.
 
-Prompt text is shown only when ``--paraphrase`` is given -- a local command that
-rewrites a prompt (stripping writing style and identifiers) read on stdin and
-written on stdout. Without it, turns show their action structure with no prompt
-text, so raw prompts are never surfaced. The only sanctioned thing to share is
+The conversation (prompt text) is sampled for this local view by default. Pass
+``--paraphrase`` -- a local command that rewrites a prompt (stripping writing
+style and identifiers) on stdin/stdout -- to normalize prompts before you share
+or screenshot. The only sanctioned thing to share is
 ``to_shareable(record)`` (atoms + hashed id + counts), not this local HTML.
 
 Usage:
@@ -75,7 +75,7 @@ def main() -> None:
     parser.add_argument(
         "--paraphrase",
         default=None,
-        help="local command to rewrite prompts (stdin->stdout); omit to hide prompt text",
+        help="local command to rewrite prompts (stdin->stdout) for sharing; omit to keep raw local prompts",
     )
     args = parser.parse_args()
 
@@ -102,7 +102,7 @@ def main() -> None:
     out.write_text(html)
     webbrowser.open(out.as_uri())
 
-    note = "with paraphrased prompts" if paraphrase else "with prompts hidden (pass --paraphrase to show normalized prompts)"
+    note = "with paraphrased prompts" if paraphrase else "with raw local prompts (pass --paraphrase to normalize for sharing)"
     print(f"opened {len(sessions)} session(s) {note}")
     print(f"  {out}")
     print("  (local file containing your own data — do not share it; use to_shareable() to export)")

@@ -357,11 +357,12 @@ def build_panel_session(
 
     Prompt-anchored: each human prompt opens a turn whose atom sequence is the
     agent's following tool calls (the same mapping as the fingerprint), tagged
-    with the turn's clock time and model. This output is LOCAL -- use
-    ``to_shareable`` for anything that leaves the machine. Prompt text is included
-    only when a ``paraphrase`` callable is supplied (style + identifiers stripped
-    locally); with no paraphraser, prompts are omitted, so raw text is never
-    surfaced.
+    with the turn's clock time and model. The conversation (prompt text) is
+    sampled for this LOCAL view; a ``paraphrase`` callable, when supplied,
+    rewrites each prompt (style + identifiers stripped) instead of showing it
+    raw -- the opt-in for sharing or screenshots. Either way this output is
+    LOCAL; use ``to_shareable`` for anything that leaves the machine (it carries
+    atoms and counts only, never prompt text).
     """
     lines = [line for line in record.get("events", []) if isinstance(line, Mapping)]
     sid = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), "session")
@@ -381,7 +382,7 @@ def build_panel_session(
             if cur is not None and cur["seq"]:
                 turns.append(cur)
             text = _prompt_text(content)
-            prompt = paraphrase(text) if (paraphrase is not None and text) else ""
+            prompt = paraphrase(text) if (paraphrase is not None and text) else text
             cur = {"t": _clock(line.get("timestamp")), "model": "", "prompt": prompt, "plan": "", "seq": []}
         elif kind == "assistant" and isinstance(content, list):
             if cur is None:

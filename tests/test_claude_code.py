@@ -181,12 +181,12 @@ def test_build_panel_session_is_prompt_anchored_and_local() -> None:
         _u("run the tests", "2026-06-17T14:10:00Z"),
         _a([{"type": "tool_use", "name": "Bash", "input": {"command": "pytest -q"}}], "2026-06-17T14:10:20Z"),
     ]}
-    ps = build_panel_session(record)  # no paraphraser -> prompts omitted
+    ps = build_panel_session(record)  # no paraphraser -> conversation sampled raw (local)
     assert ps["meta"]["project"] == "learning-from-dev"
     assert ps["meta"]["client"] == "Claude Code"
     assert [t["seq"] for t in ps["turns"]] == [["read_file", "edit"], ["run_test"]]
     assert ps["turns"][0]["t"] == "14:08"
-    assert ps["turns"][0]["prompt"] == ""  # hidden without a paraphraser
+    assert ps["turns"][0]["prompt"] == "scaffold it"  # sampled for the local view
     assert ps["meta"]["models"] == [{"name": "claude-opus-4-8"}]
 
     ps2 = build_panel_session(record, paraphrase=lambda s: s.upper())
