@@ -142,7 +142,17 @@ math{font-family:var(--serif)}
 .term .tip-src a{color:#e9b8a6}
 .foot{max-width:var(--col);margin:40px auto 0;padding:24px var(--gutter) 70px 32px;
 font-family:var(--mono);font-size:12px;color:var(--olive)}
-@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}.topbar .in{padding:10px 16px}.topbar nav{gap:6px 14px}}
+@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}
+html,body{overflow-x:clip}
+.topbar .in{padding:9px 16px;justify-content:flex-start;gap:4px 14px}
+.topbar .mark{flex:1}
+.topbar nav{width:100%;justify-content:flex-start;gap:6px 16px}
+.topbar nav .grp{gap:6px 16px}
+.math.inline,.math.display{display:inline-block;max-width:100%;overflow-x:auto;overflow-y:hidden;vertical-align:middle}
+pre{max-width:100%;overflow-x:auto}
+table{display:block;max-width:100%;overflow-x:auto}
+.term .tip{position:fixed;left:14px;right:14px;top:auto;bottom:16px;width:auto;
+  box-shadow:0 6px 22px rgba(20,17,14,.28)}}
 /* code cards — light, Cursor-blog style (NOT a dark terminal theme) */
 .codecard{margin:24px 0;border:1px solid var(--rule);border-radius:7px;background:#fff;
   overflow:hidden;box-shadow:0 1px 2px rgba(20,17,14,.04)}
