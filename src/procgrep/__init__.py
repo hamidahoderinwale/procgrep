@@ -76,7 +76,12 @@ from procgrep.stats import (
     effective_vocab_size_per_group,
     entropies_per_group,
 )
-from procgrep.summary import SummaryDiff, summary_diff, variance_decomposition
+from procgrep.summary import (
+    SummaryDiff,
+    autonomy_runlength,
+    summary_diff,
+    variance_decomposition,
+)
 from procgrep.types import Atom, AtomSequence, Trace, TraceAdapter
 from procgrep.umap_project import UmapResult, umap_project
 
@@ -112,6 +117,7 @@ __all__ = [
     "VerifyReport",
     "__version__",
     "atom_frequencies_per_group",
+    "autonomy_runlength",
     "canonicalize",
     "cluster_tasks",
     "discriminative_procedures",

@@ -49,3 +49,18 @@ def test_variance_decomposition_separates_explanatory_factor() -> None:
     r = variance_decomposition(traces, vocab, ["real", "noise"], sample=100)
     assert r["real"] > 0.8   # the real grouping explains almost all variation
     assert r["noise"] < 0.3  # the arbitrary split explains little
+
+
+def test_autonomy_runlength_counts_actions_between_prompts() -> None:
+    from procgrep.summary import autonomy_runlength
+
+    # two runs: prompt->edit,edit (2) ; prompt->read_file (1)
+    t1 = Trace(trace_id="a", agent="x", atoms=["prompt_ai", "edit", "edit", "prompt_ai", "read_file"])
+    # no human prompt -> one fully-autonomous run of length 3
+    t2 = Trace(trace_id="b", agent="x", atoms=["edit", "read_file", "run_test"])
+    r = autonomy_runlength([t1, t2])
+    assert r["n_runs"] == 3.0      # runs [2, 1, 3]
+    assert r["mean"] == 2.0
+    assert r["median"] == 2.0
+    assert r["max"] == 3.0
+    assert autonomy_runlength([])["n_runs"] == 0.0

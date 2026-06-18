@@ -167,4 +167,51 @@ def variance_decomposition(
     return out
 
 
-__all__ = ["SummaryDiff", "summary_diff", "variance_decomposition"]
+def autonomy_runlength(
+    traces: Sequence[Trace], *, prompt_atom: str = "prompt_ai"
+) -> dict[str, float]:
+    """Distribution of agent-action run lengths between human prompts.
+
+    A run is the count of non-prompt atoms following a human prompt; a trace with
+    no human prompt at all counts as one fully-autonomous run (its whole action
+    length -- one instruction, then the agent goes). A high run-length means
+    agent-dense, let-it-iterate work; a low one means tight, interleaved human
+    steering. Model-free and deterministic over the atom stream -- the "autonomy"
+    axis (let-it-iterate vs interrupt) as a measurable quantity, not a vibe.
+
+    Returns ``n_runs`` and the run-length ``mean`` / ``median`` / ``p90`` / ``max``.
+    """
+    runs: list[int] = []
+    for trace in traces:
+        atoms = list(trace.atoms)
+        if prompt_atom not in atoms:
+            if atoms:
+                runs.append(len(atoms))
+            continue
+        current = 0
+        seen = False
+        for atom in atoms:
+            if atom == prompt_atom:
+                if seen:
+                    runs.append(current)
+                seen = True
+                current = 0
+            else:
+                current += 1
+        if seen:
+            runs.append(current)
+    if not runs:
+        return {"n_runs": 0.0, "mean": 0.0, "median": 0.0, "p90": 0.0, "max": 0.0}
+    ordered = sorted(runs)
+    mid = len(ordered) // 2
+    median = float(ordered[mid]) if len(ordered) % 2 else (ordered[mid - 1] + ordered[mid]) / 2
+    return {
+        "n_runs": float(len(runs)),
+        "mean": round(sum(runs) / len(runs), 2),
+        "median": median,
+        "p90": float(ordered[min(len(ordered) - 1, int(0.9 * len(ordered)))]),
+        "max": float(max(runs)),
+    }
+
+
+__all__ = ["SummaryDiff", "autonomy_runlength", "summary_diff", "variance_decomposition"]
