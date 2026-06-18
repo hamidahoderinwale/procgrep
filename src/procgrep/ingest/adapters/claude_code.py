@@ -411,7 +411,7 @@ def build_panel_session(
         if not turn["model"]:
             turn["model"] = fallback_model
     meta: dict[str, Any] = {
-        "name": workspace,
+        "name": _anon_id(sid),
         "client": "Claude Code",
         "project": workspace,
         "id": _anon_id(sid),

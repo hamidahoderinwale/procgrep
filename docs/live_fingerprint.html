@@ -144,7 +144,7 @@
   }
 </style>
 </head>
-<body class="pmode-counts">
+<body class="pmode-shown">
 <nav class="nav">
   <div id="overviewNav"></div>
   <h2>sessions</h2>
@@ -174,8 +174,8 @@
   </div>
 
   <div class="privbar">prompts
-    <button class="on" data-m="counts" onclick="setPriv('counts')">characters only</button>
-    <button data-m="shown" onclick="setPriv('shown')">show text</button>
+    <button data-m="counts" onclick="setPriv('counts')">characters only</button>
+    <button class="on" data-m="shown" onclick="setPriv('shown')">show text</button>
   </div>
 
   <div class="atomsec">
@@ -305,7 +305,8 @@ function durationMin(turns){
   if(!turns[0].t||!turns[turns.length-1].t) return null;  // no timestamps (e.g. an atoms-only real session)
   const [h1,m1]=turns[0].t.split(":").map(Number);
   const [h2,m2]=turns[turns.length-1].t.split(":").map(Number);
-  return (h2*60+m2)-(h1*60+m1);
+  const d=(h2*60+m2)-(h1*60+m1);
+  return d>=0 ? d : null;  // HH:MM cannot span a day boundary; hide rather than show a negative
 }
 // Stage, EARNED from the session's own procedure mix -- not hand-labeled.
 // No tests + read/search dominant -> explore; high fail-rate tight loop with
