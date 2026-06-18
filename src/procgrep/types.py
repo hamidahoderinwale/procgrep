@@ -33,6 +33,12 @@ ATOM_DELETE_FILE: Atom = "delete_file"
 ATOM_SUBMIT: Atom = "submit"
 ATOM_THINK: Atom = "think"
 ATOM_ERROR: Atom = "error"
+# Shell-command sub-classes, derived from a Bash command's leading verb only --
+# a category label, never the command text (see the claude-code adapter).
+ATOM_VERSION_CONTROL: Atom = "version_control"
+ATOM_PACKAGE: Atom = "package"
+ATOM_LINT: Atom = "lint"
+ATOM_RUN_CODE: Atom = "run_code"
 ATOM_OTHER: Atom = "other"
 
 CANONICAL_ATOMS: frozenset[Atom] = frozenset(
@@ -47,6 +53,10 @@ CANONICAL_ATOMS: frozenset[Atom] = frozenset(
         ATOM_SUBMIT,
         ATOM_THINK,
         ATOM_ERROR,
+        ATOM_VERSION_CONTROL,
+        ATOM_PACKAGE,
+        ATOM_LINT,
+        ATOM_RUN_CODE,
         ATOM_OTHER,
     }
 )

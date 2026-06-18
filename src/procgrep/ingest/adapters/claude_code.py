@@ -26,13 +26,18 @@ Atom mapping (by flattened action kind):
     Read / NotebookRead                                 -> read_file
     Grep / Glob                                         -> search_repo
     WebSearch / WebFetch                                -> search_repo (search-class)
-    Bash with a test/build command                      -> run_test
+    Bash, test/build command                            -> run_test
+    Bash, git / gh / hg / svn                            -> version_control
+    Bash, pip / uv / npm / cargo ... install            -> package
+    Bash, ruff / mypy / eslint / prettier ...           -> lint
+    Bash, grep / rg / find / fd                          -> search_repo
+    Bash, python / node / make / ./script               -> run_code
     Bash (other), Agent, Task*, MCP tools, ...          -> other
 
 Design decisions:
 
-- Only the action *structure* is read -- tool names, a Bash command string, and
-  event types. Message text is never inspected, so a transcript can be
+- Only the action *structure* is read -- tool names, a Bash command's leading
+  verb, and event types. Message text is never inspected, so a transcript can be
   fingerprinted without exposing its content.
 
 - ``prompt_ai`` is the human->AI turn, matching the cursor-companion atom so the
@@ -40,9 +45,11 @@ Design decisions:
   long tool run) where Cursor is interleaved; the shared atoms make that
   contrast measurable rather than hiding it.
 
-- Bash is classified by its command: test/build commands map to ``run_test``
-  (the canonical proxy), everything else falls through to ``other`` rather than
-  inflating the test signal -- a one-size ``Bash -> run_test`` rule would.
+- Bash is sub-classified by its leading verb into a small set of safe category
+  atoms (test, version_control, package, lint, search, run_code); the command
+  string is classified and then *discarded* in `_flatten`, so only the category
+  -- never the command -- reaches the fingerprint. Anything unrecognized stays
+  ``other`` rather than inflating a specific signal.
 """
 
 from __future__ import annotations
@@ -50,16 +57,21 @@ from __future__ import annotations
 import collections
 import json
 import re
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 from procgrep.canonicalize import EventRule, field_in, make_event_adapter, register_adapter
 from procgrep.types import (
     ATOM_EDIT,
+    ATOM_LINT,
+    ATOM_OTHER,
+    ATOM_PACKAGE,
     ATOM_READ_FILE,
+    ATOM_RUN_CODE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
+    ATOM_VERSION_CONTROL,
     Atom,
     AtomSequence,
 )
@@ -76,13 +88,41 @@ _TEST_CMD = re.compile(
     r"go test|cargo test|npm (run )?test|yarn test|make test|gradle test)",
     re.IGNORECASE,
 )
+_VCS_CMD = re.compile(r"(^|\s|;|&|\|)(git|gh|hg|svn)\b", re.IGNORECASE)
+_PKG_CMD = re.compile(
+    r"\b(pip3?|uv|poetry|pipenv|conda|npm|yarn|pnpm|bundle|gem|cargo|go|apt|apt-get|brew)"
+    r"\b[^|;&]*\b(install|add|sync|update|upgrade)\b",
+    re.IGNORECASE,
+)
+_LINT_CMD = re.compile(
+    r"\b(ruff|black|isort|flake8|pylint|mypy|pyright|eslint|prettier|tsc|golangci-lint|gofmt|clippy|rubocop)\b",
+    re.IGNORECASE,
+)
+_SEARCH_CMD = re.compile(r"(^|\s|;|&|\|)(grep|rg|ag|ack|find|fd)\b", re.IGNORECASE)
+_RUN_CMD = re.compile(r"(^|\s|;|&|\|)(python3?|node|deno|bun|ruby|go run|cargo run|make|\./)", re.IGNORECASE)
+
+# A Bash command -> a privacy-safe sub-kind, ordered most-specific first. The
+# command is classified by its leading verb/keywords and then DISCARDED in
+# `_flatten`; only the category reaches the event, so the command text never
+# leaves -- the reduction to a category is itself the obfuscation. A command
+# matching nothing stays the generic "bash" (which falls through to `other`),
+# so unknown commands never inflate a specific signal.
+_BASH_SUBKIND: tuple[tuple[str, re.Pattern[str]], ...] = (
+    ("bash_test", _TEST_CMD),
+    ("bash_vcs", _VCS_CMD),
+    ("bash_package", _PKG_CMD),
+    ("bash_lint", _LINT_CMD),
+    ("bash_search", _SEARCH_CMD),
+    ("bash_run", _RUN_CMD),
+)
 
 
-def _is_test_bash(event: Mapping[str, Any]) -> bool:
-    """A Bash action whose command looks like running tests or a build."""
-    if str(event.get("kind", "")).lower() != "bash":
-        return False
-    return bool(_TEST_CMD.search(str(event.get("command", ""))))
+def _classify_bash(command: str) -> str:
+    """Classify a Bash command into a sub-kind by its leading verb only."""
+    for subkind, pattern in _BASH_SUBKIND:
+        if pattern.search(command):
+            return subkind
+    return "bash"
 
 
 CLAUDE_RULES: tuple[EventRule, ...] = (
@@ -91,7 +131,12 @@ CLAUDE_RULES: tuple[EventRule, ...] = (
     EventRule(field_in("kind", _READ_TOOLS), (ATOM_READ_FILE,)),
     EventRule(field_in("kind", _SEARCH_TOOLS), (ATOM_SEARCH_REPO,)),
     EventRule(field_in("kind", _WEB_TOOLS), (ATOM_SEARCH_REPO,)),
-    EventRule(_is_test_bash, (ATOM_RUN_TEST,)),
+    EventRule(field_in("kind", {"bash_test"}), (ATOM_RUN_TEST,)),
+    EventRule(field_in("kind", {"bash_search"}), (ATOM_SEARCH_REPO,)),
+    EventRule(field_in("kind", {"bash_vcs"}), (ATOM_VERSION_CONTROL,)),
+    EventRule(field_in("kind", {"bash_package"}), (ATOM_PACKAGE,)),
+    EventRule(field_in("kind", {"bash_lint"}), (ATOM_LINT,)),
+    EventRule(field_in("kind", {"bash_run"}), (ATOM_RUN_CODE,)),
 )
 
 _MAP = make_event_adapter(rules=CLAUDE_RULES)
@@ -133,11 +178,15 @@ def _flatten(record: Mapping[str, Any]) -> list[dict[str, Any]]:
         elif kind == "assistant" and isinstance(content, list):
             for block in content:
                 if isinstance(block, Mapping) and block.get("type") == "tool_use":
-                    tool_input = block.get("input")
-                    command = (
-                        tool_input.get("command", "") if isinstance(tool_input, Mapping) else ""
-                    )
-                    events.append({"kind": str(block.get("name") or ""), "command": command})
+                    name = str(block.get("name") or "")
+                    if name.lower() == "bash":
+                        tool_input = block.get("input")
+                        command = (
+                            tool_input.get("command", "") if isinstance(tool_input, Mapping) else ""
+                        )
+                        events.append({"kind": _classify_bash(str(command))})
+                    else:
+                        events.append({"kind": name})
         elif kind == "file-history-snapshot":
             events.append({"kind": "file_snapshot"})
     return events
@@ -222,6 +271,158 @@ def summarize_transcript(record: Mapping[str, Any]) -> dict[str, Any]:
     return out
 
 
+# Tool name / Bash sub-kind -> atom, mirroring CLAUDE_RULES. build_panel_session
+# needs the atom for each tool call in turn order; the rule adapter returns a
+# flat sequence and drops the prompt text and timestamps the panel needs.
+_BASH_ATOM: dict[str, Atom] = {
+    "bash_test": ATOM_RUN_TEST,
+    "bash_search": ATOM_SEARCH_REPO,
+    "bash_vcs": ATOM_VERSION_CONTROL,
+    "bash_package": ATOM_PACKAGE,
+    "bash_lint": ATOM_LINT,
+    "bash_run": ATOM_RUN_CODE,
+    "bash": ATOM_OTHER,
+}
+
+
+def _tool_atom(name: str) -> Atom:
+    """Map a non-Bash tool name to its atom (mirrors CLAUDE_RULES)."""
+    lowered = name.lower()
+    if lowered in _EDIT_TOOLS:
+        return ATOM_EDIT
+    if lowered in _READ_TOOLS:
+        return ATOM_READ_FILE
+    if lowered in _SEARCH_TOOLS or lowered in _WEB_TOOLS:
+        return ATOM_SEARCH_REPO
+    return ATOM_OTHER
+
+
+def _clock(ts: object) -> str:
+    """``HH:MM`` from an ISO timestamp, or ``''``."""
+    if not isinstance(ts, str):
+        return ""
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%H:%M")
+    except ValueError:
+        return ""
+
+
+def _day(ts: object) -> str:
+    """``Mon DD`` from an ISO timestamp, or ``''``."""
+    if not isinstance(ts, str):
+        return ""
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%b %d")
+    except ValueError:
+        return ""
+
+
+def _prompt_text(content: Any) -> str:
+    """The human's typed text from a user turn (text blocks only)."""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, list):
+        return " ".join(
+            str(b.get("text", ""))
+            for b in content
+            if isinstance(b, Mapping) and b.get("type") == "text"
+        )
+    return ""
+
+
+def to_shareable(record: Mapping[str, Any]) -> dict[str, Any]:
+    """The one sanctioned export payload: atoms + hashed id + counts-only metadata.
+
+    Drops the raw ``events`` (the transcript) entirely, so a system handed a
+    ``to_shareable`` result is never given the originals -- local atomization is
+    the privacy boundary. Pass an anonymized record (``load_claude_transcript``'s
+    default) so ``trace_id``/``agent`` are already hashed.
+    """
+    metadata = record.get("metadata")
+    counts = metadata if isinstance(metadata, dict) else summarize_transcript(record)
+    return {
+        "trace_id": str(record.get("trace_id", "")),
+        "agent": str(record.get("agent", "")),
+        "atoms": list(claude_code_adapter(record)),
+        "metadata": counts,
+    }
+
+
+def build_panel_session(
+    record: Mapping[str, Any], *, paraphrase: Callable[[str], str] | None = None
+) -> dict[str, Any]:
+    """Reduce one transcript to the live panel's per-session shape, for LOCAL view.
+
+    Prompt-anchored: each human prompt opens a turn whose atom sequence is the
+    agent's following tool calls (the same mapping as the fingerprint), tagged
+    with the turn's clock time and model. This output is LOCAL -- use
+    ``to_shareable`` for anything that leaves the machine. Prompt text is included
+    only when a ``paraphrase`` callable is supplied (style + identifiers stripped
+    locally); with no paraphraser, prompts are omitted, so raw text is never
+    surfaced.
+    """
+    lines = [line for line in record.get("events", []) if isinstance(line, Mapping)]
+    sid = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), "session")
+    cwd = next((str(line["cwd"]) for line in lines if line.get("cwd")), "")
+    workspace = Path(cwd).name or "local"
+    models: set[str] = set()
+    date = ""
+    turns: list[dict[str, Any]] = []
+    cur: dict[str, Any] | None = None
+    for line in lines:
+        kind = line.get("type")
+        message = line.get("message")
+        content = message.get("content") if isinstance(message, Mapping) else None
+        if not date:
+            date = _day(line.get("timestamp"))
+        if kind == "user" and _is_human_prompt(content):
+            if cur is not None and cur["seq"]:
+                turns.append(cur)
+            text = _prompt_text(content)
+            prompt = paraphrase(text) if (paraphrase is not None and text) else ""
+            cur = {"t": _clock(line.get("timestamp")), "model": "", "prompt": prompt, "plan": "", "seq": []}
+        elif kind == "assistant" and isinstance(content, list):
+            if cur is None:
+                continue
+            model = message.get("model") if isinstance(message, Mapping) else None
+            if model:
+                models.add(str(model))
+                if not cur["model"]:
+                    cur["model"] = str(model)
+            for block in content:
+                if not isinstance(block, Mapping) or block.get("type") != "tool_use":
+                    continue
+                name = str(block.get("name") or "")
+                if name.lower() == "bash":
+                    tool_input = block.get("input")
+                    command = tool_input.get("command", "") if isinstance(tool_input, Mapping) else ""
+                    cur["seq"].append(_BASH_ATOM[_classify_bash(str(command))])
+                else:
+                    cur["seq"].append(_tool_atom(name))
+        elif kind == "file-history-snapshot" and cur is not None:
+            cur["seq"].append(ATOM_EDIT)
+    if cur is not None and cur["seq"]:
+        turns.append(cur)
+    fallback_model = next(iter(sorted(models)), "")
+    for turn in turns:
+        if not turn["model"]:
+            turn["model"] = fallback_model
+    meta: dict[str, Any] = {
+        "name": workspace,
+        "client": "Claude Code",
+        "project": workspace,
+        "id": _anon_id(sid),
+        "date": date,
+        "intent": "",
+        "illustrative": False,
+        "promptsParaphrased": paraphrase is not None,
+        "models": [{"name": m} for m in sorted(models)],
+    }
+    return {"meta": meta, "turns": turns}
+
+
 def _anon_id(value: str, length: int = 8) -> str:
     """Stable truncated SHA-256 of *value*. Not reversible."""
     import hashlib
@@ -267,7 +468,9 @@ register_adapter("claude-code", claude_code_adapter, overwrite=True)
 __all__ = [
     "ATOM_PROMPT_AI",
     "CLAUDE_RULES",
+    "build_panel_session",
     "claude_code_adapter",
     "load_claude_transcript",
     "summarize_transcript",
+    "to_shareable",
 ]
