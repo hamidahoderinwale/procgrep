@@ -23,8 +23,13 @@
   .nav .nnm{display:block;font-weight:600}
   .nav .nmeta{display:block;font-size:10px;color:var(--mut);margin-top:2px}
   .nav button.active .nmeta{color:#cfcabf}
-  .head{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  h1{font-size:13px;font-weight:600;letter-spacing:.04em;margin:0}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 22px}
+  .topbar .mark{font-size:13px;font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:9px}
+  .topbar .mark::before{content:"";width:8px;height:8px;background:var(--edit);border-radius:1px}
+  .topnav a{color:var(--mut);text-decoration:none;margin-left:18px;font-size:12px}
+  .topnav a:hover{color:var(--ink)}
+  .topnav a.active{color:var(--ink);font-weight:600;border-bottom:2px solid var(--edit);padding-bottom:3px}
+  .topnav a.dim{color:var(--mut)}
   .replay{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;display:inline-flex;align-items:center;gap:7px;
     background:var(--ink);color:#fff;border:0;padding:6px 14px;border-radius:999px;cursor:pointer}
   .replay:hover{opacity:.88}
@@ -118,9 +123,15 @@
 </nav>
 <div class="panel">
 
-  <div class="head">
-    <h1>procgrep</h1>
-  </div>
+  <header class="topbar">
+    <span class="mark">procgrep</span>
+    <nav class="topnav">
+      <a href="index.html">home</a>
+      <a href="explorer/index.html">explorer</a>
+      <a class="active" href="live_fingerprint.html">sessions</a>
+      <a class="dim" href="https://github.com/hamidahoderinwale/procgrep" target="_blank">github ↗</a>
+    </nav>
+  </header>
 
   <div class="topgrid">
     <div class="idcard">
