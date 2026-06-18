@@ -9,6 +9,7 @@
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5;padding-left:212px}
 .wrap{max-width:1080px;margin:0 auto;padding:44px 32px 110px}
 .railnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:44px 16px;overflow:auto;background:#EFEAE2}
+.railnav .railgrp{margin-top:22px}
 .railnav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--olive);margin:0 0 12px;font-weight:600}
 .railnav .ritem{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin:0 0 2px}
 .railnav .ritem:hover{background:#ECE7DF}
@@ -94,11 +95,12 @@ body.hide-noise .noisetog{background:var(--ink);color:var(--paper);border-color:
 a.plain{color:var(--copper);cursor:pointer}
 </style></head><body>
 <nav class="railnav">
-  <h2>explorer</h2>
+  <h2>eval traces</h2>
   <button class="ritem act" id="nav-query" onclick="show('query')">query</button>
   <button class="ritem" id="nav-permodel" onclick="show('permodel')">per-model</button>
   <button class="ritem" id="nav-curate" onclick="show('curate')">curate</button>
   <button class="ritem" id="nav-why" onclick="show('why')">why structural</button>
+  <h2 class="railgrp">live sessions</h2>
   <button class="ritem" id="nav-sessions" onclick="show('sessions')">sessions</button>
 </nav>
 <div class="wrap">
@@ -106,8 +108,6 @@ a.plain{color:var(--copper);cursor:pointer}
 <nav class="topnav">
   <a href="../index.html">home</a>
   <a class="active" href="index.html">explorer</a>
-  <a href="#sessions" onclick="show('sessions');return false;">sessions</a>
-  <a class="dim" href="https://github.com/hamidahoderinwale/procgrep" target="_blank">github ↗</a>
 </nav></div>
 
 <!-- QUERY (hero / default) -->
