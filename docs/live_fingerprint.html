@@ -24,7 +24,7 @@
   .nav .nmeta{display:block;font-size:10px;color:var(--mut);margin-top:2px}
   .nav button.active .nmeta{color:#cfcabf}
   .topbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 22px}
-  .topbar .mark{font-size:13px;font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:9px}
+  .topbar .mark{font-size:13px;font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none}
   .topbar .mark::before{content:"";width:8px;height:8px;background:var(--edit);border-radius:1px}
   .topnav a{color:var(--mut);text-decoration:none;margin-left:18px;font-size:12px}
   .topnav a:hover{color:var(--ink)}
@@ -124,7 +124,7 @@
 <div class="panel">
 
   <header class="topbar">
-    <span class="mark">procgrep</span>
+    <a class="mark" href="index.html">procgrep</a>
     <nav class="topnav">
       <a href="index.html">home</a>
       <a href="explorer/index.html">explorer</a>
