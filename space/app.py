@@ -60,6 +60,7 @@ from pathlib import Path
 from statistics import median
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -254,6 +255,20 @@ def _action_mix(traces: list[CachedTrace]) -> dict[str, float]:
 
 # API.
 app = FastAPI(title="ProcGrep explorer", docs_url="/api")
+
+# Allow the published Pages explorer to call the live query/compare API, so the
+# static site can run example queries over whole datasets (not just its embedded
+# samples). Read-only JSON endpoints; no credentials.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://hamidah.me",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
+    allow_methods=["GET", "POST"],
+    allow_headers=["*"],
+)
 
 
 class QueryRequest(BaseModel):
