@@ -446,15 +446,19 @@ function legend(m){return '<div class="legend">'+Object.entries(m).sort((a,b)=>b
   `<span><i style="background:${ATOM[a]||'#ccc'}"></i>${a} ${pct(v)}</span>`).join('')+'</div>';}
 
 // ---- sample structural queries ----
+const SPACE="https://midah-procgrep-explorer.hf.space";
+// Each query carries a regex `p` over the space-joined atom spine, so it can run
+// live on the Space over the whole dataset; `f` is the local predicate used for
+// the instant preview over the embedded sample pool.
 const QUERIES=[
- {id:'streak',label:'edit-streak ≥5',f:a=>/(?:edit ){5,}/.test(a.join(' ')+' ')},
- {id:'nosub',label:'submitted without testing',f:a=>a.includes('submit')&&!a.includes('run_test')},
- {id:'td',label:'test-driven',f:a=>{const r=a.indexOf('run_test'),e=a.indexOf('edit');return r>=0&&(e<0||r<e);}},
- {id:'stuck',label:'stuck reading',f:a=>/(?:read_file (?:think )?){4,}/.test(a.join(' ')+' ')},
- {id:'loop',label:'canonical resolve loop',f:a=>/search_repo read_file edit run_test/.test(a.join(' '))},
- {id:'nosearch',label:'never searched the repo',f:a=>!a.includes('search_repo')},
- {id:'repro',label:'wrote a repro script',f:a=>{const c=a.indexOf('create_file');return c>=0&&a.lastIndexOf('submit')>c;}},
- {id:'recover',label:'recovered from an error',f:a=>/error edit/.test(a.join(' '))},
+ {id:'streak',label:'edit-streak ≥5',p:'\\bedit\\b(?: \\bedit\\b){4,}',f:a=>/(?:edit ){5,}/.test(a.join(' ')+' ')},
+ {id:'nosub',label:'submitted without testing',p:'^(?!.*\\brun_test\\b).*\\bsubmit\\b',f:a=>a.includes('submit')&&!a.includes('run_test')},
+ {id:'td',label:'test-driven',p:'^(?:(?!\\bedit\\b).)*\\brun_test\\b',f:a=>{const r=a.indexOf('run_test'),e=a.indexOf('edit');return r>=0&&(e<0||r<e);}},
+ {id:'stuck',label:'stuck reading',p:'(?:read_file ?(?:think )?){4,}',f:a=>/(?:read_file (?:think )?){4,}/.test(a.join(' ')+' ')},
+ {id:'loop',label:'canonical resolve loop',p:'search_repo read_file edit run_test',f:a=>/search_repo read_file edit run_test/.test(a.join(' '))},
+ {id:'nosearch',label:'never searched the repo',p:'^(?!.*\\bsearch_repo\\b)',f:a=>!a.includes('search_repo')},
+ {id:'repro',label:'wrote a repro script',p:'\\bcreate_file\\b.*\\bsubmit\\b',f:a=>{const c=a.indexOf('create_file');return c>=0&&a.lastIndexOf('submit')>c;}},
+ {id:'recover',label:'recovered from an error',p:'\\berror\\b \\bedit\\b',f:a=>/error edit/.test(a.join(' '))},
 ];
 
 // ---- QUERY view ----
@@ -501,6 +505,35 @@ function runQ(custom,id){
     <div class="eyebrow">matching traces (click to open)</div>
     ${hits.slice(0,40).map(h=>`<div class="qhit" onclick="poolTrace('${h.trace_id}')"><span class="qhmodel">${prettyModel(h.model)}</span> <span class="dim">${h.atoms.length} steps</span> ${spineMini(h.atoms)}</div>`).join('')}
     ${hits.length>40?`<div class="dim" style="margin-top:6px">+ ${hits.length-40} more</div>`:''}`;
+  const livePat = id ? (QUERIES.find(x=>x.id===id)||{}).p : custom;
+  if(livePat) liveQ(CURDS, livePat, label);
+}
+// Upgrade the instant local-sample preview to a live result over the WHOLE
+// dataset via the Space backend. On any failure the local preview stays, so
+// the page still works offline / if the Space is down.
+async function liveQ(ds, pattern, label){
+  let d;
+  try{
+    const r=await fetch(SPACE+'/query',{method:'POST',headers:{'content-type':'application/json'},
+      body:JSON.stringify({dataset:ds,pattern})});
+    d=await r.json();
+  }catch(e){return;}
+  if(!d||d.error)return;
+  const bars=(d.by_model||[]).map(m=>
+    `<div class="rrow"><span class="rlab">${prettyModel(m.model)}</span>
+      <span class="barbg"><span class="fill" style="width:${(m.rate*120).toFixed(0)}px;background:var(--copper)"></span></span>
+      <span class="rval">${pct(m.rate)}</span></div>`).join('');
+  const hits=d.hits||[];
+  document.getElementById('qres').innerHTML=
+   `<div style="font-size:15px;margin:4px 0"><b>${d.n_hits}</b> / ${d.n_traces} traces match <b>${label}</b></div>
+    <div class="dim" style="margin-bottom:12px"><span class="speed">live over the full dataset in ${d.elapsed_ms} ms · no model call · $0</span></div>
+    <div class="eyebrow">which models</div>${bars||'<span class="dim">none</span>'}
+    <div class="eyebrow">action mix · matched vs. all</div>
+    <div class="rrow"><span class="rlab">matched</span>${d.n_hits?mixbar(d.mix_hits):'<span class="dim">no matches</span>'}</div>
+    <div class="rrow"><span class="rlab">all traces</span>${mixbar(d.mix_all)}</div>
+    <div class="eyebrow">matching traces (sample)</div>
+    ${hits.map(h=>`<div class="qhit"><span class="qhmodel">${prettyModel(h.model)}</span> <span class="dim">${h.steps} steps</span> ${spineMini(h.atoms)}</div>`).join('')}
+    ${d.n_hits>hits.length?`<div class="dim" style="margin-top:6px">+ ${d.n_hits-hits.length} more across the dataset</div>`:''}`;
 }
 function poolTrace(tid){const p=PROF[CURDS];const s=(p.samples||[]).find(x=>x.trace_id===tid);
   if(s){trace(CURDS,p.samples.indexOf(s));return;}
