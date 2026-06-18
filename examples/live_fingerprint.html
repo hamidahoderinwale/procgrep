@@ -57,6 +57,13 @@
   .cap{font-size:11px;letter-spacing:.06em;color:var(--mut);text-transform:uppercase;margin:0 0 10px}
   .tlhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
   .cap .hint{text-transform:none;letter-spacing:0;font-size:10px;opacity:.85}
+  .privbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mut);margin:0 0 22px}
+  .privbar button{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;border:0;background:#ECE7DF;color:var(--mut);padding:3px 11px;border-radius:999px;cursor:pointer}
+  .privbar button.on{background:var(--ink);color:#fff}
+  .turn .pr-count{margin:2px 0;color:var(--mut);font-size:11px}
+  .turn .pr-text{margin:2px 0}
+  body.pmode-counts .pr-text, body.pmode-counts .turn .plan{display:none}
+  body.pmode-shown .pr-count{display:none}
 
   .atomsec{max-width:540px;margin-bottom:24px}
   .procline{font-size:12px;color:var(--mut);margin:16px 0 0}
@@ -116,7 +123,7 @@
   code{font-size:11px}
 </style>
 </head>
-<body>
+<body class="pmode-counts">
 <nav class="nav">
   <h2>sessions</h2>
   <div id="switch"></div>
@@ -144,6 +151,11 @@
       <div class="pex"><span class="plab">raw</span><span class="praw">"why does our FooBarAuth.validate() still 500 on null sub?"</span></div>
       <div class="pex"><span class="plab">shown</span><span class="pnorm">"handle the null-subject case in token validation"</span></div>
     </div>
+  </div>
+
+  <div class="privbar">prompts
+    <button class="on" data-m="counts" onclick="setPriv('counts')">characters only</button>
+    <button data-m="shown" onclick="setPriv('shown')">show text</button>
   </div>
 
   <div class="atomsec">
@@ -345,7 +357,7 @@ function buildTimeline(){
     d.innerHTML=`<span class="node" style="background:${COLOR[dominant(tn.seq)]}"></span>`+
       `<div class="turnmain">`+
         `<div class="when">Turn ${turnNo} · <b>${tn.t}</b><span class="mtag" style="color:${colorForModel(tn.model)}">${shortModel(tn.model)}</span></div>`+
-        (tn.prompt?`<div class="pr">"${tn.prompt}"</div>`:"")+
+        (tn.prompt?`<div class="pr-count">prompt · ${tn.prompt.length} chars</div><div class="pr-text">"${tn.prompt}"</div>`:"")+
         `<div class="acts">${childrenHtml(tn)}</div>`+
       `</div>`+
       `<div class="plan">${tn.plan}</div>`;
@@ -410,6 +422,13 @@ function applyFilter(){
   }
 }
 function closeTip(){document.getElementById("tip").classList.add("hidden");}
+// Privacy dial: "atoms only" hides prompt + plan text (what to_shareable exports);
+// "prompts shown" is the local view. (--paraphrase is the runner's middle ground.)
+function setPriv(m){
+  document.body.classList.remove("pmode-counts","pmode-shown");
+  document.body.classList.add(m==="shown"?"pmode-shown":"pmode-counts");
+  document.querySelectorAll(".privbar button").forEach(b=>b.classList.toggle("on", b.dataset.m===m));
+}
 
 // ---- replay ----
 const btn=document.getElementById("replayBtn"), tri=btn.querySelector(".tri"), rlab=document.getElementById("rlab");
