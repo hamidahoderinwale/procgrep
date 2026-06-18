@@ -99,13 +99,14 @@ a.plain{color:var(--copper);cursor:pointer}
   <button class="ritem" id="nav-permodel" onclick="show('permodel')">per-model</button>
   <button class="ritem" id="nav-curate" onclick="show('curate')">curate</button>
   <button class="ritem" id="nav-why" onclick="show('why')">why structural</button>
+  <button class="ritem" id="nav-sessions" onclick="show('sessions')">sessions</button>
 </nav>
 <div class="wrap">
 <div class="topbar"><a class="mark" href="../index.html">procgrep</a>
 <nav class="topnav">
   <a href="../index.html">home</a>
   <a class="active" href="index.html">explorer</a>
-  <a href="../live_fingerprint.html">sessions</a>
+  <a href="#sessions" onclick="show('sessions');return false;">sessions</a>
   <a class="dim" href="https://github.com/hamidahoderinwale/procgrep" target="_blank">github ↗</a>
 </nav></div>
 
@@ -138,6 +139,7 @@ a.plain{color:var(--copper);cursor:pointer}
 
 <!-- WHY STRUCTURAL -->
 <div id="why" class="hidden"></div>
+<div id="sessions" class="hidden"><iframe id="sessframe" title="live procedural fingerprint" style="width:100%;height:86vh;border:0;border-radius:6px;background:#fff"></iframe></div>
 
 <!-- TRACE DETAIL (on demand) -->
 <div id="tr" class="hidden"></div>
@@ -782,17 +784,18 @@ document.querySelectorAll('#index th[data-k]').forEach(th=>th.onclick=()=>{
   const k=th.dataset.k;ST.dir=(k===ST.sort)?-ST.dir:-1;ST.sort=k;renderBrowse();});
 
 // ---- view router ----
-const VIEWS=['query','curate','permodel','why','tr','browse'];
-const NAVOF={query:'nav-query',curate:'nav-curate',permodel:'nav-permodel',why:'nav-why'};
+const VIEWS=['query','curate','permodel','why','sessions','tr','browse'];
+const NAVOF={query:'nav-query',curate:'nav-curate',permodel:'nav-permodel',why:'nav-why',sessions:'nav-sessions'};
 function show(id){
   VIEWS.forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
-  ['nav-query','nav-curate','nav-permodel','nav-why'].forEach(n=>document.getElementById(n).classList.remove('act'));
+  ['nav-query','nav-curate','nav-permodel','nav-why','nav-sessions'].forEach(n=>document.getElementById(n).classList.remove('act'));
   if(NAVOF[id])document.getElementById(NAVOF[id]).classList.add('act');
   else if(id==='tr'||id==='browse')document.getElementById('nav-query').classList.add('act');
   if(id==='query')queryView();
   if(id==='curate')curateView();
   if(id==='permodel')permodelView();
   if(id==='why')whyView();
+  if(id==='sessions'){const f=document.getElementById('sessframe');if(!f.getAttribute('src'))f.src='../live_fingerprint.html?embed=1';}
   if(id==='browse')renderBrowse();
   window.scrollTo(0,0);
 }
@@ -800,6 +803,7 @@ document.getElementById('q').addEventListener('input',e=>onType(e.target.value))
 
 // boot: query-first; queryView() auto-runs the highest-hit sample
 show('query');
+{const _h=location.hash.slice(1);if(VIEWS.includes(_h))show(_h);}
 // deep links
 const _h=location.hash.replace('#','');
 if(['why','browse','curate','permodel','query'].includes(_h))show(_h);

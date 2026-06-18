@@ -474,6 +474,11 @@ function load(idx){
   play();
 }
 
+// When embedded inside the explorer ("sessions" mode), hide our own top bar --
+// the explorer already provides the global nav.
+if(new URLSearchParams(location.search).has("embed")){
+  const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
+}
 load(0);
 </script>
 </body>
