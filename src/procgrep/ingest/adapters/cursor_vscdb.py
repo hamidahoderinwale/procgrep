@@ -46,9 +46,10 @@ Design decisions:
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
-from collections.abc import Iterator
+from collections.abc import Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -91,19 +92,90 @@ cursor_vscdb_adapter = make_event_adapter(rules=CURSOR_VSCDB_RULES)
 register_adapter("cursor-vscdb", cursor_vscdb_adapter, overwrite=True)
 
 
+def _hash_path(path: str) -> str:
+    """Stable short hash of a workspace-relative path; no real path leaves."""
+    return hashlib.sha1(path.encode("utf-8")).hexdigest()[:12]
+
+
+def _params(tf: dict[str, Any]) -> dict[str, Any]:
+    """A tool call's params, tolerating the JSON-string form Cursor sometimes uses."""
+    p = tf.get("params")
+    if isinstance(p, str):
+        try:
+            p = json.loads(p)
+        except ValueError:
+            return {}
+    return p if isinstance(p, dict) else {}
+
+
 def _event_for_bubble(bubble: dict[str, Any]) -> dict[str, Any]:
-    """Map one bubble to a structure-only event (turn type and tool name)."""
+    """Map one bubble to a structure-only event: turn type, tool, hashed file.
+
+    The hashed ``file`` (from ``targetFile`` / ``relativeWorkspacePath``) is the
+    only addition beyond atom structure; it lets ``session_rework`` tell a
+    re-edit of an already-touched file from forward progress, without carrying
+    any path or content.
+    """
     if bubble.get("type") == 1:
         return {"kind": "prompt"}
     tf = bubble.get("toolFormerData") or {}
     tool = tf.get("name") or tf.get("tool")
     if tool:
-        return {"kind": "ai", "tool": tool}
+        event: dict[str, Any] = {"kind": "ai", "tool": tool}
+        params = _params(tf)
+        path = params.get("targetFile") or params.get("relativeWorkspacePath")
+        if path:
+            event["file"] = _hash_path(str(path))
+        return event
     if bubble.get("codeBlocks"):
         return {"kind": "ai", "tool": "_codeblock"}
     if bubble.get("text"):
         return {"kind": "think"}
     return {"kind": "ai"}  # no tool, no text -> falls through to ATOM_OTHER
+
+
+_FILE_EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook"}
+
+
+def session_rework(events: Sequence[dict[str, Any]]) -> dict[str, float]:
+    """Model-free rework signal for one session's events.
+
+    Rework is re-editing a file the session already edited: a proxy for
+    correction rather than forward progress, and the negative term an
+    interactive process reward wants. A prompt counts as a rework prompt when
+    the agent re-touches an already-edited file before the next human prompt.
+    File-less edits (inline code blocks) are not attributable and are skipped.
+
+    Returns prompts, edits, rework_prompts, re_edits, and the two ratios
+    (0.0 when the denominator is zero).
+    """
+    edited: set[str] = set()
+    prompts = rework_prompts = edits = re_edits = 0
+    flagged_this_run = False
+    for event in events:
+        if event.get("kind") == "prompt":
+            prompts += 1
+            flagged_this_run = False
+            continue
+        if event.get("tool") in _FILE_EDIT_TOOLS:
+            file = event.get("file")
+            if file is None:
+                continue
+            edits += 1
+            if file in edited:
+                re_edits += 1
+                if not flagged_this_run:
+                    rework_prompts += 1
+                    flagged_this_run = True
+            edited.add(file)
+    return {
+        "prompts": prompts,
+        "edits": edits,
+        "rework_prompts": rework_prompts,
+        "re_edits": re_edits,
+        "rework_ratio": rework_prompts / prompts if prompts else 0.0,
+        "re_edit_ratio": re_edits / edits if edits else 0.0,
+    }
 
 
 def read_state_vscdb(path: str | Path, *, agent: str = "cursor") -> Iterator[dict[str, Any]]:
@@ -141,4 +213,4 @@ def read_state_vscdb(path: str | Path, *, agent: str = "cursor") -> Iterator[dic
         con.close()
 
 
-__all__ = ["CURSOR_VSCDB_RULES", "cursor_vscdb_adapter", "read_state_vscdb"]
+__all__ = ["CURSOR_VSCDB_RULES", "cursor_vscdb_adapter", "read_state_vscdb", "session_rework"]
