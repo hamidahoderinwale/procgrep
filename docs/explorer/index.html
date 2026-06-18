@@ -678,9 +678,7 @@ function findings(){
   document.getElementById('findings').innerHTML=
    `<div class="card"><div class="dim">coverage, parseable trace datasets</div><div class="big">${sup.length}/${cand.length}</div>
       <div class="dim">${notTrace} benchmarks/corpora &amp; ${oos} out-of-scope excluded · ${CAT.n_discovered} discovered</div></div>
-    <div class="card"><div class="dim">formats (click to filter)</div><div style="margin-top:8px">${fmtChips}</div></div>
-    <div class="card"><div class="dim">what's excluded, honestly</div>
-      <div class="dim" style="margin-top:8px">non-parseable rows are benchmarks (task definitions), corpora, gated, or out-of-scope domains, not parse failures on real traces</div></div>`;
+    <div class="card"><div class="dim">formats (click to filter)</div><div style="margin-top:8px">${fmtChips}</div></div>`;
   const benches={}; DS.forEach(r=>{if(r.benchmark)(benches[r.benchmark]=benches[r.benchmark]||[]).push(r);});
   const bs=document.getElementById('benchstrip');
   if(bs)bs.innerHTML=Object.entries(benches).sort((a,b)=>b[1].length-a[1].length).map(([b,rs])=>{
