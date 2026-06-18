@@ -34,3 +34,18 @@ def test_summary_diff_handles_absent_categorical() -> None:
     diff = summary_diff(a, b)
     assert diff.categorical_jsd == {}  # no tool dicts present
     assert diff.deltas["autonomy"] == 1.0
+
+
+def test_variance_decomposition_separates_explanatory_factor() -> None:
+    from procgrep.bpe import fit_bpe
+    from procgrep.summary import variance_decomposition
+
+    traces = []
+    for i in range(6):
+        traces.append(Trace(trace_id=f"a{i}", agent="x", atoms=["edit", "edit", "run_test"], metadata={"real": "A", "noise": str(i % 2)}))
+    for i in range(6):
+        traces.append(Trace(trace_id=f"b{i}", agent="x", atoms=["read_file", "read_file", "search_repo"], metadata={"real": "B", "noise": str(i % 2)}))
+    vocab = fit_bpe([t.atoms for t in traces], vocab_size=12, seed=0)
+    r = variance_decomposition(traces, vocab, ["real", "noise"], sample=100)
+    assert r["real"] > 0.8   # the real grouping explains almost all variation
+    assert r["noise"] < 0.3  # the arbitrary split explains little

@@ -11,11 +11,14 @@ categorical field (e.g. per-tool call counts), which it contrasts by JSD.
 from __future__ import annotations
 
 import collections
+import random
 from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
 
+from procgrep.bpe import ProcedureVocabulary
+from procgrep.encode import encode
 from procgrep.jsd import jsd
 from procgrep.types import Trace
 
@@ -111,4 +114,57 @@ def summary_diff(
     )
 
 
-__all__ = ["SummaryDiff", "summary_diff"]
+def variance_decomposition(
+    traces: Sequence[Trace],
+    vocab: ProcedureVocabulary,
+    factors: Sequence[str],
+    *,
+    sample: int = 800,
+    seed: int = 0,
+) -> dict[str, float]:
+    """Pseudo-R2 of how much procedural variation each factor explains.
+
+    A PERMANOVA-style partition over the pairwise JSD-squared between trajectory
+    fingerprints: for each factor (a trace-metadata key), R2 = 1 - within-group
+    dispersion / total dispersion. R2 near 1 means traces sharing that factor's
+    value are procedurally homogeneous, so the factor explains a lot; near 0
+    means it does not. Distances are JSD between encoded fingerprints, so this
+    answers "what drives how an agent works -- the task, the model, the
+    scaffold?" on one model-free metric. O(N^2); subsamples to ``sample``.
+    """
+    items = list(traces)
+    if len(items) > sample:
+        items = random.Random(seed).sample(items, sample)
+    n = len(items)
+    if n < 3:
+        raise ValueError("variance_decomposition needs at least 3 traces")
+    dists = [np.asarray(fp.distribution(), dtype=np.float64) for fp in encode(items, vocab=vocab)]
+    sq: dict[tuple[int, int], float] = {}
+    for i in range(n):
+        for j in range(i + 1, n):
+            d = jsd(dists[i], dists[j])
+            sq[(i, j)] = d * d
+    ss_total = sum(sq.values()) / n
+    if ss_total <= 0:
+        return dict.fromkeys(factors, 0.0)
+
+    out: dict[str, float] = {}
+    for factor in factors:
+        groups: dict[object, list[int]] = collections.defaultdict(list)
+        for idx, trace in enumerate(items):
+            groups[(trace.metadata or {}).get(factor)].append(idx)
+        ss_within = 0.0
+        for members in groups.values():
+            if len(members) < 2:
+                continue
+            pair_sum = sum(
+                sq[(members[a], members[b])]
+                for a in range(len(members))
+                for b in range(a + 1, len(members))
+            )
+            ss_within += pair_sum / len(members)
+        out[factor] = round(1.0 - ss_within / ss_total, 4)
+    return out
+
+
+__all__ = ["SummaryDiff", "summary_diff", "variance_decomposition"]
