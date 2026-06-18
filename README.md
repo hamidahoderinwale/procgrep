@@ -2,23 +2,25 @@
 
 `procgrep` reads agent trace logs and tells you how agents differ in *how they work*, not just whether they passed.
 
-[**Live explorer**](https://midah-procgrep-explorer.hf.space) · [**Interactive essay**](https://hamidah.me/procgrep)
+[**Live explorer**](https://midah-procgrep-explorer.hf.space) · [**Interactive essay**](https://hamidah.me/procgrep) · [**Paper (arXiv)**](https://arxiv.org/abs/2606.16988)
 
 ![Replaying one agent trajectory step by step; a structural query fires the instant it matches](docs/figures/replay.gif)
 
-No model is in the loop: procgrep reads agent traces and returns exact, reproducible measurements.
+No model is in the loop: procgrep returns exact, reproducible measurements.
 
 ---
 
 ## What it does
 
-When a coding agent attempts a task, it leaves a sequence of actions — search the repo, read a file, edit a file, run tests, submit. `procgrep` converts those sequences into comparable representations and answers questions like:
+When a coding agent attempts a task, it leaves a sequence of actions: search the repo, read a file, edit a file, run tests, submit. `procgrep` converts those sequences into comparable representations and answers questions like:
 
 - **Are these two agents doing the same thing?** Feed both sets of traces and get a divergence score.
 - **Which agent is more consistent?** Measure how much an agent's procedure varies across tasks.
 - **What makes one agent fail where another succeeds?** Find the action-sequence patterns exclusive to failures.
 - **Did fine-tuning change how the model works, not just whether it passes?** Compare parent and child trajectories across four structural axes.
 - **Is this trajectory heading toward failure?** Match against known failure patterns early enough to act on it.
+
+Beyond reading traces, procgrep lets you *program* a target procedure: specify it, compile it to a reward, decode mask, guard, or scaffold config, and verify the result.
 
 ---
 
@@ -52,13 +54,13 @@ for row in matrix.to_records():
 
 ## Core concepts
 
-**Atoms.** Each agent action is normalized to a canonical type — `localize`, `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `submit`, `think`, with `error` and `other` as catch-alls. This shared alphabet makes agents on different scaffolds comparable. It is a base, not a ceiling: an adapter can emit finer-grained atoms where they help (e.g. node-typed AST edits for GumTree traces), and the recurring *procedures* layered on top are learned per corpus, not fixed.
+**Atoms.** Each agent action is normalized to a canonical type: `localize`, `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `submit`, `think`, with `error` and `other` as catch-alls. This shared alphabet makes agents on different scaffolds comparable. It is a base, not a ceiling: an adapter can emit finer-grained atoms where they help (e.g. node-typed AST edits for GumTree traces), and the recurring *procedures* layered on top are learned per corpus, not fixed.
 
 **Trajectory.** One agent attempting one task, represented as an ordered list of atoms. This is what `procgrep` ingests.
 
-**Procedures.** Recurring multi-step patterns learned from the corpus via BPE (the same algorithm used to tokenize text for language model training). A procedure might be `search_repo → read_file → think` — a pattern frequent enough to be worth naming.
+**Procedures.** Recurring multi-step patterns learned from the corpus via BPE (the same algorithm used to tokenize text for language model training). A procedure might be `search_repo → read_file → think`, a pattern frequent enough to be worth naming.
 
-**Fingerprint.** A trajectory encoded as a distribution over procedures — how often each appeared. Two trajectories with similar fingerprints approached the problem similarly.
+**Fingerprint.** A trajectory encoded as a distribution over procedures: how often each appeared. Two trajectories with similar fingerprints approached the problem similarly.
 
 **JSD.** Jensen-Shannon divergence: how different two fingerprints are. 0 = identical, 1 = completely non-overlapping. Used to compare agents, groups, or training conditions.
 
@@ -120,7 +122,7 @@ The `examples/rules/known_failure_patterns.yaml` file includes patterns validate
 
 ### Score a trajectory against a procedural spec
 
-A reward spec defines what a good trajectory looks like — which phases it should go through, which patterns are failures, which are bonuses — and returns a 0–1 score per trajectory.
+A reward spec defines what a good trajectory looks like: which phases it should go through, which patterns are failures, which are bonuses, and returns a 0–1 score per trajectory.
 
 ```python
 from procgrep.reward import load_spec, score
@@ -133,7 +135,7 @@ print(result.satisfied_phases)     # ["exploration", "implementation", "test_ver
 print(result.triggered_penalties)  # ["stuck_reading"]
 ```
 
-The `stuck_reading` penalty (`read_file → think → read_file → think`) fires in the first 12 steps on 80% of trajectories that eventually fail — usable as a real-time circuit breaker before the context budget is exhausted.
+The `stuck_reading` penalty (`read_file → think → read_file → think`) fires in the first 12 steps on 80% of trajectories that eventually fail, usable as a real-time circuit breaker before the context budget is exhausted.
 
 ### Compare parent and child after fine-tuning
 
@@ -152,9 +154,9 @@ This tells you: did the child preserve the parent's action repertoire? Did the d
 
 ---
 
-## Programming procedures (experimental)
+## Programming procedures
 
-Beyond reading traces, procgrep can turn a target procedure into something you specify, hand to a scaffold, and verify — with no model in the loop.
+procgrep turns a target procedure into something you specify, hand to a scaffold, and verify, with no model in the loop.
 
 A `ProcedureSpec` is the unit: a declarative, validated description of the procedure you want, learnable from the trajectories that passed.
 
@@ -183,11 +185,11 @@ report = verify(before_traces, after_traces, spec, vocab)
 print(report.behavior_moved, report.outcome_delta, report.verdict)
 ```
 
-`verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result — so a null result is located, not just observed.
+`verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result, so a null result is located, not just observed.
 
-`enforce` supports four modes — `prompt`, `guard`, `reward` (a deterministic dense process reward whose per-step increments sum to the full-trajectory score), and `decode` (an `allowed(prefix)` mask over the action grammar for constrained decoding) — and `optimize` searches a spec's penalty caps and phase set offline against a discrimination metric, returning a tuned spec and a report. All are model-free: they emit artifacts or score traces; none runs an agent.
+`enforce` supports four modes: `prompt`, `guard`, `reward` (a deterministic dense process reward whose per-step increments sum to the full-trajectory score), and `decode` (an `allowed(prefix)` mask over the action grammar for constrained decoding). `optimize` searches a spec's penalty caps and phase set offline against a discrimination metric, returning a tuned spec and a report. All are model-free: they emit artifacts or score traces; none runs an agent.
 
-Roadmap: a `Runner` that executes agents under a spec in sandboxes and feeds the resulting traces back to `verify`. It is kept outside the core on purpose — procgrep emits and measures, the scaffold runs the model — which is what keeps the measurements exactly reproducible.
+Roadmap: a `Runner` that executes agents under a spec in sandboxes and feeds the resulting traces back to `verify`. It is kept outside the core on purpose, procgrep emits and measures while the scaffold runs the model, which is what keeps the measurements exactly reproducible.
 
 ---
 
@@ -210,7 +212,7 @@ procgrep vocab-tree --vocab vocab.json          # or --input traces/canonical.js
 
 ### The procedure hierarchy
 
-BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged procedure decomposes into the two tokens it was glued from, down to atoms. `vocab-tree` (and `procgrep.render_vocab_tree`) renders it. On real Claude Code sessions, for example, `prompt_ai → edit` shows up as a building block of larger procedures:
+BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged procedure decomposes into the two tokens it was glued from, down to atoms. `vocab-tree` (and `procgrep.render_vocab_tree`) renders it. On real Claude Code sessions, `prompt_ai → edit` shows up as a building block of larger procedures:
 
 ```text
 6 atoms: edit, other, prompt_ai, read_file, run_test, search_repo
@@ -244,11 +246,9 @@ pip install procgrep[dev]      # development dependencies
 ## Notes
 
 - Python 3.10+. No LLM SDK required.
-- Built-in adapters: SWE-agent, mini-swe-agent, OpenHands, Agentless, DARS, Moatless, SWE-smith, GumTree, ReAct-text (autonomous scaffolds); `cursor-companion` and `claude-code` (interactive scaffolds — human+AI sessions).
-- All random operations take a `seed` argument; default is `0`.
-- `ruff` and `mypy --strict` clean.
+- Built-in adapters cover autonomous scaffolds (SWE-agent, OpenHands, Agentless, and more) and interactive human+AI sessions (`cursor-companion`, `claude-code`).
 - **Privacy model for interactive adapters.** The interactive adapters never retain prompt text (word counts only) and hash identifiers like session ids and workspace paths by default (`anonymize=True`). Only abstract action structure crosses the ingest boundary.
-- **Procedural library.** `ProcedureLibrary("dir/")` saves derived or authored specs as YAML — reusable, git-versioned procedural memory. `spec.to_yaml()` round-trips with `from_yaml`, and library entries plug into `enforce` / `verify` / `score` unchanged (no new object model).
-- **Task clustering uses a pluggable embedder.** `cluster_tasks(texts, embedder)` takes any `Callable[[list[str]], ndarray]`, so the embedding model is yours to choose. `hf_embedder("<model>")` is a local default (`pip install procgrep[embed]`); a lighter local backend (fastembed, model2vec) is a drop-in via the same callable. A local embedder keeps text on-machine and retains only cluster labels; an API embedder sends text off-machine, so reserve it for non-sensitive corpora.
+- **Procedural library.** `ProcedureLibrary("dir/")` saves derived or authored specs as YAML: reusable, git-versioned procedural memory. `spec.to_yaml()` round-trips with `from_yaml`, and library entries plug into `enforce` / `verify` / `score` unchanged (no new object model).
+- **Task clustering uses a pluggable embedder.** `cluster_tasks(texts, embedder)` takes any `Callable[[list[str]], ndarray]`, with a local `hf_embedder("<model>")` default that keeps text on-machine.
 
 See [METRICS.md](METRICS.md) for the full list of measurements, [STUDIES.md](STUDIES.md) for worked case studies, and [FAQ.md](FAQ.md) for common questions. Runnable demos are in [`examples/`](examples/); the live-explorer backend in [`space/`](space/); the essay, figures, and reference pages in [`docs/`](docs/).
