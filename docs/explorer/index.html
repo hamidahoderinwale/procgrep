@@ -557,7 +557,8 @@ function curateView(){
   const p=PROF[CURDS]; const r=p.redundancy;
   const s=r.coverage_shortest, d=r.coverage_diverse;
   document.getElementById('curbody').innerHTML=
-   `<div class="eyebrow">${p.dataset.split('/').pop()} · ${p.n_traces} traces</div>
+   `<h1>Curate a representative subset.</h1>
+    <div class="eyebrow">${p.dataset.split('/').pop()} · ${p.n_traces} traces</div>
     <p class="note">Shrink the set to a fixed budget, <b>the same number of traces</b>, chosen two ways.
     <b>Procedural variety</b> = the share of the dataset's distinct procedures (recurring action
     sub-sequences) that still appear in the kept subset.</p>
