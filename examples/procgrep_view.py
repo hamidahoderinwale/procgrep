@@ -1,4 +1,4 @@
-"""Open the live procedural fingerprint panel on YOUR local Claude Code sessions.
+"""Open the live procedural fingerprint panel on YOUR local Claude Code and Cursor sessions.
 
 Local-first and privacy-first. It reads the transcripts Claude Code already
 writes under ``~/.claude/projects`` on this machine, reduces each to the panel's
@@ -31,6 +31,7 @@ from pathlib import Path
 from typing import Any
 
 from procgrep.ingest.adapters.claude_code import build_panel_session
+from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions as build_cursor_sessions
 
 PANEL = Path(__file__).resolve().parent.parent / "docs" / "live_fingerprint.html"
 
@@ -71,7 +72,12 @@ def _read_lines(path: str) -> list[dict[str, Any]]:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--path", default="~/.claude/projects", help="directory of Claude Code transcripts")
-    parser.add_argument("--limit", type=int, default=12, help="most recent N sessions")
+    parser.add_argument(
+        "--cursor",
+        default="~/Library/Application Support/Cursor/User/globalStorage/state.vscdb",
+        help="Cursor state.vscdb to include; skipped if absent",
+    )
+    parser.add_argument("--limit", type=int, default=12, help="most recent N Claude Code sessions")
     parser.add_argument(
         "--paraphrase",
         default=None,
@@ -88,9 +94,17 @@ def main() -> None:
         panel = build_panel_session({"events": _read_lines(file)}, paraphrase=paraphrase)
         if len(panel["turns"]) >= 3:
             sessions.append(panel)
+    n_cc = len(sessions)
+
+    cursor_db = Path(args.cursor).expanduser()
+    if cursor_db.exists():
+        for panel in build_cursor_sessions(cursor_db, paraphrase=paraphrase, limit=args.limit):
+            if len(panel["turns"]) >= 3:
+                sessions.append(panel)
+    n_cursor = len(sessions) - n_cc
 
     if not sessions:
-        print(f"No usable transcripts under {base}. Opening the bundled demo instead.")
+        print(f"No usable Claude Code transcripts under {base} or Cursor sessions. Opening the demo.")
         webbrowser.open(PANEL.as_uri())
         return
 
@@ -108,8 +122,8 @@ def main() -> None:
     out.write_text(html)
     webbrowser.open(out.as_uri())
 
-    note = "with paraphrased prompts" if paraphrase else "with raw local prompts (pass --paraphrase to normalize for sharing)"
-    print(f"opened {len(sessions)} session(s) {note}")
+    note = "paraphrased prompts" if paraphrase else "raw local prompts (pass --paraphrase to normalize for sharing)"
+    print(f"opened {len(sessions)} session(s): {n_cc} Claude Code, {n_cursor} Cursor, with {note}")
     print(f"  {out}")
     print("  (local file containing your own data — do not share it; use to_shareable() to export)")
 

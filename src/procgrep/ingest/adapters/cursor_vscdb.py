@@ -49,7 +49,7 @@ from __future__ import annotations
 import hashlib
 import json
 import sqlite3
-from collections.abc import Iterator, Sequence
+from collections.abc import Callable, Iterator, Sequence
 from pathlib import Path
 from typing import Any
 
@@ -63,6 +63,7 @@ from procgrep.types import (
     ATOM_DELETE_FILE,
     ATOM_EDIT,
     ATOM_LINT,
+    ATOM_OTHER,
     ATOM_PROMPT_AI,
     ATOM_READ_FILE,
     ATOM_RUN_CODE,
@@ -213,4 +214,140 @@ def read_state_vscdb(path: str | Path, *, agent: str = "cursor") -> Iterator[dic
         con.close()
 
 
-__all__ = ["CURSOR_VSCDB_RULES", "cursor_vscdb_adapter", "read_state_vscdb", "session_rework"]
+_TOOL_ATOM = {
+    **dict.fromkeys(_READ_TOOLS, ATOM_READ_FILE),
+    **dict.fromkeys(_SEARCH_TOOLS, ATOM_SEARCH_REPO),
+    **dict.fromkeys(_EDIT_TOOLS, ATOM_EDIT),
+    "delete_file": ATOM_DELETE_FILE,
+    "read_lints": ATOM_LINT,
+    **dict.fromkeys(_TERMINAL_TOOLS, ATOM_RUN_CODE),
+}
+
+
+def _atom_for_bubble(bubble: dict[str, Any]) -> str:
+    """Atom for one assistant bubble, by its tool, code block, or reasoning."""
+    tf = bubble.get("toolFormerData") or {}
+    tool = tf.get("name") or tf.get("tool")
+    if tool in _TOOL_ATOM:
+        return _TOOL_ATOM[tool]
+    if not tool and bubble.get("codeBlocks"):
+        return ATOM_EDIT
+    if not tool and bubble.get("text"):
+        return ATOM_THINK
+    return ATOM_OTHER
+
+
+def _dt_ms(ms: object):
+    """A local ``datetime`` from epoch milliseconds, or ``None``."""
+    from datetime import datetime
+
+    if not isinstance(ms, (int, float)):
+        return None
+    try:
+        return datetime.fromtimestamp(ms / 1000)
+    except (ValueError, OSError, OverflowError):
+        return None
+
+
+def build_panel_sessions(
+    path: str | Path,
+    *,
+    paraphrase: Callable[[str], str] | None = None,
+    limit: int | None = None,
+) -> list[dict[str, Any]]:
+    """Build live-panel sessions from a Cursor ``state.vscdb`` (LOCAL view).
+
+    Mirrors the claude-code panel builder: each composer session becomes a set
+    of prompt-anchored turns whose ``seq`` is the agent's atom sequence. Carries
+    prompt text and the session title for the local panel only; pass
+    ``paraphrase`` to normalize prompts, and use ``to_shareable`` for anything
+    that leaves the machine (atoms and counts only).
+
+    Memory-bounded for large stores: composer rows are read by indexed key
+    prefix, the most recent ``limit`` are kept, and only those sessions' bubbles
+    are loaded, one session at a time -- so cost scales with sessions shown, not
+    DB size (the live store can be many GB).
+    """
+    con = sqlite3.connect(f"file:{Path(path)}?mode=ro", uri=True)
+    sessions: list[dict[str, Any]] = []
+    try:
+        composers: list[tuple[str, dict[str, Any]]] = []
+        # Range scan, not LIKE: LIKE ignores the key index (case-insensitive by
+        # default), which full-scans a multi-GB store; a >=/< range uses it.
+        for key, value in con.execute(
+            "SELECT key, value FROM cursorDiskKV WHERE key >= 'composerData:' AND key < 'composerData;'"
+        ):
+            try:
+                composers.append((key.split(":", 1)[1], json.loads(value)))
+            except (ValueError, IndexError):
+                continue
+        composers.sort(key=lambda c: c[1].get("lastUpdatedAt") or 0, reverse=True)
+        if limit is not None:
+            composers = composers[:limit]
+        for cid, cd in composers:
+            bubbles: dict[str, dict[str, Any]] = {}
+            for key, value in con.execute(
+                "SELECT key, value FROM cursorDiskKV WHERE key >= ? AND key < ?",
+                (f"bubbleId:{cid}:", f"bubbleId:{cid};"),
+            ):
+                try:
+                    bubbles[key.split(":", 2)[2]] = json.loads(value)
+                except (ValueError, IndexError):
+                    continue
+            turns: list[dict[str, Any]] = []
+            cur: dict[str, Any] | None = None
+            for header in cd.get("fullConversationHeadersOnly", []):
+                bubble = bubbles.get(str(header.get("bubbleId")))
+                if bubble is None:
+                    continue
+                if bubble.get("type") == 1:
+                    if cur is not None and cur["seq"]:
+                        turns.append(cur)
+                    dt = _dt_ms(bubble.get("createdAt"))
+                    text = (bubble.get("text") or "").strip()
+                    prompt = paraphrase(text) if (paraphrase is not None and text) else text
+                    cur = {
+                        "t": dt.strftime("%H:%M") if dt else "",
+                        "model": "",
+                        "prompt": prompt,
+                        "plan": "",
+                        "seq": [],
+                    }
+                elif cur is not None:
+                    cur["seq"].append(_atom_for_bubble(bubble))
+            if cur is not None and cur["seq"]:
+                turns.append(cur)
+            if not turns:
+                continue
+            created, updated = _dt_ms(cd.get("createdAt")), _dt_ms(cd.get("lastUpdatedAt"))
+            sid = hashlib.sha1(cid.encode("utf-8")).hexdigest()[:8]
+            sessions.append({
+                "meta": {
+                    "name": (cd.get("name") or "").strip() or sid,
+                    "client": "Cursor",
+                    "project": "Cursor",
+                    "id": sid,
+                    "date": updated.strftime("%b %d") if updated else "",
+                    "ended": updated.isoformat() if updated else "",
+                    "durationMin": round((updated - created).total_seconds() / 60)
+                    if (created and updated and updated >= created)
+                    else None,
+                    "intent": "",
+                    "illustrative": False,
+                    "promptsParaphrased": paraphrase is not None,
+                    "models": [],
+                },
+                "turns": turns,
+            })
+    finally:
+        con.close()
+    return sessions
+
+
+__all__ = [
+    "CURSOR_VSCDB_RULES",
+    "build_panel_sessions",
+    "cursor_vscdb_adapter",
+    "read_state_vscdb",
+    "session_rework",
+]
