@@ -30,6 +30,17 @@ body{padding-left:212px}
 .gnav .gfoot a.on{color:var(--ink);font-weight:600}
 .gnav .toolentry{display:block;color:var(--ink);text-decoration:none;font-size:13px;padding:7px 9px;margin:0 0 16px;border-radius:6px;background:#E2DBD0}
 .gnav .toolentry:hover{background:var(--ink);color:#fff}
+.gnav .sec.here{background:var(--ink);color:#fff}
+.gnav .sec.here .n{color:#cfc9bf}
+.gnav{transition:transform .2s ease}
+body.navhidden .gnav{transform:translateX(-100%)}
+body.navhidden{padding-left:0}
+.gtop{display:flex;align-items:center;margin:0 0 14px}
+.gtop .gmark{margin:0}
+.navtoggle{margin-left:auto;border:0;background:transparent;color:var(--olive);cursor:pointer;font-size:15px;line-height:1;padding:2px 8px;border-radius:5px}
+.navtoggle:hover{background:#ECE7DF}
+.navshow{position:fixed;left:12px;top:12px;z-index:50;display:none;border:0;background:var(--ink);color:#fff;border-radius:6px;padding:8px 11px;cursor:pointer;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+body.navhidden .navshow{display:block}
 .topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.85);backdrop-filter:saturate(140%) blur(8px);
 font-family:var(--mono);font-size:13px;border-bottom:1px solid var(--rule)}
 .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
@@ -206,7 +217,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 </head><body>
 <div class="progress" id="progress"></div>
 <nav class="gnav">
-  <a class="gmark" href="index.html">procgrep</a>
+  <div class="gtop"><a class="gmark" href="index.html">procgrep</a><button class="navtoggle" onclick="toggleNav()" title="hide nav" aria-label="hide nav">«</button></div>
   <a class="toolentry" href="explorer/">explorer →</a>
   <div class="seclist">
     <a class="sec" href="#background"><span class="n">01</span>Background</a>
@@ -225,6 +236,7 @@ table{display:block;max-width:100%;overflow-x:auto}
     <a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a>
   </div>
 </nav>
+<button class="navshow" onclick="toggleNav()" aria-label="show nav">☰ procgrep</button>
 
 <div class="hero">
   <h1>Agent trajectories as programs</h1>
@@ -1994,5 +2006,16 @@ if(cur<0){here.classList.remove('on');active=-1;return;}
 if(cur!==active){active=cur;here.innerHTML='<span class="n">'+items[cur].num+'</span>'+items[cur].title;}
 here.classList.add('on');}
 addEventListener('scroll',upd,{passive:true});addEventListener('resize',upd);upd();})();
+// Collapsible sidebar + scrollspy: highlight the section you're reading (replaces
+// the old top progress indicator), and let the reader hide the nav for more room.
+function toggleNav(){document.body.classList.toggle('navhidden');}
+(function(){
+  const links=[...document.querySelectorAll('.gnav .sec')];
+  const secs=links.map(a=>document.getElementById(a.getAttribute('href').slice(1)));
+  if(!links.length)return;
+  function spy(){const y=scrollY+130;let cur=-1;secs.forEach((s,i)=>{if(s&&s.offsetTop<=y)cur=i;});
+    links.forEach((a,i)=>a.classList.toggle('here',i===cur));}
+  addEventListener('scroll',spy,{passive:true});addEventListener('resize',spy);spy();
+})();
 </script>
 </body></html>
