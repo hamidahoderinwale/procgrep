@@ -83,6 +83,7 @@ body.hide-noise .atom.nz{display:none}
 body.hide-noise .gap{display:none}
 .qbar{display:flex;gap:0;margin:6px 0 10px;border:2px solid var(--ink);background:#fff}
 .qbar span.mag{padding:9px 4px 9px 12px;color:var(--olive)}
+.qbar .qk{align-self:center;margin-right:10px;font:11px var(--mono);color:var(--olive);border:1px solid var(--rule);border-radius:4px;padding:2px 6px}
 #q{flex:1;border:none;font-size:16px;padding:10px 12px 10px 4px;background:transparent}
 #q:focus{outline:none}
 .tryline{margin:2px 0 16px;color:var(--olive)}
@@ -157,7 +158,8 @@ body.corpus-sess .cgroup[data-c="eval"]{display:none}
 <p class="sub">Ask a structural question about how an agent worked, like "did it edit five times with no test?" or "did it submit without testing?", and get an exact answer instantly, over real trajectory datasets. No model call, deterministic, free. <a class="plain" onclick="show('why')">Why not just ask an LLM? →</a></p>
 <div class="dsbar" id="dsbar"></div>
 <div class="qbar"><span class="mag">⌕</span>
-  <input id="q" placeholder="atom pattern, e.g.  (edit ){5,}   or pick one below" autocomplete="off"></div>
+  <input id="q" placeholder="search traces by action pattern, e.g.  (edit ){5,}" autocomplete="off">
+  <kbd class="qk">⌘K</kbd></div>
 <div class="tryline">try: <span id="trychips"></span> <span class="chip noisetog" onclick="document.body.classList.toggle('hide-noise')">hide think/other</span></div>
 <div id="qres"></div>
 </div>
@@ -615,6 +617,14 @@ function selectSession(i,btn){
   if(btn)btn.classList.add('act');
 }
 window.addEventListener('message',e=>{if(e.data&&e.data.type==='procgrep-sessions')renderSessList(e.data);});
+// Keyboard-first: Cmd/Ctrl+K focuses search (jumps to eval if you're in sessions).
+document.addEventListener('keydown',e=>{
+  if((e.metaKey||e.ctrlKey)&&e.key.toLowerCase()==='k'){
+    e.preventDefault();
+    if(document.body.classList.contains('corpus-sess'))pickCorpus('eval');
+    const q=document.getElementById('q');if(q){q.focus();q.select();}
+  }
+});
 document.getElementById('q').addEventListener('input',e=>onType(e.target.value));
 
 // boot: query-first; queryView() auto-runs the highest-hit sample
