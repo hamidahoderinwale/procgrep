@@ -645,6 +645,11 @@ const EMBED=PARAMS.has("embed");
 // one anonymized, atoms-only session exported through to_shareable. It carries no
 // prompt text, code, or paths, so it is safe to ship.
 const WANT_DEMO=PARAMS.has("demo");
+// The bundled demo carries no prompt text, so the illustrative raw->shown
+// normalization example would contradict its "atoms only" framing -- drop it.
+if(WANT_DEMO){
+  const pb=document.querySelector(".parabox"); if(pb)pb.style.display="none";
+}
 if(EMBED){
   const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
   const nv=document.querySelector(".nav"); if(nv)nv.style.display="none";
