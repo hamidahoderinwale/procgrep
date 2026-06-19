@@ -633,10 +633,13 @@ function load(idx){
   play();
 }
 
-// When embedded inside the explorer ("sessions" mode), hide our own top bar --
-// the explorer already provides the global nav.
-if(new URLSearchParams(location.search).has("embed")){
+// When embedded in the explorer, the explorer's sidebar is the nav: hide our own
+// top bar AND rail, and use the full width -- the parent lists the sessions.
+const EMBED=new URLSearchParams(location.search).has("embed");
+if(EMBED){
   const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
+  const nv=document.querySelector(".nav"); if(nv)nv.style.display="none";
+  document.body.style.padding="22px 24px 40px";
 }
 // The local runner opens this file from a temp dir, so the relative site links
 // (essay, explorer) cannot resolve -- drop them; the local panel stands alone.
@@ -648,6 +651,18 @@ load(0);
 // For your own sessions, land on the run-length overview, not a single session,
 // so the aggregate is the first thing seen rather than something to toggle to.
 if(IS_LOCAL){renderAutonomy();setView("overview");}
+// Embedded: hand the session list (metadata only) to the explorer so it can show
+// them in the global rail, and take selection commands back. One rail, not two.
+if(EMBED && window.parent!==window){
+  const list=SESSIONS.map((s,i)=>({i,name:s.meta.name,client:s.meta.client,
+    date:s.meta.date||"",dur:fmtDur(durationMin(s))||"",model:shortModel(primaryModel(s.turns))||""}));
+  window.parent.postMessage({type:"procgrep-sessions",list,hasOverview:IS_LOCAL},"*");
+  window.addEventListener("message",e=>{
+    const m=e.data; if(!m||m.type!=="procgrep-select")return;
+    if(playing)pause(false);
+    if(m.index==null)setView("overview"); else load(m.index);
+  });
+}
 </script>
 </body>
 </html>

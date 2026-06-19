@@ -16,6 +16,10 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);f
 .railnav .railfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px}
 .railnav .railfoot a{display:block;color:var(--olive);font-size:12px;padding:4px 6px;text-decoration:none}
 .railnav .railfoot a:hover{color:var(--ink)}
+.railnav #sesslist .sessitem{display:block;line-height:1.32;padding:7px 10px;text-align:left}
+.railnav #sesslist .sessitem .nnm{display:block;font-size:13px}
+.railnav #sesslist .sessitem .smeta{display:block;font-size:10px;color:var(--olive)}
+.railnav #sesslist .sessitem.act .smeta{color:#cfc9bf}
 .railnav .railgrp{margin-top:22px}
 .railnav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--olive);margin:0 0 12px;font-weight:600}
 .railnav .ritem{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin:0 0 2px}
@@ -138,7 +142,7 @@ body.corpus-sess .cgroup[data-c="eval"]{display:none}
     <button class="ritem" id="nav-why" onclick="show('why')">why structural</button>
   </div>
   <div class="cgroup" data-c="sess">
-    <button class="ritem" id="nav-sessions" onclick="show('sessions')">sessions</button>
+    <div id="sesslist"><span class="dim" style="display:block;padding:8px 10px;font-size:11px">loading sessions…</span></div>
   </div>
   <div class="railfoot">
     <a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a>
@@ -572,11 +576,11 @@ document.querySelectorAll('#index th[data-k]').forEach(th=>th.onclick=()=>{
 
 // ---- view router ----
 const VIEWS=['query','curate','permodel','why','sessions','tr','browse'];
-const NAVOF={query:'nav-query',curate:'nav-curate',permodel:'nav-permodel',why:'nav-why',sessions:'nav-sessions'};
+const NAVOF={query:'nav-query',curate:'nav-curate',permodel:'nav-permodel',why:'nav-why'};
 function show(id){
   VIEWS.forEach(x=>document.getElementById(x).classList.toggle('hidden',x!==id));
-  ['nav-query','nav-curate','nav-permodel','nav-why','nav-sessions'].forEach(n=>document.getElementById(n).classList.remove('act'));
-  if(NAVOF[id])document.getElementById(NAVOF[id]).classList.add('act');
+  ['nav-query','nav-curate','nav-permodel','nav-why'].forEach(n=>{const el=document.getElementById(n);if(el)el.classList.remove('act');});
+  if(NAVOF[id]){const el=document.getElementById(NAVOF[id]);if(el)el.classList.add('act');}
   else if(id==='tr'||id==='browse')document.getElementById('nav-query').classList.add('act');
   if(id==='query')queryView();
   if(id==='curate')curateView();
@@ -595,6 +599,22 @@ function pickCorpus(c){
   document.getElementById('c-sess').classList.toggle('on',c==='sess');
   show(c==='sess'?'sessions':'query');
 }
+// The embedded session panel posts its session list up; render it in the global
+// rail and post the selection back so it loads in the content. One rail, not two.
+function renderSessList(msg){
+  const el=document.getElementById('sesslist'); if(!el)return;
+  const active=msg.hasOverview?'ov':(msg.list[0]?msg.list[0].i:null);
+  let html=msg.hasOverview?`<button class="ritem sessitem${active==='ov'?' act':''}" onclick="selectSession(null,this)"><span class="nnm">overview</span><span class="smeta">run length across sessions</span></button>`:'';
+  html+=msg.list.map(s=>`<button class="ritem sessitem${active===s.i?' act':''}" onclick="selectSession(${s.i},this)"><span class="nnm">${s.name}</span><span class="smeta">${s.client}${s.date?` · ${s.date}`:''}${s.dur?` · ${s.dur}`:''}</span></button>`).join('');
+  el.innerHTML=html||'<span class="dim" style="display:block;padding:8px 10px;font-size:11px">no sessions</span>';
+}
+function selectSession(i,btn){
+  const f=document.getElementById('sessframe');
+  if(f&&f.contentWindow)f.contentWindow.postMessage({type:'procgrep-select',index:i},'*');
+  document.querySelectorAll('#sesslist .sessitem').forEach(b=>b.classList.remove('act'));
+  if(btn)btn.classList.add('act');
+}
+window.addEventListener('message',e=>{if(e.data&&e.data.type==='procgrep-sessions')renderSessList(e.data);});
 document.getElementById('q').addEventListener('input',e=>onType(e.target.value));
 
 // boot: query-first; queryView() auto-runs the highest-hit sample
