@@ -8,7 +8,14 @@
 *{box-sizing:border-box}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5;padding-left:212px}
 .wrap{max-width:1080px;margin:0 auto;padding:44px 32px 110px}
-.railnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:44px 16px;overflow:auto;background:#EFEAE2}
+.railnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#EFEAE2;display:flex;flex-direction:column}
+.railnav .mark{margin:0 6px 14px}
+.railnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#E2DBD0;border-radius:7px;padding:3px}
+.railnav .surf a,.railnav .surf button{flex:1;text-align:center;font:11px var(--mono);border:0;background:transparent;color:var(--olive);padding:6px 3px;border-radius:5px;cursor:pointer;text-decoration:none}
+.railnav .surf .on,.railnav .surf a:hover{background:var(--ink);color:#fff}
+.railnav .railfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px}
+.railnav .railfoot a{display:block;color:var(--olive);font-size:12px;padding:4px 6px;text-decoration:none}
+.railnav .railfoot a:hover{color:var(--ink)}
 .railnav .railgrp{margin-top:22px}
 .railnav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--olive);margin:0 0 12px;font-weight:600}
 .railnav .ritem{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin:0 0 2px}
@@ -118,29 +125,27 @@ body.corpus-sess .cgroup[data-c="eval"]{display:none}
 }
 </style></head><body class="corpus-eval">
 <nav class="railnav">
+  <a class="mark" href="../index.html">procgrep</a>
+  <div class="surf">
+    <a href="../index.html">essay</a>
+    <button id="c-eval" class="on" onclick="pickCorpus('eval')">eval</button>
+    <button id="c-sess" onclick="pickCorpus('sess')">sessions</button>
+  </div>
   <div class="cgroup" data-c="eval">
-    <h2>eval traces</h2>
     <button class="ritem act" id="nav-query" onclick="show('query')">query</button>
     <button class="ritem" id="nav-permodel" onclick="show('permodel')">per-model</button>
     <button class="ritem" id="nav-curate" onclick="show('curate')">curate</button>
     <button class="ritem" id="nav-why" onclick="show('why')">why structural</button>
   </div>
   <div class="cgroup" data-c="sess">
-    <h2>live sessions</h2>
     <button class="ritem" id="nav-sessions" onclick="show('sessions')">sessions</button>
+  </div>
+  <div class="railfoot">
+    <a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a>
+    <a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a>
   </div>
 </nav>
 <div class="wrap">
-<div class="topbar"><a class="mark" href="../index.html">procgrep</a>
-<nav class="topnav">
-  <a href="../index.html">essay</a>
-  <a class="active" href="index.html">explorer</a>
-</nav></div>
-
-<div class="cswitch">
-  <button id="c-eval" class="on" onclick="pickCorpus('eval')">eval traces<span class="sub">remote · public</span></button>
-  <button id="c-sess" onclick="pickCorpus('sess')">your sessions<span class="sub">local · private</span></button>
-</div>
 
 <!-- QUERY (hero / default) -->
 <div id="query">
