@@ -577,6 +577,8 @@ function setView(v){
   det.classList.toggle("hidden",overview);
   au.classList.toggle("hidden",!overview);
   document.querySelectorAll("#overviewNav button").forEach(b=>b.classList.toggle("active",overview));
+  // Only one thing is active: the overview, or the current session -- never both.
+  document.querySelectorAll("#switch button").forEach((b,i)=>b.classList.toggle("active",!overview&&i===current));
 }
 
 function load(idx){
@@ -607,8 +609,10 @@ if(new URLSearchParams(location.search).has("embed")){
 // Newest session first when a recency key is present; stable, so the demo
 // (no `ended`) keeps its authored order.
 SESSIONS.sort((a,b)=>String(b.meta.ended||"").localeCompare(String(a.meta.ended||"")));
-if(IS_LOCAL)renderAutonomy();
 load(0);
+// For your own sessions, land on the run-length overview, not a single session,
+// so the aggregate is the first thing seen rather than something to toggle to.
+if(IS_LOCAL){renderAutonomy();setView("overview");}
 </script>
 </body>
 </html>
