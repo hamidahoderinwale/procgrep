@@ -96,6 +96,12 @@ def main() -> None:
 
     sessions.reverse()  # newest first in the nav
     html = PANEL.read_text()
+    # Inline the shared theme so the temp file stays self-contained off /tmp,
+    # where the relative stylesheet link would not resolve.
+    theme = (PANEL.parent / "assets" / "css" / "theme.css").read_text()
+    html = html.replace(
+        '<link rel="stylesheet" href="assets/css/theme.css">', f"<style>{theme}</style>"
+    )
     inject = f"<script>window.PROCGREP_SESSIONS={json.dumps(sessions)};</script>\n"
     html = html.replace("<script>", inject + "<script>", 1)
     out = Path(tempfile.gettempdir()) / "procgrep_view.html"

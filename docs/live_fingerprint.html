@@ -4,12 +4,16 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>procgrep · live procedural fingerprint</title>
+<link rel="stylesheet" href="assets/css/theme.css">
 <style>
+  /* Base colors come from theme.css; alias the panel's semantic names to them
+     and keep the atom, outcome, and rule shades that are specific to the panel. */
   :root{
-    --bg:#F7F5F2; --ink:#14110E; --mut:#585E53; --line:#E2DCD3;
-    --edit:#CB4D20; --read:#5692E5; --prompt:#9A6CB4; --test:#4A7C59; --other:#A99B86;
+    --bg:var(--paper); --mut:var(--olive); --line:#E2DCD3;
+    --edit:var(--copper); --read:var(--blue); --fail:var(--copper);
+    --prompt:#9A6CB4; --test:#4A7C59; --other:#A99B86;
     --search:#2E8B8B; --package:#C08A2E; --lint:#9A5B4A; --vcs:#4E6A8A;
-    --pass:#4A7C59; --fail:#CB4D20;
+    --pass:#4A7C59;
   }
   *{box-sizing:border-box}
   body{background:var(--bg);color:var(--ink);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0;padding:40px 20px 40px 250px}
