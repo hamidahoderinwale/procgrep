@@ -116,7 +116,7 @@ article code{font-family:var(--mono);font-size:.86em;background:#efeae2;padding:
 article figure{margin:30px 0;text-align:center}
 article figure img{max-width:100%;height:auto;border:1px solid var(--rule);background:#fff;border-radius:3px}
 article figure figcaption,article .caption{font-family:var(--mono);font-size:13px;color:var(--olive);
-line-height:1.5;margin-top:10px;text-align:left;max-width:62ch;margin-left:0;margin-right:auto}
+line-height:1.5;margin-top:10px;text-align:center;max-width:62ch;margin-left:auto;margin-right:auto}
 /* tables */
 article table{width:100%;border-collapse:collapse;margin:24px 0;font-family:var(--mono);font-size:13px}
 article th{text-align:left;font-weight:600;color:var(--olive);border-bottom:1px solid var(--ink);padding:6px 8px}
@@ -683,6 +683,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 <figure id="fig:failure_by_family">
 <img loading="lazy" src="figures/failure_by_family.png" />
 <figcaption>Failure types by model family. Model behavior on compositional tasks.</figcaption>
+</figure>
 </figure>
 <p>Next, developers make a number of decisions to train and scaffold their models. We set out to understand how this affects model processes based on a set of tasks and find that “fingerprints” are recoverable—unique model-specific patterns regarding tool-use and order of operations that can be attributed back to an agent. Given certain parameters like the costs for different types of actions and the length of a task, hopefully this can form the basis of more informed model choice and configuration decisions depending on a developer’s goal (i.e. task and workflow-aware routing). For a given model, its procedural space can be described by its entropy and compression, where entropy describes the variance of the actions and compression is a rough proxy for repetitiveness. We find the GPT-4o has the most diversity of actions compared to Claude models.</p>
 <p>Entropy is just one method of characterizing procedural behavior given a trajectory and it makes sense that there is some level of behavioral similarity for models of the same family and harness—suggesting that architectural design choices bleed into procedural tendencies. We compare the divergence of procedural distributions with JSD to test and find that scaffolds and model generation are the strongest indicators of procedural habits compared to the model generation in distilled model pairs, suggesting that the generation of the model and programmed behavior play a disproportionate role and that a distilled student’s procedural style is largely derived from its teacher. See Figure <a href="#fig:jsd_full" data-reference-type="ref" data-reference="fig:jsd_full">13</a> for a matrix showing all the pairwise divergence rates across models.</p>
@@ -1929,7 +1930,7 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   const peak=agg.reduce((a,b)=>b.mean>a.mean?b:a);
   const x=d3.scaleLog().base(2).domain([14,820]).range([PADL,W-PADR]);
   const y=d3.scaleLinear().domain([0.28,0.72]).range([H-PADB,PADT]);
-  mount.innerHTML='<div class="jtip" id="vm-tip"><span class="dim">Each point is the mean V-measure over 5 KMeans seeds, with its ±1 SD band. Hover a point.</span></div>';
+  mount.innerHTML='<div class="jtip" id="vm-tip" style="padding-right:118px"><span class="dim">Each point is the mean V-measure over 5 KMeans seeds, with its ±1 SD band.</span></div>';
   const svg=d3.select(mount).insert('svg',':first-child')
     .attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%')
     .attr('preserveAspectRatio','xMidYMid meet')
@@ -1947,7 +1948,7 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   svg.append('path').datum(agg).attr('d',area).attr('fill',BAND);
   const line=d3.line().x(d=>x(d.vocab)).y(d=>y(d.mean)).curve(d3.curveMonotoneX);
   svg.append('path').datum(agg).attr('d',line).attr('fill','none').attr('stroke',BLUE).attr('stroke-width',2);
-  const seeds=svg.append('g').style('display','none');
+  const seeds=svg.append('g');
   seeds.selectAll('circle').data(runs).join('circle').attr('cx',d=>x(d.vocab)).attr('cy',d=>y(d.v)).attr('r',2.4).attr('fill',OLIVE).attr('fill-opacity',.42);
   svg.append('line').attr('x1',x(peak.vocab)).attr('x2',x(peak.vocab)).attr('y1',y(peak.mean)-5).attr('y2',PADT+2).attr('stroke',COPPER).attr('stroke-dasharray','3 3').attr('stroke-width',1);
   svg.append('text').attr('x',x(peak.vocab)).attr('y',PADT-5).attr('text-anchor','middle').attr('font-size',10.5).attr('fill',COPPER).text('peak K=192 · '+peak.mean.toFixed(3));
@@ -1957,12 +1958,12 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   function hover(d){const dd=d.mean-peak.mean;
     tip.innerHTML=`<b>K=${d.V}</b> <span class="dim">realized ${d.vocab}</span> &nbsp; V-measure <b>${d.mean.toFixed(3)}</b> <span class="dim">±${d.sd.toFixed(3)}</span> &nbsp;·&nbsp; <span class="dim">${dd>=0?'this is the peak':dd.toFixed(3)+' vs peak'}</span>`;}
   const lab=document.createElement('label');
-  lab.style.cssText='display:inline-flex;align-items:center;gap:6px;cursor:pointer;font:11px ui-monospace,Menlo,monospace;color:'+OLIVE+';user-select:none;margin:4px 0 2px';
-  const box=document.createElement('input'); box.type='checkbox'; box.style.cssText='accent-color:'+COPPER+';cursor:pointer';
+  lab.style.cssText='position:absolute;top:2px;right:4px;z-index:2;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font:11px ui-monospace,Menlo,monospace;color:'+OLIVE+';user-select:none;background:rgba(247,245,242,.85);padding:2px 6px;border-radius:5px';
+  const box=document.createElement('input'); box.type='checkbox'; box.checked=true; box.style.cssText='accent-color:'+COPPER+';cursor:pointer';
   const t=document.createElement('span'); t.textContent='show all seeds';
   lab.appendChild(box); lab.appendChild(t);
   box.addEventListener('change',()=>seeds.style('display',box.checked?null:'none'));
-  mount.appendChild(lab);
+  mount.style.position='relative'; mount.appendChild(lab);
 })();
 </script>
 <script>
