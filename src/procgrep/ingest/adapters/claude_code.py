@@ -67,6 +67,7 @@ from procgrep.types import (
     ATOM_LINT,
     ATOM_OTHER,
     ATOM_PACKAGE,
+    ATOM_PROMPT_AI,
     ATOM_READ_FILE,
     ATOM_RUN_CODE,
     ATOM_RUN_TEST,
@@ -75,9 +76,6 @@ from procgrep.types import (
     Atom,
     AtomSequence,
 )
-
-# Matches the cursor-companion atom so both human+AI sources share one alphabet.
-ATOM_PROMPT_AI: Atom = "prompt_ai"
 
 _EDIT_TOOLS = {"edit", "write", "notebookedit", "multiedit"}
 _READ_TOOLS = {"read", "notebookread"}

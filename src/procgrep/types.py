@@ -33,6 +33,8 @@ ATOM_DELETE_FILE: Atom = "delete_file"
 ATOM_SUBMIT: Atom = "submit"
 ATOM_THINK: Atom = "think"
 ATOM_ERROR: Atom = "error"
+# Interactive human+AI sessions: the developer hands a prompt to the agent.
+ATOM_PROMPT_AI: Atom = "prompt_ai"
 # Shell-command sub-classes, derived from a Bash command's leading verb only --
 # a category label, never the command text (see the claude-code adapter).
 ATOM_VERSION_CONTROL: Atom = "version_control"
@@ -53,6 +55,7 @@ CANONICAL_ATOMS: frozenset[Atom] = frozenset(
         ATOM_SUBMIT,
         ATOM_THINK,
         ATOM_ERROR,
+        ATOM_PROMPT_AI,
         ATOM_VERSION_CONTROL,
         ATOM_PACKAGE,
         ATOM_LINT,

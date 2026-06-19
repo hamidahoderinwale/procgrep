@@ -59,11 +59,11 @@ from procgrep.canonicalize import (
     make_event_adapter,
     register_adapter,
 )
-from procgrep.ingest.adapters.cursor_companion import ATOM_PROMPT_AI
 from procgrep.types import (
     ATOM_DELETE_FILE,
     ATOM_EDIT,
     ATOM_LINT,
+    ATOM_PROMPT_AI,
     ATOM_READ_FILE,
     ATOM_RUN_CODE,
     ATOM_SEARCH_REPO,

@@ -76,14 +76,11 @@ from procgrep.canonicalize import (
 )
 from procgrep.types import (
     ATOM_EDIT,
+    ATOM_PROMPT_AI,
     ATOM_READ_FILE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
-    Atom,
 )
-
-ATOM_PROMPT_AI: Atom = "prompt_ai"
-"""Human->AI turn -- the developer sends a prompt to the Cursor AI."""
 
 _EDIT_TYPES = {"code_change", "file_change", "entry_created", "edit", "file_save"}
 _PROMPT_TYPES = {"prompt", "ai_prompt", "llm_prompt", "prompt_with_edit"}

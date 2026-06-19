@@ -246,8 +246,9 @@ pip install procgrep[dev]      # development dependencies
 ## Notes
 
 - Python 3.10+. No LLM SDK required.
-- Built-in adapters cover autonomous scaffolds (SWE-agent, OpenHands, Agentless, and more) and interactive human+AI sessions (`cursor-companion`, `claude-code`).
-- **Privacy model for interactive adapters.** The interactive adapters never retain prompt text (word counts only) and hash identifiers like session ids and workspace paths by default (`anonymize=True`). Only abstract action structure crosses the ingest boundary.
+- Built-in adapters cover autonomous scaffolds (SWE-agent, OpenHands, Agentless, and more) and interactive human+AI sessions: `claude-code`, plus Cursor via `cursor-vscdb` (reads Cursor's local `state.vscdb` directly) or the `cursor-companion` exporter.
+- **Run it on your own sessions.** `python examples/procgrep_view.py` reads your local Claude Code transcripts, opens the session panel, and adds an `overview` of run length (agent actions per human prompt) across them. Local-first; `to_shareable()` is the only sanctioned export.
+- **Privacy model for interactive adapters.** The canonical ingest keeps only atoms and hashed identifiers (session ids, workspace paths) by default (`anonymize=True`); `to_shareable()` exports atoms and counts, never prompt text. The local panel can show your own prompts on your machine, but only the shareable export crosses the boundary.
 - **Procedural library.** `ProcedureLibrary("dir/")` saves derived or authored specs as YAML: reusable, git-versioned procedural memory. `spec.to_yaml()` round-trips with `from_yaml`, and library entries plug into `enforce` / `verify` / `score` unchanged (no new object model).
 - **Task clustering uses a pluggable embedder.** `cluster_tasks(texts, embedder)` takes any `Callable[[list[str]], ndarray]`, with a local `hf_embedder("<model>")` default that keeps text on-machine.
 
