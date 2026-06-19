@@ -72,9 +72,19 @@ from procgrep.types import (
 )
 
 _READ_TOOLS = {"read_file"}
-_SEARCH_TOOLS = {"grep", "codebase_search", "glob_file_search", "list_dir", "rg", "web_search"}
-_EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook", "_codeblock"}
-_TERMINAL_TOOLS = {"run_terminal_cmd"}
+_SEARCH_TOOLS = {"grep", "codebase_search", "glob_file_search", "list_dir", "rg", "web_search", "ripgrep_raw_search"}
+_EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook", "edit_file", "_codeblock"}
+_TERMINAL_TOOLS = {"run_terminal_cmd", "run_terminal_command"}
+
+
+def _normalize_tool(tool: str) -> str:
+    """Strip Cursor's tool-version suffix so e.g. ``read_file_v2`` maps like
+    ``read_file``. Cursor versions tool names (``_v2`` ...) across releases; the
+    atom mapping is keyed on the base name, so normalize before lookup."""
+    head, sep, tail = tool.rpartition("_v")
+    if sep and head and tail.isdigit():
+        return head
+    return tool
 
 # Evaluated in order; each event matches exactly one rule (user turn, reasoning
 # turn, or a single tool call), with the generic "other" fallback for the rest.
@@ -122,6 +132,7 @@ def _event_for_bubble(bubble: dict[str, Any]) -> dict[str, Any]:
     tf = bubble.get("toolFormerData") or {}
     tool = tf.get("name") or tf.get("tool")
     if tool:
+        tool = _normalize_tool(tool)
         event: dict[str, Any] = {"kind": "ai", "tool": tool}
         params = _params(tf)
         path = params.get("targetFile") or params.get("relativeWorkspacePath")
@@ -135,7 +146,7 @@ def _event_for_bubble(bubble: dict[str, Any]) -> dict[str, Any]:
     return {"kind": "ai"}  # no tool, no text -> falls through to ATOM_OTHER
 
 
-_FILE_EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook"}
+_FILE_EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook", "edit_file"}
 
 
 def session_rework(events: Sequence[dict[str, Any]]) -> dict[str, float]:
@@ -220,6 +231,7 @@ _TOOL_ATOM = {
     **dict.fromkeys(_EDIT_TOOLS, ATOM_EDIT),
     "delete_file": ATOM_DELETE_FILE,
     "read_lints": ATOM_LINT,
+    "todo_write": ATOM_THINK,
     **dict.fromkeys(_TERMINAL_TOOLS, ATOM_RUN_CODE),
 }
 
@@ -228,6 +240,8 @@ def _atom_for_bubble(bubble: dict[str, Any]) -> str:
     """Atom for one assistant bubble, by its tool, code block, or reasoning."""
     tf = bubble.get("toolFormerData") or {}
     tool = tf.get("name") or tf.get("tool")
+    if tool:
+        tool = _normalize_tool(tool)
     if tool in _TOOL_ATOM:
         return _TOOL_ATOM[tool]
     if not tool and bubble.get("codeBlocks"):
