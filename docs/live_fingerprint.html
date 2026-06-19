@@ -606,6 +606,9 @@ function load(idx){
 if(new URLSearchParams(location.search).has("embed")){
   const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
 }
+// The local runner opens this file from a temp dir, so the relative site links
+// (essay, explorer) cannot resolve -- drop them; the local panel stands alone.
+if(IS_LOCAL){document.querySelectorAll(".topnav a").forEach(a=>a.remove());}
 // Newest session first when a recency key is present; stable, so the demo
 // (no `ended`) keeps its authored order.
 SESSIONS.sort((a,b)=>String(b.meta.ended||"").localeCompare(String(a.meta.ended||"")));
