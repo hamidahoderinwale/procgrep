@@ -17,6 +17,16 @@ Only structure crosses the boundary: turn type and tool name, never prompt text,
 tool args, or code. That keeps extraction inside procgrep's privacy model
 (atoms + ids, no content), same as ``to_shareable``.
 
+Tab / inline autocomplete (next-edit prediction) is captured only COARSELY.
+``cursorDiskKV`` has no per-completion Tab events (it persists Composer/chat
+bubbles + Cmd-K ``inlineDiff`` edits), but the sibling ``ItemTable`` keeps
+``aiCodeTracking.dailyStats.*`` with per-DAY ``tabSuggestedLines`` /
+``tabAcceptedLines`` (and ``composer*`` equivalents). So Tab volume + accept-rate
+are recoverable at day granularity, but not per-trace/per-event -- this adapter's
+atom stream is the agentic/conversational surface, and weaving Tab into
+trajectories would need an editor/telemetry hook. ``unifiedMode`` on
+``composerData`` distinguishes the captured modes (``agent`` / ``chat`` / ``plan``).
+
 Atom mapping (Cursor agent tool -> canonical atom):
 
     user turn (type 1)                          -> prompt_ai

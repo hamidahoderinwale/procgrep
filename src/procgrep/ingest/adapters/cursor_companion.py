@@ -8,7 +8,13 @@ separate project woven in only as an ingest adapter -- an exemplar trace
 source, not part of procgrep's core.
 
 The companion captures human+AI Cursor sessions: AI prompts, code edits,
-terminal commands, and file reads/searches. This adapter is defined
+terminal commands, and file reads/searches. It does NOT capture Tab / inline
+autocomplete (next-edit prediction) at the event level. (Cursor itself records
+only DAY-level Tab line counts -- ``tabSuggestedLines`` / ``tabAcceptedLines`` in
+its own ``state.vscdb`` ItemTable under ``aiCodeTracking.dailyStats``; per-
+completion Tab events are not persisted anywhere and would need an editor-level
+inline-completion hook.) So the captured surface is the conversational/agentic
+one, not the per-completion inline-completion one. This adapter is defined
 declaratively as feature-based rules over `make_event_adapter`, so a single
 export event decomposes into the atoms its fields imply. A prompt turn that
 also edited code becomes ``prompt_ai`` then ``edit`` -- a decomposition a

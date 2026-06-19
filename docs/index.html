@@ -1929,7 +1929,7 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   const peak=agg.reduce((a,b)=>b.mean>a.mean?b:a);
   const x=d3.scaleLog().base(2).domain([14,820]).range([PADL,W-PADR]);
   const y=d3.scaleLinear().domain([0.28,0.72]).range([H-PADB,PADT]);
-  mount.innerHTML='<div class="jtip" id="vm-tip"><span class="dim">Each point is the mean V-measure over 5 KMeans seeds, with its ±1 SD band. Hover a point; toggle the raw seeds below.</span></div>';
+  mount.innerHTML='<div class="jtip" id="vm-tip"><span class="dim">Each point is the mean V-measure over 5 KMeans seeds, with its ±1 SD band. Hover a point.</span></div>';
   const svg=d3.select(mount).insert('svg',':first-child')
     .attr('viewBox',`0 0 ${W} ${H}`).attr('width','100%')
     .attr('preserveAspectRatio','xMidYMid meet')
