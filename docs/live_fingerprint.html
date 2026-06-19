@@ -126,8 +126,13 @@
   .winmark::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--line)}
   code{font-size:11px}
   .hidden{display:none}
+  .nav button.hidden{display:none}  /* beat .nav button{display:block} specificity */
   #autonomy .chart{background:#fff;border-radius:6px;padding:18px 20px 10px}
   #autonomy .cap2{color:var(--mut);font-size:12px;margin:10px 2px 0}
+  #autonomy .sqbar{display:flex;align-items:center;gap:7px;border:2px solid var(--ink);background:#fff;padding:8px 12px;margin:0 0 6px;color:var(--mut)}
+  #autonomy .sqbar input{flex:1;border:0;background:transparent;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}
+  #autonomy .sqbar input:focus{outline:none}
+  #autonomy .sqnote{color:var(--mut);font-size:11px;margin:0 2px 16px}
   #autonomy .astats{display:flex;flex-wrap:wrap;gap:26px;margin:18px 2px 0}
   #autonomy .astats .sv{font-size:20px;font-weight:600;color:var(--ink)}
   #autonomy .astats .sl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
@@ -182,8 +187,7 @@
   </div>
 
   <div class="privbar">prompts
-    <button class="on" data-m="shown" onclick="setPriv('shown')">show text</button>
-    <button data-m="counts" onclick="setPriv('counts')">hide text</button>
+    <button id="privtog" class="on" onclick="togglePriv()">show text</button>
   </div>
 
   <div class="atomsec">
@@ -276,6 +280,13 @@ const modelColors=["#14110E","#A99B86","#5692E5"];
 // Per-session state, rebuilt by load().
 let META, SESSION, FLAT, RANGE, PRESENT, fills, turnEls;
 let current=0, selected=null, lastNow=null;
+let SESSQ="";
+// Structural query over your own sessions: the same atom-pattern grammar as the
+// eval explorer, run locally on the injected session atoms. Nothing leaves.
+function sessionSpine(s){return s.turns.flatMap(t=>["prompt_ai",...(t.seq||[])]).join(" ")+" ";}
+function sessionRe(){if(!SESSQ.trim())return null;try{return new RegExp(SESSQ);}catch{return false;}}
+function matchedSessions(){const re=sessionRe();return (re===null||re===false)?SESSIONS:SESSIONS.filter(s=>re.test(sessionSpine(s)));}
+function onSessQuery(v){SESSQ=v;renderAutonomy();renderSwitcher();}
 let timer=null, playhead=0, playing=false;
 
 const atomsEl=document.getElementById("atoms");
@@ -474,10 +485,11 @@ function applyFilter(){
 function closeTip(){document.getElementById("tip").classList.add("hidden");}
 // Privacy dial: "atoms only" hides prompt + plan text (what to_shareable exports);
 // "prompts shown" is the local view. (--paraphrase is the runner's middle ground.)
-function setPriv(m){
-  document.body.classList.remove("pmode-counts","pmode-shown");
-  document.body.classList.add(m==="shown"?"pmode-shown":"pmode-counts");
-  document.querySelectorAll(".privbar button").forEach(b=>b.classList.toggle("on", b.dataset.m===m));
+// One toggle: pressed (on) = prompt text is shown, unpressed = hidden.
+function togglePriv(){
+  const showing=document.body.classList.toggle("pmode-shown");
+  document.body.classList.toggle("pmode-counts",!showing);
+  document.getElementById("privtog").classList.toggle("on",showing);
 }
 
 // ---- replay ----
@@ -524,9 +536,11 @@ function renderSwitcher(){
     }
   }
   const el=document.getElementById("switch");el.innerHTML="";
+  const matched=new Set(matchedSessions());
   SESSIONS.forEach((s,i)=>{
     const b=document.createElement("button");
     if(i===current)b.className="active";
+    if(SESSQ.trim()&&!matched.has(s))b.classList.add("hidden");  // query filters the rail too
     const stage=classifyStage(s.turns);
     const dur=durationMin(s), pm=primaryModel(s.turns);
     b.innerHTML=`<span class="nnm">${s.meta.name}</span>`+
@@ -542,43 +556,51 @@ function renderSwitcher(){
 // the length of each turn's seq. The histogram is computed from the same
 // injected sessions that power the per-session replay; no extra data path.
 function renderAutonomy(){
-  const runs=[];
-  SESSIONS.forEach(s=>s.turns.forEach(t=>{if(Array.isArray(t.seq))runs.push(t.seq.length);}));
-  if(!runs.length)return;
+  const au=document.getElementById("autonomy");
+  // Build the query bar once and keep it; only the chart below re-renders, so
+  // typing in the query never loses focus.
+  if(!document.getElementById("sq")){
+    au.innerHTML='<div class="sqbar"><span>⌕</span><input id="sq" autocomplete="off" '
+      +'placeholder="grep your sessions · atom pattern, e.g.  (read_file ){3,}" oninput="onSessQuery(this.value)"></div>'
+      +'<div class="sqnote" id="sqnote"></div><div id="autochart"></div>';
+    document.getElementById("sq").value=SESSQ;
+  }
+  const matched=matchedSessions();
+  const runs=[]; matched.forEach(s=>s.turns.forEach(t=>{if(Array.isArray(t.seq))runs.push(t.seq.length);}));
+  const bad=sessionRe()===false;
+  document.getElementById("sqnote").innerHTML = SESSQ.trim()
+    ? `${matched.length} / ${SESSIONS.length} sessions match`+(bad?' · <span style="color:var(--edit)">invalid pattern</span>':"")
+    : `${SESSIONS.length} session${SESSIONS.length>1?"s":""}`;
+  const chart=document.getElementById("autochart");
+  if(!runs.length){chart.innerHTML='<p class="cap2">no matching runs</p>';return;}
   const W=5, top=Math.max(...runs);
   const sorted=[...runs].sort((a,b)=>a-b);
   const median=sorted[Math.floor((sorted.length-1)/2)];
   const mean=runs.reduce((a,b)=>a+b,0)/runs.length;
-  // Clip the sparse tail into a final overflow bin so the visible range covers
-  // where the mass is, not the lone maximum.
   const p95=sorted[Math.min(sorted.length-1,Math.floor(sorted.length*0.95))];
   const cap=Math.max(W*4,Math.ceil(p95/W)*W), clipped=cap<top;
   const nb=cap/W+1, counts=new Array(nb).fill(0);
   runs.forEach(r=>counts[Math.min(Math.floor(r/W),nb-1)]++);
-  const SW=720,SH=300,ml=44,mr=14,mt=20,mb=44, pw=SW-ml-mr, ph=SH-mt-mb;
+  const SW=720,SH=300,ml=44,mr=14,mt=20, pw=SW-ml-mr, ph=SH-mt-44;
   const xmax=nb*W, bw=pw/nb, ymax=Math.max(...counts);
   const xpx=v=>ml+(v/xmax)*pw, ypx=c=>mt+ph-(c/ymax)*ph;
   let bars="";
   counts.forEach((c,i)=>{if(!c)return;const x=ml+i*bw,h=(c/ymax)*ph;
     bars+=`<rect x="${x.toFixed(1)}" y="${(mt+ph-h).toFixed(1)}" width="${(bw-0.6).toFixed(1)}" height="${h.toFixed(1)}" fill="var(--edit)"/>`;});
-  let yt="";
-  const stepY=[1,2,5,10,20,50,100,200,500,1000].find(s=>ymax/s<=4)||2000;
+  let yt="";const stepY=[1,2,5,10,20,50,100,200,500,1000].find(s=>ymax/s<=4)||2000;
   for(let v=0;v<=ymax;v+=stepY){const y=ypx(v);
     yt+=`<text x="${ml-9}" y="${(y+3).toFixed(0)}" text-anchor="end" font-size="10" fill="var(--mut)">${v}</text>`
       +`<line x1="${ml-5}" y1="${y.toFixed(1)}" x2="${ml}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;}
   let xt="";const step=cap<=30?5:(cap<=80?10:25);
-  for(let v=0;v<=cap;v+=step){const x=xpx(v);
-    const lab=(v===cap&&clipped)?`${v}+`:`${v}`;
+  for(let v=0;v<=cap;v+=step){const x=xpx(v);const lab=(v===cap&&clipped)?`${v}+`:`${v}`;
     xt+=`<text x="${x.toFixed(1)}" y="${(mt+ph+17).toFixed(0)}" text-anchor="middle" font-size="10" fill="var(--mut)">${lab}</text>`;}
   const base=`<line x1="${ml}" y1="${(mt+ph).toFixed(1)}" x2="${SW-mr}" y2="${(mt+ph).toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;
   const svg=`<svg viewBox="0 0 ${SW} ${SH}" width="100%" role="img" aria-label="Actions per human prompt">${bars}${base}${yt}${xt}`
     +`<text x="${ml+pw/2}" y="${SH-6}" text-anchor="middle" font-size="11" fill="var(--mut)">actions after one prompt</text></svg>`;
   const st=(v,l)=>`<div class="stat"><div class="sv">${v}</div><div class="sl">${l}</div></div>`;
-  document.getElementById("autonomy").innerHTML=
-    `<p class="cap">Actions per human prompt <span class="hint">· across ${SESSIONS.length} session${SESSIONS.length>1?"s":""}</span></p>`
-    +`<div class="chart">${svg}</div>`
-    +`<p class="cap2">histogram of agent run lengths between prompts</p>`
-    +`<div class="astats">${st(SESSIONS.length,"sessions")}${st(runs.length,"runs")}${st(median,"median")}${st(mean.toFixed(1),"mean")}${st(top,"max")}</div>`;
+  chart.innerHTML=`<p class="cap">Actions per human prompt <span class="hint">· across ${matched.length} session${matched.length>1?"s":""}</span></p>`
+    +`<div class="chart">${svg}</div><p class="cap2">histogram of agent run lengths between prompts</p>`
+    +`<div class="astats">${st(matched.length,"sessions")}${st(runs.length,"runs")}${st(median,"median run")}${st(mean.toFixed(1),"mean run")}${st(top,"longest run")}</div>`;
 }
 
 function setView(v){
