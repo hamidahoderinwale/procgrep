@@ -45,6 +45,7 @@ reward = [
 ]
 viz = [
     "umap-learn>=0.5.5",  # only needed for umap_project / the `umap` CLI
+    "matplotlib>=3.8",  # only needed to regenerate the cascade figures (scripts/fig_cascades.py)
 ]
 embed = [
     "sentence-transformers>=2.2",  # only needed for the default hf_embedder; any callable works
