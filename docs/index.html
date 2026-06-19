@@ -13,6 +13,20 @@
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);
 font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
+body{padding-left:212px}
+.toc{display:none}
+.gnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#EFEAE2;display:flex;flex-direction:column;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;z-index:40}
+.gnav .gmark{font-weight:600;display:inline-flex;align-items:center;gap:9px;margin:0 6px 14px;color:var(--ink);text-decoration:none;font-size:13px}
+.gnav .gmark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}
+.gnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#E2DBD0;border-radius:7px;padding:3px}
+.gnav .surf a{flex:1;text-align:center;font-size:11px;color:var(--olive);padding:6px 3px;border-radius:5px;text-decoration:none}
+.gnav .surf a.on,.gnav .surf a:hover{background:var(--ink);color:#fff}
+.gnav .seclist{display:flex;flex-direction:column;gap:1px}
+.gnav .sec{display:block;color:var(--ink);text-decoration:none;font-size:11.5px;line-height:1.3;padding:6px 8px;border-radius:6px}
+.gnav .sec:hover{background:#ECE7DF}.gnav .sec .n{color:var(--olive);margin-right:7px}
+.gnav .gfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px}
+.gnav .gfoot a{display:block;color:var(--olive);font-size:12px;padding:4px 6px;text-decoration:none}
+.gnav .gfoot a:hover{color:var(--ink)}
 .topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.85);backdrop-filter:saturate(140%) blur(8px);
 font-family:var(--mono);font-size:13px;border-bottom:1px solid var(--rule)}
 .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
@@ -143,6 +157,12 @@ math{font-family:var(--serif)}
 font-family:var(--mono);font-size:12px;color:var(--olive)}
 @media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}
 html,body{overflow-x:clip}
+body{padding-left:0}
+.gnav{position:static;width:auto;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 16px}
+.gnav .gmark{margin:0 8px 0 0}
+.gnav .surf{margin:0}
+.gnav .seclist{display:none}
+.gnav .gfoot{margin:0 0 0 auto;border:0;padding:0;display:flex;gap:12px}
 .topbar .in{padding:9px 16px;justify-content:flex-start;gap:4px 14px}
 .topbar .mark{flex:1}
 .topbar nav{width:100%;justify-content:flex-start;gap:6px 16px}
@@ -182,18 +202,30 @@ table{display:block;max-width:100%;overflow-x:auto}
 <script src="assets/js/charts.js"></script>
 </head><body>
 <div class="progress" id="progress"></div>
-<div class="topbar"><div class="in"><span class="mark">procgrep</span>
-<span class="here" id="here" aria-live="polite"></span>
-<nav><span class="grp"><a href="#showcase">demo</a><a href="#refs">references</a></span>
-<span class="sep" aria-hidden="true"></span>
-<span class="grp"><a href="explorer/">explorer</a><a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a><a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a></span></nav></div></div>
+<nav class="gnav">
+  <a class="gmark" href="index.html">procgrep</a>
+  <div class="surf"><a class="on" href="index.html">essay</a><a href="explorer/">eval</a><a href="explorer/#sess">sessions</a></div>
+  <div class="seclist">
+    <a class="sec" href="#background"><span class="n">01</span>Background</a>
+    <a class="sec" href="#a-theory-of-procedural-understanding"><span class="n">02</span>A theory of procedural understanding</a>
+    <a class="sec" href="#why-procedural-representations-matter"><span class="n">03</span>Why procedural representations matter</a>
+    <a class="sec" href="#natural-studies-with-procedural-representations"><span class="n">04</span>Natural studies</a>
+    <a class="sec" href="#controlled-evaluations-with-procedural-controls"><span class="n">05</span>Controlled evaluations</a>
+    <a class="sec" href="#sec:distillation"><span class="n">06</span>Distilled model case study</a>
+    <a class="sec" href="#conclusion"><span class="n">07</span>Conclusion</a>
+    <a class="sec" href="#appendix"><span class="n">08</span>Appendix</a>
+    <a class="sec" href="#refs"><span class="n">★</span>References</a>
+  </div>
+  <div class="gfoot">
+    <a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a>
+    <a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a>
+  </div>
+</nav>
 
 <div class="hero">
   <h1>Agent trajectories as programs</h1>
   <div class="sub">Fingerprinting and programming coding-agent behavior.</div>
-  <div class="byline"><span>Hamidah Oderinwale</span>
-    <a href="https://arxiv.org/abs/2606.16988">Paper on arXiv ↗</a>
-    <a href="https://github.com/hamidahoderinwale/procgrep">ProcGrep on GitHub ↗</a></div>
+  <div class="byline"><span>Hamidah Oderinwale</span></div>
 </div>
 
 <div class="abstract" id="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. <code>ProcGrep</code> is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
