@@ -27,6 +27,9 @@ body{padding-left:212px}
 .gnav .gfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px}
 .gnav .gfoot a{display:block;color:var(--olive);font-size:12px;padding:4px 6px;text-decoration:none}
 .gnav .gfoot a:hover{color:var(--ink)}
+.gnav .gfoot a.on{color:var(--ink);font-weight:600}
+.gnav .toolentry{display:block;color:var(--ink);text-decoration:none;font-size:13px;padding:7px 9px;margin:0 0 16px;border-radius:6px;background:#E2DBD0}
+.gnav .toolentry:hover{background:var(--ink);color:#fff}
 .topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.85);backdrop-filter:saturate(140%) blur(8px);
 font-family:var(--mono);font-size:13px;border-bottom:1px solid var(--rule)}
 .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
@@ -204,7 +207,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 <div class="progress" id="progress"></div>
 <nav class="gnav">
   <a class="gmark" href="index.html">procgrep</a>
-  <div class="surf"><a class="on" href="index.html">essay</a><a href="explorer/">eval</a><a href="explorer/#sess">sessions</a></div>
+  <a class="toolentry" href="explorer/">explorer →</a>
   <div class="seclist">
     <a class="sec" href="#background"><span class="n">01</span>Background</a>
     <a class="sec" href="#a-theory-of-procedural-understanding"><span class="n">02</span>A theory of procedural understanding</a>
@@ -217,6 +220,7 @@ table{display:block;max-width:100%;overflow-x:auto}
     <a class="sec" href="#refs"><span class="n">★</span>References</a>
   </div>
   <div class="gfoot">
+    <a class="on" href="index.html">essay</a>
     <a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a>
     <a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a>
   </div>
