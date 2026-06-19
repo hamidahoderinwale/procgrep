@@ -813,6 +813,26 @@ addEventListener('scroll',upd,{{passive:true}});addEventListener('resize',upd);u
 </script>
 </body></html>
 """
+    # Guard against silently clobbering the hand-maintained layer. docs/index.html
+    # carries a global sidebar nav, interactive figures (e.g. the V-measure chart),
+    # scrollspy, and tooltip affordances that live ONLY in the generated file and are
+    # NOT reconstructed here. Refuse to overwrite when those markers are present unless
+    # --force is passed, so a naive rerun cannot lose that work. Reconcile the layer
+    # into this generator before relying on a plain rebuild.
+    import sys
+    drift_markers = ('class="gnav"', 'id="fig-vm"', 'class="tipnote"')
+    if OUT.exists() and "--force" not in sys.argv:
+        existing = OUT.read_text(errors="ignore")
+        present = [m for m in drift_markers if m in existing]
+        if present:
+            print(
+                f"REFUSING to overwrite {OUT}: it has hand-added markers {present} "
+                f"(global nav / interactive figures / tooltips) that this generator "
+                f"does not produce. Reconcile them into build_paper.py first, or pass "
+                f"--force to overwrite and lose them.",
+                file=sys.stderr,
+            )
+            raise SystemExit(2)
     OUT.write_text(page)
     print(f"wrote {OUT}  ({len(page) // 1024} KB, body {len(body) // 1024} KB)")
 
