@@ -128,6 +128,9 @@
   #autonomy .astats .sv{font-size:20px;font-weight:600;color:var(--ink)}
   #autonomy .astats .sl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
   .nav #overviewNav button .nmeta{color:var(--mut)}
+  .nav #overviewNav .ovrow{display:flex;align-items:center;gap:8px}
+  .nav #overviewNav .ovico rect{fill:var(--edit)}
+  .nav #overviewNav button.active .ovico rect{fill:#fff}
   @media(max-width:720px){
     body{padding:22px 16px 40px}
     .panel{max-width:none}
@@ -155,6 +158,7 @@
   <header class="topbar">
     <a class="mark" href="index.html">procgrep</a>
     <nav class="topnav">
+      <a href="index.html">essay</a>
       <a href="explorer/index.html">explorer</a>
     </nav>
   </header>
@@ -174,8 +178,8 @@
   </div>
 
   <div class="privbar">prompts
-    <button data-m="counts" onclick="setPriv('counts')">characters only</button>
     <button class="on" data-m="shown" onclick="setPriv('shown')">show text</button>
+    <button data-m="counts" onclick="setPriv('counts')">hide text</button>
   </div>
 
   <div class="atomsec">
@@ -301,13 +305,22 @@ function primaryModel(turns){
   const c={};turns.forEach(t=>{c[t.model]=(c[t.model]||0)+t.seq.length;});
   return Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];
 }
-function durationMin(turns){
-  if(!turns[0].t||!turns[turns.length-1].t) return null;  // no timestamps (e.g. an atoms-only real session)
-  const [h1,m1]=turns[0].t.split(":").map(Number);
-  const [h2,m2]=turns[turns.length-1].t.split(":").map(Number);
-  const d=(h2*60+m2)-(h1*60+m1);
-  return d>=0 ? d : null;  // HH:MM cannot span a day boundary; hide rather than show a negative
+function _mins(t){
+  if(!t) return null;
+  const [h,m]=t.split(":").map(Number);
+  return (Number.isFinite(h)&&Number.isFinite(m)) ? h*60+m : null;
 }
+// Span from the earliest to the latest turn time, not first-to-last: transcript
+// timestamps are not always monotonic, so first-minus-last could go negative.
+// Returns null when there are too few times to span (e.g. an atoms-only session).
+function timeSpan(turns){
+  const xs=turns.map(t=>_mins(t.t)).filter(v=>v!=null);
+  if(xs.length<2) return null;
+  const lo=Math.min(...xs), hi=Math.max(...xs);
+  const start=turns.find(t=>_mins(t.t)===lo).t, end=turns.find(t=>_mins(t.t)===hi).t;
+  return {start, end, mins:hi-lo};
+}
+function durationMin(turns){const s=timeSpan(turns); return s?s.mins:null;}
 // Stage, EARNED from the session's own procedure mix -- not hand-labeled.
 // No tests + read/search dominant -> explore; high fail-rate tight loop with
 // little reading -> debug; otherwise edit+test feature work -> build.
@@ -335,13 +348,11 @@ function renderHeader(){
   let actions=0;
   SESSION.forEach(t=>{actions+=t.seq.length;});
   const apx=(actions/SESSION.length).toFixed(1);
-  const hasTimes=SESSION.every(t=>t.t);
   const row=(k,v)=>`<div class="idrow"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   let html=(META.date?row("date",META.date):"");
-  if(hasTimes){
-    const [h1,m1]=SESSION[0].t.split(":").map(Number);
-    const [h2,m2]=SESSION[SESSION.length-1].t.split(":").map(Number);
-    html+=row("time",`${SESSION[0].t}–${SESSION[SESSION.length-1].t}`)+row("duration",`${(h2*60+m2)-(h1*60+m1)} min`);
+  const span=timeSpan(SESSION);
+  if(span){
+    html+=row("time",`${span.start}–${span.end}`)+row("duration",`${span.mins} min`);
   }
   html+=row("turns",SESSION.length)+row("tool calls",actions)+row("tool calls / prompt",apx);
   document.getElementById("stats").innerHTML=html;
@@ -487,7 +498,12 @@ function renderSwitcher(){
   if(ov){ov.innerHTML="";
     if(IS_LOCAL){
       const b=document.createElement("button");
-      b.innerHTML='<span class="nnm">overview</span><span class="nmeta">run-length across sessions</span>';
+      b.innerHTML=
+        '<span class="ovrow"><svg class="ovico" width="15" height="12" viewBox="0 0 15 12" aria-hidden="true">'
+        +'<rect x="0" y="7" width="2.6" height="5"/><rect x="4" y="4" width="2.6" height="8"/>'
+        +'<rect x="8" y="6" width="2.6" height="6"/><rect x="12" y="1" width="2.6" height="11"/></svg>'
+        +'<span class="nnm">overview</span></span>'
+        +'<span class="nmeta">run length across sessions</span>';
       b.onclick=()=>{if(playing)pause(false);setView("overview");};
       ov.appendChild(b);
     }
