@@ -15,6 +15,7 @@ body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);
 font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
 body{padding-left:212px}
 .toc{display:none}
+.tipnote{max-width:var(--col,720px);margin:14px auto 0;padding:0 32px;font-family:var(--mono);font-size:12.5px;line-height:1.5;color:var(--olive)}
 .gnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#EFEAE2;display:flex;flex-direction:column;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;z-index:40}
 .gnav .gmark{font-weight:600;display:inline-flex;align-items:center;gap:9px;margin:0 6px 14px;color:var(--ink);text-decoration:none;font-size:13px}
 .gnav .gmark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}
@@ -24,10 +25,15 @@ body{padding-left:212px}
 .gnav .seclist{display:flex;flex-direction:column;gap:1px}
 .gnav .sec{display:block;color:var(--ink);text-decoration:none;font-size:11.5px;line-height:1.3;padding:6px 8px;border-radius:6px}
 .gnav .sec:hover{background:#ECE7DF}.gnav .sec .n{color:var(--olive);margin-right:7px}
-.gnav .gfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px}
-.gnav .gfoot a{display:block;color:var(--olive);font-size:12px;padding:4px 6px;text-decoration:none}
-.gnav .gfoot a:hover{color:var(--ink)}
-.gnav .gfoot a.on{color:var(--ink);font-weight:600}
+.gnav .gfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:1px}
+.gnav .gfoot a,.gnav .gfoot .cur{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 6px;border-radius:6px;text-decoration:none;color:var(--olive)}
+.gnav .gfoot a:hover{color:var(--ink);background:#ECE7DF}
+.gnav .gfoot .cur{color:var(--ink);cursor:default}
+.gnav .gfoot .ico{flex:0 0 15px;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center}
+.gnav .gfoot .ico svg{width:14px;height:14px;fill:currentColor}
+.gnav .gfoot .dot{width:7px;height:7px;background:var(--copper);border-radius:50%}
+.gnav .gfoot .ext,.gnav .gfoot .here{margin-left:auto;font-size:10px;color:var(--olive)}
+.gnav .gfoot .meta{margin-top:9px;padding:0 6px;font-size:10.5px;line-height:1.55;color:var(--olive)}
 .gnav .toolentry{display:block;color:var(--ink);text-decoration:none;font-size:13px;padding:7px 9px;margin:0 0 16px;border-radius:6px;background:#E2DBD0}
 .gnav .toolentry:hover{background:var(--ink);color:#fff}
 .gnav .sec.here{background:var(--ink);color:#fff}
@@ -113,8 +119,9 @@ article table{width:100%;border-collapse:collapse;margin:24px 0;font-family:var(
 article th{text-align:left;font-weight:600;color:var(--olive);border-bottom:1px solid var(--ink);padding:6px 8px}
 article td{border-bottom:1px solid var(--rule);padding:6px 8px;vertical-align:top}
 /* the procgrep example query box */
-article .tcolorbox{background:#fff;border:1px solid var(--copper);border-left:3px solid var(--copper);
-border-radius:3px;padding:12px 16px;margin:22px 0;font-family:var(--mono);font-size:14px;color:var(--ink)}
+article .tcolorbox{background:#EFEAE2;border-radius:8px;padding:14px 18px;margin:22px 0;
+font-family:var(--mono);font-size:14px;line-height:1.55;color:var(--ink)}
+article .tcolorbox p{margin:0}
 /* citations + references */
 .citation{font-family:var(--mono);font-size:.8em;color:var(--copper)}
 #refs{font-size:14px;line-height:1.5}
@@ -231,9 +238,10 @@ table{display:block;max-width:100%;overflow-x:auto}
     <a class="sec" href="#refs"><span class="n">★</span>References</a>
   </div>
   <div class="gfoot">
-    <a class="on" href="index.html">essay</a>
-    <a href="https://arxiv.org/abs/2606.16988">arXiv ↗</a>
-    <a href="https://github.com/hamidahoderinwale/procgrep">github ↗</a>
+    <span class="cur"><span class="ico"><span class="dot"></span></span>essay<span class="here">here</span></span>
+    <a href="https://arxiv.org/abs/2606.16988"><span class="ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1H4a1.6 1.6 0 0 0-1.6 1.6v10.8A1.6 1.6 0 0 0 4 15h8a1.6 1.6 0 0 0 1.6-1.6V5.5L9 1zm0 1.7L12.3 6H9V2.7zM5 8.4h6V9.6H5V8.4zm0 2.4h6V12H5v-1.2z"/></svg></span>arXiv<span class="ext">↗</span></a>
+    <a href="https://github.com/hamidahoderinwale/procgrep"><span class="ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.02-1.49-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.88 2.34.67.07-.52.28-.88.51-1.08-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></span>github<span class="ext">↗</span></a>
+    <div class="meta">June 2026<br><span id="lastmod"></span></div>
   </div>
 </nav>
 <button class="navshow" onclick="toggleNav()" aria-label="show nav">☰ procgrep</button>
@@ -246,6 +254,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 
 <div class="abstract" id="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. <code>ProcGrep</code> is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
+<p class="tipnote">Note: hover the dotted terms for tooltips. These tooltips are AI-generated and may not be accurate; where a source is cited in the tooltip, that link is authoritative.</p>
 
 
 <aside class="showcase" id="showcase">
@@ -254,7 +263,6 @@ table{display:block;max-width:100%;overflow-x:auto}
   <div class="sc-frame">
     <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
   </div>
-  <p class="caption">The live explorer: query the whole store, set two groups side by side, and replay any trajectory. No model call.</p>
 </aside>
 <figure class="exfig" id="compare-fig">
   <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
@@ -279,6 +287,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 </section>
 <section id="a-theory-of-procedural-understanding" class="level1">
 <h1>A theory of procedural understanding</h1>
+<p>Firstly, we demonstrate that these fingerprints do in fact exist, and different models are differentiable by their architectural types. We find that models are distinguishable by their fingerprints alone at 85.7% accuracy compared to a random baseline of 11.1% when selecting a model by chance. We attribute this to problem solving style <span class="citation" data-cites="bisztray2025iknowllmwrote">(<a href="#ref-bisztray2025iknowllmwrote" role="doc-biblioref">Bisztray et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Bisztray, Tamas, Bilel Cherif, Richard A. Dubniczky, et al. 2025. <em>I Know Which LLM Wrote Your Code Last Summer: LLM Generated Code Stylometry for Authorship Attribution</em>. <a href="https://arxiv.org/abs/2506.17323">https://arxiv.org/abs/2506.17323</a>.</span></span>. Furthermore, we extend this to deterministic scaffolds such as Agentless and Moatless to see if they affect procedural behavior and they also imprint unique fingerprints that are identifiable with near perfect accuracy. We performed the comparisons in pairwise settings, to understand distinguishability and we find that Claude-4 and SWE-agent-LM-32B are the most identifiable, whereas GPT-4 and Claude-3 Opus are the most confusable (F1 0.20–0.30).</p>
 <p>Framing agent coding traces as procedures lets us comparatively study and interact with them in ways that are useful for benchmarking, evaluating the difficulty of evals themselves, differentiating models by their behavioral <span class="term" tabindex="0">fingerprints<span class="tip"><span class="tip-def">“…identifiable by their behavioral habits, which we define as fingerprints: a probe over these procedural signatures attributes an unseen trajectory to the correct agent.”</span><span class="tip-src">— <a href="#abstract">this paper, Abstract</a></span></span></span>, and performing procedural search. We release a library called ProcGrep to support these use cases. For example, ProcGrep supports queries such as the following.</p>
 <div class="tcolorbox">
 <p>“All Claude-4 trajectories from the past two weeks on Python repositories where <code>search_repo</code> was followed by three or more <code>read_file</code> calls within the first 8 steps, the agent then made at least one <code>edit</code>, and no <code>run_test</code> occurred before the final <code>submit</code>—on instances with difficulty score above 3.”</p>
@@ -670,9 +679,7 @@ table{display:block;max-width:100%;overflow-x:auto}
 </figure>
 <figure id="fig:failure_by_family">
 <img loading="lazy" src="figures/failure_by_family.png" />
-<figcaption>Failure types by model family.</figcaption>
-</figure>
-<figcaption>Model behavior on compositional tasks.</figcaption>
+<figcaption>Failure types by model family. Model behavior on compositional tasks.</figcaption>
 </figure>
 <p>Next, developers make a number of decisions to train and scaffold their models. We set out to understand how this affects model processes based on a set of tasks and find that “fingerprints” are recoverable—unique model-specific patterns regarding tool-use and order of operations that can be attributed back to an agent. Given certain parameters like the costs for different types of actions and the length of a task, hopefully this can form the basis of more informed model choice and configuration decisions depending on a developer’s goal (i.e. task and workflow-aware routing). For a given model, its procedural space can be described by its entropy and compression, where entropy describes the variance of the actions and compression is a rough proxy for repetitiveness. We find the GPT-4o has the most diversity of actions compared to Claude models.</p>
 <p>Entropy is just one method of characterizing procedural behavior given a trajectory and it makes sense that there is some level of behavioral similarity for models of the same family and harness—suggesting that architectural design choices bleed into procedural tendencies. We compare the divergence of procedural distributions with JSD to test and find that scaffolds and model generation are the strongest indicators of procedural habits compared to the model generation in distilled model pairs, suggesting that the generation of the model and programmed behavior play a disproportionate role and that a distilled student’s procedural style is largely derived from its teacher. See Figure <a href="#fig:jsd_full" data-reference-type="ref" data-reference="fig:jsd_full">13</a> for a matrix showing all the pairwise divergence rates across models.</p>
@@ -2017,5 +2024,9 @@ function toggleNav(){document.body.classList.toggle('navhidden');}
     links.forEach((a,i)=>a.classList.toggle('here',i===cur));}
   addEventListener('scroll',spy,{passive:true});addEventListener('resize',spy);spy();
 })();
+// Auto last-updated from the file's own Last-Modified, so it never needs hand-editing.
+(function(){const el=document.getElementById('lastmod');if(!el)return;
+  const d=new Date(document.lastModified);
+  if(!isNaN(d)) el.textContent='updated '+d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});})();
 </script>
 </body></html>
