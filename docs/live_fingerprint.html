@@ -320,7 +320,20 @@ function timeSpan(turns){
   const start=turns.find(t=>_mins(t.t)===lo).t, end=turns.find(t=>_mins(t.t)===hi).t;
   return {start, end, mins:hi-lo};
 }
-function durationMin(turns){const s=timeSpan(turns); return s?s.mins:null;}
+// Prefer the real ISO duration the adapter computed (handles multi-day sessions);
+// fall back to the HH:MM span only for the demo, which carries no real timing.
+function durationMin(session){
+  const m=session.meta&&session.meta.durationMin;
+  if(typeof m==="number") return m;
+  const s=timeSpan(session.turns||[]);
+  return s?s.mins:null;
+}
+function fmtDur(m){
+  if(m==null) return null;
+  if(m<90) return m+" min";
+  if(m<1440) return Math.round(m/60)+" h";
+  return Math.round(m/1440)+" d";
+}
 // Stage, EARNED from the session's own procedure mix -- not hand-labeled.
 // No tests + read/search dominant -> explore; high fail-rate tight loop with
 // little reading -> debug; otherwise edit+test feature work -> build.
@@ -350,10 +363,8 @@ function renderHeader(){
   const apx=(actions/SESSION.length).toFixed(1);
   const row=(k,v)=>`<div class="idrow"><span class="k">${k}</span><span class="v">${v}</span></div>`;
   let html=(META.date?row("date",META.date):"");
-  const span=timeSpan(SESSION);
-  if(span){
-    html+=row("time",`${span.start}–${span.end}`)+row("duration",`${span.mins} min`);
-  }
+  const dur=durationMin({meta:META,turns:SESSION});
+  if(dur!=null) html+=row("duration",fmtDur(dur));
   html+=row("turns",SESSION.length)+row("tool calls",actions)+row("tool calls / prompt",apx);
   document.getElementById("stats").innerHTML=html;
 }
@@ -513,9 +524,9 @@ function renderSwitcher(){
     const b=document.createElement("button");
     if(i===current)b.className="active";
     const stage=classifyStage(s.turns);
-    const dur=durationMin(s.turns), pm=primaryModel(s.turns);
+    const dur=durationMin(s), pm=primaryModel(s.turns);
     b.innerHTML=`<span class="nnm">${s.meta.name}</span>`+
-      `<span class="nmeta">${s.meta.project}${s.meta.date?` · ${s.meta.date}`:''}${dur!=null?` · ${dur} min`:''}</span>`+
+      `<span class="nmeta">${s.meta.project}${s.meta.date?` · ${s.meta.date}`:''}${dur!=null?` · ${fmtDur(dur)}`:''}</span>`+
       `<span class="nmeta">${s.meta.client}${pm?` · ${shortModel(pm)}`:''}</span>`;
     if(TAGS[stage]) b.title=`${stage}: ${TAGS[stage]}`;
     b.onclick=()=>load(i);
@@ -593,6 +604,9 @@ function load(idx){
 if(new URLSearchParams(location.search).has("embed")){
   const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
 }
+// Newest session first when a recency key is present; stable, so the demo
+// (no `ended`) keeps its authored order.
+SESSIONS.sort((a,b)=>String(b.meta.ended||"").localeCompare(String(a.meta.ended||"")));
 if(IS_LOCAL)renderAutonomy();
 load(0);
 </script>

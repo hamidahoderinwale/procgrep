@@ -317,6 +317,17 @@ def _day(ts: object) -> str:
         return ""
 
 
+def _iso_dt(ts: object):
+    """Parse an ISO timestamp to a ``datetime``, or ``None``."""
+    if not isinstance(ts, str):
+        return None
+    from datetime import datetime
+    try:
+        return datetime.fromisoformat(ts.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+
+
 def _prompt_text(content: Any) -> str:
     """The human's typed text from a user turn (text blocks only)."""
     if isinstance(content, str):
@@ -366,16 +377,20 @@ def build_panel_session(
     sid = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), "session")
     cwd = next((str(line["cwd"]) for line in lines if line.get("cwd")), "")
     workspace = Path(cwd).name or "local"
+    # Real session timing from ISO timestamps -- correct across multi-day, resumed
+    # sessions, unlike the per-turn HH:MM clock. `ended` is the recency sort key,
+    # `date` the last-activity day so the rail reads in the same order it sorts.
+    stamps = sorted(d for d in (_iso_dt(line.get("timestamp")) for line in lines) if d)
+    ended = stamps[-1].isoformat() if stamps else ""
+    date = _day(ended) if ended else ""
+    duration_min = round((stamps[-1] - stamps[0]).total_seconds() / 60) if stamps else None
     models: set[str] = set()
-    date = ""
     turns: list[dict[str, Any]] = []
     cur: dict[str, Any] | None = None
     for line in lines:
         kind = line.get("type")
         message = line.get("message")
         content = message.get("content") if isinstance(message, Mapping) else None
-        if not date:
-            date = _day(line.get("timestamp"))
         if kind == "user" and _is_human_prompt(content):
             if cur is not None and cur["seq"]:
                 turns.append(cur)
@@ -414,6 +429,8 @@ def build_panel_session(
         "project": workspace,
         "id": _anon_id(sid),
         "date": date,
+        "ended": ended,
+        "durationMin": duration_min,
         "intent": "",
         "illustrative": False,
         "promptsParaphrased": paraphrase is not None,
