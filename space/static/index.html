@@ -2,16 +2,80 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>procgrep · query agent traces, live</title>
-<link rel="stylesheet" href="static/style.css">
-</head><body><div class="wrap">
-<nav class="tabs">
-  <span class="tab act" id="tab-query" onclick="showView('query')">query</span>
-  <span class="tab" id="tab-compare" onclick="showView('compare')">compare</span>
-  <a class="tab plain" href="https://hamidah.me/procgrep/">home ↗</a>
-  <a class="tab plain" href="https://hamidah.me/procgrep/explorer/">explorer ↗</a>
-  <a class="tab plain" href="https://hamidah.me/procgrep/live_fingerprint.html">sessions ↗</a>
-  <a class="tab plain" href="https://github.com/hamidahoderinwale/procgrep" target="_blank" rel="noopener">github ↗</a>
+<link rel="stylesheet" href="/static/theme.css">
+<link rel="stylesheet" href="/static/style.css">
+<style>
+/* Global sidebar nav, mirrored from the published explorer so the Space and the
+   Pages site share one chrome: a surface toggle (eval/sessions), the per-surface
+   nav, a session list the embedded panel fills, and a footer out to the essay,
+   arXiv, and GitHub. The eval content keeps the live query + compare views and
+   talks to this same backend over same-origin relative paths. */
+body{padding-left:212px}
+.railnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#EFEAE2;display:flex;flex-direction:column}
+.railnav .mark{margin:0 6px 14px;font-weight:600;display:inline-flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none}
+.railnav .mark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}
+.railnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#E2DBD0;border-radius:7px;padding:3px}
+.railnav .surf button{flex:1;text-align:center;font:11px var(--mono);border:0;background:transparent;color:var(--olive);padding:6px 3px;border-radius:5px;cursor:pointer}
+.railnav .surf button.on{background:var(--ink);color:#fff}
+.railnav .railfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:1px}
+.railnav .railfoot a{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 6px;border-radius:6px;text-decoration:none;color:var(--olive)}
+.railnav .railfoot a:hover{color:var(--ink);background:rgba(20,17,14,.06)}
+.railnav .railfoot .ico{flex:0 0 15px;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center}
+.railnav .railfoot .ico svg{width:14px;height:14px;fill:currentColor}
+.railnav .railfoot .ext{margin-left:auto;font-size:10px;color:var(--olive)}
+.railnav .railfoot .meta{margin-top:9px;padding:0 6px;font-size:10.5px;line-height:1.55;color:var(--olive)}
+.railnav #sesslist .sessitem{display:block;line-height:1.32;padding:7px 10px;text-align:left}
+.railnav #sesslist .sessitem .nnm{display:block;font-size:13px}
+.railnav #sesslist .sessitem .smeta{display:block;font-size:10px;color:var(--olive)}
+.railnav #sesslist .sessitem.act .smeta{color:#cfc9bf}
+.railnav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--olive);margin:0 0 12px;font-weight:600}
+.railnav .ritem{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin:0 0 2px}
+.railnav .ritem:hover{background:#ECE7DF}
+.railnav .ritem.act{background:var(--ink);color:#fff}
+.cgroup{display:contents}
+body.corpus-eval .cgroup[data-c="sess"]{display:none}
+body.corpus-sess .cgroup[data-c="eval"]{display:none}
+/* The wrap drops the explorer's own top tab row; the rail is the nav now. */
+.tabs{display:none}
+#sessframe{width:100%;height:80vh;border:0;border-radius:6px;background:#fff}
+.sesscallout{margin:14px 0 0;padding:10px 14px;border:1px solid var(--rule);background:#fff;color:var(--olive);font-size:12px;line-height:1.55}
+.sesscallout code{background:#efeae2;padding:1px 6px;border-radius:3px;color:var(--ink)}
+@media(max-width:720px){
+  body{padding-left:0}
+  .railnav{position:static;width:auto;height:auto;padding:12px 16px;background:#EFEAE2;
+    display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+  .railnav h2{margin:0 4px 0 0;font-size:9px}
+  .railnav .ritem{display:inline-block;width:auto;padding:6px 9px;margin:0}
+  .railnav .railfoot{flex-direction:row;flex-wrap:wrap;margin:0 0 0 8px;border:0;padding:0}
+  .railnav .railfoot .meta{display:none}
+}
+</style>
+</head><body class="corpus-eval">
+<nav class="railnav">
+  <a class="mark" href="/">procgrep</a>
+  <div class="surf">
+    <button id="c-eval" class="on" onclick="pickCorpus('eval')">eval</button>
+    <button id="c-sess" onclick="pickCorpus('sess')">sessions</button>
+  </div>
+  <div class="cgroup" data-c="eval">
+    <button class="ritem act" id="nav-query" onclick="showView('query')">query</button>
+    <button class="ritem" id="nav-compare" onclick="showView('compare')">compare</button>
+  </div>
+  <div class="cgroup" data-c="sess">
+    <div id="sesslist"><span class="dim" style="display:block;padding:8px 10px;font-size:11px">loading sessions…</span></div>
+  </div>
+  <div class="railfoot">
+    <a href="https://hamidah.me/procgrep/"><span class="ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3 1.5h10A1.5 1.5 0 0 1 14.5 3v10a1.5 1.5 0 0 1-1.5 1.5H3A1.5 1.5 0 0 1 1.5 13V3A1.5 1.5 0 0 1 3 1.5zM4.5 5h7v1.2h-7V5zm0 2.6h7v1.2h-7V7.6zm0 2.6h4.5v1.2H4.5v-1.2z"/></svg></span>essay<span class="ext">↗</span></a>
+    <a href="https://arxiv.org/abs/2606.16988"><span class="ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M9 1H4a1.6 1.6 0 0 0-1.6 1.6v10.8A1.6 1.6 0 0 0 4 15h8a1.6 1.6 0 0 0 1.6-1.6V5.5L9 1zm0 1.7L12.3 6H9V2.7zM5 8.4h6V9.6H5V8.4zm0 2.4h6V12H5v-1.2z"/></svg></span>arXiv<span class="ext">↗</span></a>
+    <a href="https://github.com/hamidahoderinwale/procgrep"><span class="ico"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.02-1.49-2.22.48-2.69-1.07-2.69-1.07-.36-.92-.89-1.17-.89-1.17-.73-.5.05-.49.05-.49.81.06 1.23.83 1.23.83.72 1.23 1.88.88 2.34.67.07-.52.28-.88.51-1.08-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.83-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.6 7.6 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.52.56.83 1.28.83 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8 8 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg></span>github<span class="ext">↗</span></a>
+    <div class="meta">June 2026</div>
+  </div>
 </nav>
+
+<div class="wrap">
+<!-- app.js's showView toggles these tab elements; the rail is the visible nav so
+     they are kept hidden purely to satisfy that DOM contract. -->
+<nav class="tabs" hidden><span class="tab" id="tab-query"></span><span class="tab" id="tab-compare"></span></nav>
 
 <section id="view-query">
 <h1>Grep agent traces, live.</h1>
@@ -47,6 +111,71 @@ action-mix distance, and the length and reasoning gaps. No model call.</p>
 <div id="cmp-res"></div>
 </section>
 
+<section id="view-sessions" class="hidden">
+<h1>One session, as a procedural fingerprint.</h1>
+<p class="sub">A real Claude Code session reduced to its action structure: each human prompt opens a turn,
+and the agent's tool calls become the turn's atoms. Pick it in the sidebar, replay it, or run an atom
+pattern over it — the same grammar as the eval query.</p>
+<iframe id="sessframe" title="live procedural fingerprint"></iframe>
+<p class="sesscallout">These are sample traces. Run procgrep locally to explore your own sessions:
+<code>python examples/procgrep_view.py</code></p>
+</section>
+
 </div>
-<script src="static/app.js"></script>
+
+<script src="/static/app.js"></script>
+<script>
+// Surface toggle + session-list plumbing for the global rail. The eval views
+// (query/compare) live in app.js and already fetch this backend over relative
+// paths; this script only adds the eval/sessions switch and wires the sessions
+// rail to the embedded fingerprint panel. One rail, not two.
+const _origShowView = window.showView;
+window.showView = function(name, axis){
+  document.getElementById("view-query").classList.toggle("hidden", name !== "query");
+  document.getElementById("view-compare").classList.toggle("hidden", name !== "compare");
+  document.getElementById("view-sessions").classList.toggle("hidden", name !== "sessions");
+  document.getElementById("nav-query").classList.toggle("act", name === "query");
+  document.getElementById("nav-compare").classList.toggle("act", name === "compare");
+  if(name === "sessions"){ ensureSessFrame(); return; }
+  // Defer to app.js for the eval views (it owns the comparator init/axis logic).
+  if(_origShowView) _origShowView(name, axis);
+};
+
+let _sessLoaded = false;
+function ensureSessFrame(){
+  const f = document.getElementById("sessframe");
+  if(!_sessLoaded){ _sessLoaded = true; f.src = "/static/live_fingerprint.html?embed=1&demo=1"; }
+}
+
+function pickCorpus(c){
+  document.body.classList.remove("corpus-eval","corpus-sess");
+  document.body.classList.add("corpus-" + c);
+  document.getElementById("c-eval").classList.toggle("on", c === "eval");
+  document.getElementById("c-sess").classList.toggle("on", c === "sess");
+  showView(c === "sess" ? "sessions" : "query");
+}
+
+// The embedded panel posts its session list up; render it in the global rail and
+// post the selection back so it loads in the iframe. Mirrors the Pages explorer.
+function renderSessList(msg){
+  const el = document.getElementById("sesslist"); if(!el) return;
+  const active = msg.hasOverview ? "ov" : (msg.list[0] ? msg.list[0].i : null);
+  let html = msg.hasOverview
+    ? `<button class="ritem sessitem${active==="ov"?" act":""}" onclick="selectSession(null,this)"><span class="nnm">overview</span><span class="smeta">run length across sessions</span></button>`
+    : "";
+  html += msg.list.map(s =>
+    `<button class="ritem sessitem${active===s.i?" act":""}" onclick="selectSession(${s.i},this)"><span class="nnm">${s.name}</span><span class="smeta">${s.client}${s.date?` · ${s.date}`:""}${s.dur?` · ${s.dur}`:""}</span></button>`
+  ).join("");
+  el.innerHTML = html || '<span class="dim" style="display:block;padding:8px 10px;font-size:11px">no sessions</span>';
+}
+function selectSession(i, btn){
+  const f = document.getElementById("sessframe");
+  if(f && f.contentWindow) f.contentWindow.postMessage({type:"procgrep-select", index:i}, "*");
+  document.querySelectorAll("#sesslist .sessitem").forEach(b => b.classList.remove("act"));
+  if(btn) btn.classList.add("act");
+}
+window.addEventListener("message", e => {
+  if(e.data && e.data.type === "procgrep-sessions") renderSessList(e.data);
+});
+</script>
 </body></html>

@@ -1,0 +1,697 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>procgrep · live procedural fingerprint</title>
+<link rel="stylesheet" href="theme.css">
+<style>
+  /* Base colors come from theme.css; alias the panel's semantic names to them
+     and keep the atom, outcome, and rule shades that are specific to the panel. */
+  :root{
+    --bg:var(--paper); --mut:var(--olive); --line:#E2DCD3;
+    --edit:var(--copper); --read:var(--blue); --fail:var(--copper);
+    --prompt:#9A6CB4; --test:#4A7C59; --other:#A99B86;
+    --search:#2E8B8B; --package:#C08A2E; --lint:#9A5B4A; --vcs:#4E6A8A;
+    --run:#6E7B8B; --pass:#4A7C59;
+  }
+  *{box-sizing:border-box}
+  body{background:var(--bg);color:var(--ink);font:13px/1.5 ui-monospace,SFMono-Regular,Menlo,monospace;margin:0;padding:40px 20px 40px 250px}
+  .panel{max-width:760px;margin:0 auto}
+  .nav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:40px 16px;overflow:auto;background:#EFEAE2}
+  .nav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--mut);margin:0 0 12px;font-weight:600}
+  .nav button{display:block;width:100%;text-align:left;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;
+    border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin-bottom:2px}
+  .nav button:hover{background:#ECE7DF}
+  .nav button.active{background:var(--ink);color:#fff}
+  .nav .nnm{display:block;font-weight:600}
+  .nav .nmeta{display:block;font-size:10px;color:var(--mut);margin-top:2px}
+  .nav button.active .nmeta{color:#cfcabf}
+  .topbar{display:flex;align-items:center;justify-content:space-between;margin:0 0 22px}
+  .topbar .mark{font-size:13px;font-weight:600;letter-spacing:.04em;display:inline-flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none}
+  .topbar .mark::before{content:"";width:8px;height:8px;background:var(--edit);border-radius:1px}
+  .topnav a{color:var(--mut);text-decoration:none;margin-left:18px;font-size:12px}
+  .topnav a:hover{color:var(--ink)}
+  .topnav a.active{color:var(--ink);font-weight:600;border-bottom:2px solid var(--edit);padding-bottom:3px}
+  .topnav a.dim{color:var(--mut)}
+  .replay{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;display:inline-flex;align-items:center;gap:7px;
+    background:var(--ink);color:#fff;border:0;padding:6px 14px;border-radius:999px;cursor:pointer}
+  .replay:hover{opacity:.88}
+  .replay .tri{font-size:10px}
+
+  .idcard{background:#fff;border-radius:6px;padding:14px 16px}
+  .idrow{display:flex;gap:12px;margin:3px 0;font-size:12px}
+  .idrow .k{width:76px;flex:0 0 auto;color:var(--mut);font-size:11px}
+  .idrow .v{color:var(--ink);font-weight:600}
+  .idrow .v.hash{font-weight:400;color:var(--mut)}
+  .intent{color:var(--mut);font-size:12px;margin:11px 0 13px}
+  .intent .tag{font-size:10px;background:#ECE7DF;color:var(--mut);padding:1px 6px;border-radius:3px;margin-left:6px}
+
+  .stats{font-size:12px;color:var(--mut);line-height:1.75;margin:0}
+  .topgrid{display:grid;grid-template-columns:1fr 300px;gap:30px;align-items:start;margin-bottom:26px}
+  .stats b{color:var(--ink);font-weight:600}
+  .stats .idrow{align-items:center}
+  .stats .k{width:112px}
+  .stats .models{display:flex;align-items:center;gap:9px;margin-top:0}
+  .mbar{display:inline-flex;width:150px;height:8px;border-radius:2px;overflow:hidden}
+  .mbar .seg{height:100%}
+  .ml{white-space:nowrap}
+  .sw{display:inline-block;width:7px;height:7px;border-radius:1px;margin-right:4px}
+
+  .cap{font-size:11px;letter-spacing:.06em;color:var(--mut);text-transform:uppercase;margin:0 0 10px}
+  .tlhead{display:flex;align-items:center;justify-content:space-between;margin:0 0 6px}
+  .cap .hint{text-transform:none;letter-spacing:0;font-size:10px;opacity:.85}
+  .privbar{display:flex;align-items:center;gap:8px;font-size:11px;color:var(--mut);margin:0 0 22px}
+  .privbar button{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:11px;border:0;background:#ECE7DF;color:var(--mut);padding:3px 11px;border-radius:999px;cursor:pointer}
+  .privbar button.on{background:var(--ink);color:#fff}
+  .turn .pr-count{margin:2px 0;color:var(--mut);font-size:11px}
+  .turn .pr-text{margin:2px 0}
+  body.pmode-counts .pr-text, body.pmode-counts .turn .plan{display:none}
+  body.pmode-shown .pr-count{display:none}
+
+  .atomsec{max-width:540px;margin-bottom:24px}
+  .procline{font-size:12px;color:var(--mut);margin:16px 0 0}
+  .procline .chain{color:var(--ink);font-weight:600}
+
+  .atom{display:flex;align-items:center;gap:9px;margin:6px 0;cursor:pointer;user-select:none}
+  .atom .dot{width:7px;height:7px;border-radius:50%;background:transparent;flex:0 0 auto}
+  .atom.sel .dot{background:var(--ink)}
+  .atom .nm{width:128px;flex:0 0 auto;color:var(--mut)}
+  .atom.sel .nm{color:var(--ink);font-weight:600}
+  .track{flex:1;height:11px;background:#ECE7DF;border-radius:2px;overflow:hidden}
+  .fill{display:block;height:100%;width:0;border-radius:2px;transition:width .28s ease}
+  .atom .pc{width:34px;text-align:right;font-weight:600}
+  .fnote{font-size:11px;color:var(--mut);margin-top:8px;min-height:1em}
+  .fnote a{color:var(--read);cursor:pointer}
+  .tip{display:inline-flex;align-items:center;gap:10px;background:#fff;border-radius:6px;box-shadow:0 1px 5px rgba(0,0,0,.06);padding:5px 10px;font-size:11px;color:var(--mut);margin:0 0 12px}
+  .tip .x{cursor:pointer;font-size:10px;opacity:.7}
+  .tip .x:hover{opacity:1}
+  .tip.hidden{display:none}
+
+  .parabox{background:#fff;border-radius:6px;padding:14px 16px;font-size:11px;color:var(--mut)}
+  .parabox .note{margin-bottom:11px;line-height:1.6}
+  .pex{display:flex;gap:12px;margin:4px 0;align-items:baseline}
+  .plab{width:46px;flex:0 0 auto;text-align:right;color:var(--mut)}
+  .praw{color:#A99B86;text-decoration:line-through}
+  .pnorm{color:var(--ink);font-weight:500}
+
+  .tlleg{font-size:10px;color:var(--mut);margin:0 0 12px;padding-left:15px;line-height:1.95}
+  .tlleg li{margin:0}
+  .bluedot{display:inline-block;width:8px;height:8px;border-radius:50%;border:2px solid var(--read);background:#fff;vertical-align:middle}
+  .badge{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:3px;margin-left:8px;vertical-align:middle;white-space:nowrap}
+  .badge.pass{background:#E3EDE6;color:var(--pass)}
+  .badge.fail{background:#F6E3DC;color:var(--fail)}
+
+  .tl{max-height:560px;overflow:auto;background:#fff;border-radius:6px;padding:16px 18px}
+  .turn{position:relative;display:grid;grid-template-columns:1fr 40%;gap:18px;padding:0 0 16px 24px;transition:opacity .2s}
+  .turn::before{content:"";position:absolute;left:5px;top:5px;bottom:-3px;width:2px;background:var(--line)}
+  .turn:last-child::before{display:none}
+  .turn .node{position:absolute;left:0;top:3px;width:11px;height:11px;border-radius:50%;background:var(--other);border:2px solid #fff}
+  .turn.inwin::before{background:var(--read)}
+  .turn.inwin .node{border-color:var(--read)}
+  .turn.now .node{box-shadow:0 0 0 3px rgba(203,77,32,.30)}
+  .turn.future{opacity:.24}
+  .turn.dim{opacity:.18}
+  .turnmain{min-width:0}
+  .turn .when{color:var(--mut);font-size:11px}
+  .turn .when b{color:var(--ink);font-weight:600}
+  .turn.now .when b{color:var(--edit)}
+  .turn .mtag{font-size:10px;margin-left:6px}
+  .turn .pr{margin:2px 0}
+  .turn .acts{margin-top:4px;padding-left:13px}
+  .turn .act{font-size:12px;color:var(--mut);line-height:1.7}
+  .turn .act .br{color:#C9C2B6;margin-right:5px}
+  .turn .plan{color:var(--mut);font-style:italic;font-size:11px;line-height:1.5;align-self:start}
+  .winmark{position:relative;padding:0 0 14px 24px;color:var(--mut);font-size:10px}
+  .winmark::before{content:"";position:absolute;left:5px;top:0;bottom:0;width:2px;background:var(--line)}
+  code{font-size:11px}
+  .hidden{display:none}
+  .nav button.hidden{display:none}  /* beat .nav button{display:block} specificity */
+  #autonomy .chart{background:#fff;border-radius:6px;padding:18px 20px 10px}
+  #autonomy .cap2{color:var(--mut);font-size:12px;margin:10px 2px 0}
+  #autonomy .sqbar{display:flex;align-items:center;gap:7px;border:2px solid var(--ink);background:#fff;padding:8px 12px;margin:0 0 6px;color:var(--mut)}
+  #autonomy .sqbar input{flex:1;border:0;background:transparent;font:14px ui-monospace,SFMono-Regular,Menlo,monospace;color:var(--ink)}
+  #autonomy .sqbar input:focus{outline:none}
+  #autonomy .sqnote{color:var(--mut);font-size:11px;margin:0 2px 16px}
+  #autonomy .astats{display:flex;flex-wrap:wrap;gap:26px;margin:18px 2px 0}
+  #autonomy .astats .sv{font-size:20px;font-weight:600;color:var(--ink)}
+  #autonomy .astats .sl{font-size:11px;color:var(--mut);text-transform:uppercase;letter-spacing:.05em;margin-top:2px}
+  .nav #overviewNav button .nmeta{color:var(--mut)}
+  .nav #overviewNav .ovrow{display:flex;align-items:center;gap:8px}
+  .nav #overviewNav .ovico rect{fill:var(--edit)}
+  .nav #overviewNav button.active .ovico rect{fill:#fff}
+  @media(max-width:720px){
+    body{padding:22px 16px 40px}
+    .panel{max-width:none}
+    .nav{position:static;width:auto;height:auto;padding:12px 16px;margin-bottom:18px;background:#EFEAE2;
+      display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+    .nav h2{margin:0 4px 0 0}
+    .nav button{display:inline-block;width:auto;padding:6px 9px;margin:0}
+    .nav .nmeta{display:none}
+    .topbar{flex-wrap:wrap;gap:8px;margin-bottom:16px}
+    .topgrid{grid-template-columns:1fr;gap:16px;margin-bottom:18px}
+    .stats .k{width:104px}
+    .atomsec,.parabox{max-width:none}
+    .atom .nm{width:108px}
+  }
+</style>
+</head>
+<body class="pmode-shown">
+<nav class="nav">
+  <div id="overviewNav"></div>
+  <h2>sessions</h2>
+  <div id="switch"></div>
+</nav>
+<div class="panel">
+
+  <header class="topbar">
+    <a class="mark" href="index.html">procgrep</a>
+    <nav class="topnav">
+      <a href="index.html">essay</a>
+      <a href="explorer/index.html">explorer</a>
+    </nav>
+  </header>
+
+  <div id="detail">
+  <div class="topgrid">
+    <div class="idcard">
+      <div id="ident"></div>
+      <p class="intent" id="intent"></p>
+      <div class="stats" id="stats"></div>
+    </div>
+    <div class="parabox">
+      <div class="note">prompts are normalized locally before display: writing style and identifiers stripped, never stored or exported</div>
+      <div class="pex"><span class="plab">raw</span><span class="praw">"why does our FooBarAuth.validate() still 500 on null sub?"</span></div>
+      <div class="pex"><span class="plab">shown</span><span class="pnorm">"handle the null-subject case in token validation"</span></div>
+    </div>
+  </div>
+
+  <div class="privbar">prompts
+    <button id="privtog" class="on" onclick="togglePriv()">show text</button>
+  </div>
+
+  <div class="atomsec">
+    <p class="cap">Atoms <span class="hint" id="atomsHint"></span></p>
+    <div class="tip" id="tip"><span>tap an atom to filter the timeline below</span><span class="x" onclick="closeTip()">✕</span></div>
+    <div id="atoms"></div>
+    <div class="fnote" id="fnote"></div>
+    <p class="procline">top procedure · <span class="chain" id="procChain"></span> · <span class="pw" id="procW"></span><span id="procGloss"></span></p>
+  </div>
+
+  <div class="tlhead">
+    <p class="cap" style="margin:0">Timeline <span class="hint">· the session as a thread · each turn's plan on the right</span></p>
+    <button class="replay" id="replayBtn" onclick="toggleReplay()"><span class="tri">▶</span> <span id="rlab">Replay session</span></button>
+  </div>
+  <ul class="tlleg">
+    <li>each turn is your prompt, then the agent's tool sequence; the dot is colored by the turn's main action</li>
+    <li>the <span class="badge pass">✓ tests pass</span> / <span class="badge fail">✗ tests fail</span> badge is that turn's test result</li>
+    <li><span class="bluedot"></span><span id="winLeg"></span></li>
+  </ul>
+  <div class="tl" id="tl"></div>
+  </div>
+
+  <div id="autonomy" class="hidden"></div>
+</div>
+<script>
+// Synthetic, self-consistent sessions. Everything below is COMPUTED from this
+// data: the panel demonstrates the real logic, exposing nothing real. The three
+// sessions are deliberately contrasting (build / explore / debug) so switching
+// shows distinct fingerprints, archetypes, and top procedures.
+const O="claude-opus-4-8", H="claude-haiku-4-5";
+const DEMO_SESSIONS=[
+  {"meta":{"name":"recovered session","client":"Claude Code","project":"local \u00b7 anonymized","id":"ae6d93a7","date":"","intent":"atoms only \u00b7 source not recoverable","illustrative":false,"real":true,"models":[]},"turns":[{"t":"","model":"","prompt":"","plan":"","seq":["edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","other","other","read_file","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","other","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","read_file","edit","edit","other","read_file","read_file","read_file","read_file","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","read_file","edit","read_file","edit","other","other","edit","read_file","read_file","read_file","edit","edit","edit","edit","edit","read_file","edit","other","read_file","read_file","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","other","read_file","other","read_file","read_file","read_file","edit","other","read_file","other","read_file","edit","edit","other","other","other","other","other","other","read_file","read_file","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","other","read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","read_file","edit","other","read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","other","other","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","read_file","read_file","read_file","edit","edit","other","read_file","edit","other","read_file"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","other","other","read_file","read_file","other","other","read_file","read_file"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["read_file","edit","read_file","edit","other","read_file","other","other","other","read_file"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["other","other","edit","other","read_file"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","edit","other","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","other","other","other","read_file","edit","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["read_file","read_file","read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit"]},{"t":"","model":"","prompt":"","plan":"","seq":["read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","other","other","other","other","read_file","read_file","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","edit","edit","other","read_file","other"]},{"t":"","model":"","prompt":"","plan":"","seq":["edit","read_file","edit","other","read_file","other"]}]},
+  {meta:{name:"auth-guard", client:"Claude Code", project:"learning-from-dev", id:"ae6d93a7", date:"Jun 17",
+    intent:"build a token-validation guard for the auth flow", models:[{name:O},{name:H}]},
+   turns:[
+    {t:"14:08", model:O, prompt:"explore the auth package layout",     plan:"Skim the session store and middleware, then grep for where claims are set.", seq:["read_file","read_file","read_file","read_file","search_repo"]},
+    {t:"14:11", model:H, prompt:"how are tokens issued today",         plan:"Trace the issue path end to end.",                          seq:["read_file","read_file","read_file"]},
+    {t:"14:13", model:H, prompt:"pull in a jwt library",               plan:"Add the dependency and confirm the import resolves.",       seq:["package","read_file"]},
+    {t:"14:15", model:O, prompt:"scaffold the validation module",      plan:"Create validate.py with a stub and import it.",             seq:["read_file","edit"]},
+    {t:"14:18", model:O, prompt:"add a token validation helper",       plan:"validate_token plus a happy-path test.",                    seq:["read_file","edit","run_test"], outcome:"pass"},
+    {t:"14:21", model:O, prompt:"handle the expired-token case",       plan:"Branch on expiry and extend the test matrix.",              seq:["edit","run_test","edit","run_test"], outcome:"fail"},
+    {t:"14:24", model:O, prompt:"the null-subject case still fails",   plan:"Guard a missing subject claim before decode.",              seq:["read_file","edit","run_test"], outcome:"fail"},
+    {t:"14:27", model:O, prompt:"try the library decoder instead",     plan:"Swap the hand-rolled parse for the library decoder.",       seq:["read_file","edit","run_test"], outcome:"pass"},
+    {t:"14:30", model:O, prompt:"add error handling to the auth flow", plan:"Wrap the decode path and surface a typed error.",           seq:["read_file","read_file","edit","edit","run_test"], outcome:"fail"},
+    {t:"14:33", model:O, prompt:"narrow the caught exception",         plan:"Catch only the decode error.",                              seq:["edit","run_test"], outcome:"fail"},
+    {t:"14:35", model:O, prompt:"re-raise as a typed AuthError",       plan:"Map to AuthError at the boundary.",                         seq:["edit","run_test"], outcome:"pass"},
+    {t:"14:38", model:O, prompt:"wire the guard into middleware",      plan:"Register the guard and read the call site back.",           seq:["read_file","edit"]},
+    {t:"14:40", model:O, prompt:"logout still errors",                plan:"Reproduce the logout failure first.",                       seq:["read_file","edit","run_test"], outcome:"fail"},
+    {t:"14:42", model:O, prompt:"patch the logout path",              plan:"Clear the session token on logout.",                        seq:["edit","run_test"], outcome:"pass"},
+    {t:"14:44", model:H, prompt:"lint and tidy the imports",          plan:"Run ruff and drop the unused decoder.",                     seq:["edit","lint"]},
+    {t:"14:46", model:O, prompt:"commit the fix",                     plan:"Stage and commit with a descriptive message.",              seq:["version_control"]},
+  ]},
+  {meta:{name:"ingestion", client:"Claude Code", project:"data-pipeline", id:"7f2c1b04", date:"Jun 16",
+    intent:"map how the ingestion pipeline fits together", models:[{name:O},{name:H}]},
+   turns:[
+    {t:"09:02", model:O, prompt:"where does ingestion start",        plan:"Find the entrypoint and the first stage.",                  seq:["read_file","read_file","read_file","search_repo"]},
+    {t:"09:05", model:O, prompt:"trace the queue consumer",          plan:"Follow the consumer loop and its handlers.",                seq:["read_file","read_file","read_file","read_file"]},
+    {t:"09:09", model:H, prompt:"how are batches sized",             plan:"Look for the batching policy and limits.",                  seq:["read_file","read_file","search_repo"]},
+    {t:"09:12", model:O, prompt:"find the retry logic",              plan:"Search for backoff and retry decorators.",                  seq:["search_repo","read_file","read_file"]},
+    {t:"09:16", model:O, prompt:"look up the config schema",         plan:"Open the settings and defaults.",                           seq:["read_file","read_file","read_file"]},
+    {t:"09:19", model:H, prompt:"check dead-letter handling",        plan:"Trace where failed messages go.",                           seq:["read_file","read_file","search_repo"]},
+    {t:"09:23", model:O, prompt:"note the backpressure path",        plan:"See how the pipeline slows under load.",                    seq:["read_file","read_file","read_file"]},
+    {t:"09:27", model:O, prompt:"skim the tests for coverage",       plan:"Scan the test suite for the gaps.",                          seq:["read_file","read_file","search_repo"]},
+    {t:"09:30", model:O, prompt:"summarize the data flow",           plan:"Write up the stages end to end.",                           seq:["read_file","read_file"]},
+  ]},
+  {meta:{name:"checkout", client:"Claude Code", project:"api-server", id:"c3915d8e", date:"Jun 15",
+    intent:"fix the flaky checkout test", models:[{name:O},{name:H}]},
+   turns:[
+    {t:"16:40", model:O, prompt:"reproduce the flaky checkout test", plan:"Run it in a loop to see it fail.",                          seq:["read_file","run_test"], outcome:"fail"},
+    {t:"16:43", model:O, prompt:"add logging around the race",       plan:"Instrument the suspicious async call.",                     seq:["edit","run_test"], outcome:"fail"},
+    {t:"16:46", model:O, prompt:"is it the async timing",            plan:"Hypothesize an unawaited settlement.",                      seq:["edit","run_test"], outcome:"fail"},
+    {t:"16:49", model:O, prompt:"await the settlement",              plan:"Await the promise before asserting.",                       seq:["edit","run_test"], outcome:"pass"},
+    {t:"16:51", model:H, prompt:"run it again to be sure",           plan:"Re-run to confirm it is stable.",                           seq:["run_test"], outcome:"fail"},
+    {t:"16:54", model:O, prompt:"mock the clock",                    plan:"The remaining flake is wall-clock dependent.",              seq:["read_file","edit","run_test"], outcome:"fail"},
+    {t:"16:57", model:O, prompt:"freeze time in the fixture",        plan:"Pin the clock in the test fixture.",                        seq:["edit","run_test"], outcome:"pass"},
+    {t:"17:00", model:O, prompt:"run the whole suite",               plan:"Full pass to check nothing regressed.",                     seq:["run_test"], outcome:"pass"},
+    {t:"17:02", model:H, prompt:"remove the debug logging",          plan:"Strip the instrumentation and lint.",                       seq:["edit","lint"]},
+    {t:"17:04", model:O, prompt:"commit the fix",                    plan:"Commit with a note on the root cause.",                     seq:["version_control"]},
+  ]},
+];
+
+// IS_LOCAL is true when a local runner injected real sessions before this script
+// (examples/procgrep_view.py). On the hosted Space the sessions come from a
+// bundled, atoms-only demo fetched at boot (see the boot block below); until it
+// arrives SESSIONS holds the synthetic DEMO_SESSIONS so the panel still renders.
+let IS_LOCAL=(typeof window!=="undefined"&&Array.isArray(window.PROCGREP_SESSIONS)&&window.PROCGREP_SESSIONS.length>0);
+let SESSIONS=IS_LOCAL?window.PROCGREP_SESSIONS:DEMO_SESSIONS;
+const ORDER=["read_file","search_repo","prompt_ai","edit","lint","run_test","run_code","package","version_control","other"];
+const LAB={read_file:"read_file",search_repo:"search_repo",prompt_ai:"prompt_ai",edit:"edit",lint:"lint",run_test:"run_test",run_code:"run_code",package:"package",version_control:"version_control",other:"bash/other"};
+const COLOR={read_file:"var(--read)",search_repo:"var(--search)",prompt_ai:"var(--prompt)",edit:"var(--edit)",lint:"var(--lint)",run_test:"var(--test)",run_code:"var(--run)",package:"var(--package)",version_control:"var(--vcs)",other:"var(--other)"};
+const WIN=40;
+const modelColors=["#14110E","#A99B86","#5692E5"];
+
+// Per-session state, rebuilt by load().
+let META, SESSION, FLAT, RANGE, PRESENT, fills, turnEls;
+let current=0, selected=null, lastNow=null;
+let SESSQ="";
+// Structural query over your own sessions: the same atom-pattern grammar as the
+// eval explorer, run locally on the injected session atoms. Nothing leaves.
+function sessionSpine(s){return s.turns.flatMap(t=>["prompt_ai",...(t.seq||[])]).join(" ")+" ";}
+function sessionRe(){if(!SESSQ.trim())return null;try{return new RegExp(SESSQ);}catch{return false;}}
+function matchedSessions(){const re=sessionRe();return (re===null||re===false)?SESSIONS:SESSIONS.filter(s=>re.test(sessionSpine(s)));}
+function onSessQuery(v){SESSQ=v;renderAutonomy();renderSwitcher();}
+let timer=null, playhead=0, playing=false;
+
+const atomsEl=document.getElementById("atoms");
+const tlEl=document.getElementById("tl");
+const divider=document.createElement("div");
+divider.className="winmark";
+
+function shares(atoms){const c={};atoms.forEach(a=>c[a]=(c[a]||0)+1);const n=atoms.length||1;
+  const s={};PRESENT.forEach(k=>s[k]=(c[k]||0)/n);return s;}
+function dominant(seq){const c={};seq.forEach(a=>c[a]=(c[a]||0)+1);let best="other",bn=-1;
+  ORDER.forEach(k=>{if((c[k]||0)>bn){bn=c[k]||0;best=k;}});return bn>0?best:"other";}
+function topProcedure(atoms){
+  const pair={};
+  for(let i=0;i<atoms.length-1;i++){const k=atoms[i]+" | "+atoms[i+1];pair[k]=(pair[k]||0)+1;}
+  let best=null,bn=0;for(const k in pair)if(pair[k]>bn){bn=pair[k];best=k;}
+  if(!best)return null;
+  const [l,r]=best.split(" | ");
+  return {chain:l+" → "+r, weight:bn/Math.max(1,atoms.length-1)};
+}
+function gloss(chain){
+  if(chain==="edit → run_test"||chain==="run_test → edit") return "build then verify";
+  if(chain==="read_file → edit") return "locate then change";
+  if(chain==="read_file → read_file") return "exploration sweep";
+  if(chain==="read_file → search_repo"||chain==="search_repo → read_file") return "search and read";
+  if(chain==="edit → prompt_ai"||chain==="prompt_ai → edit") return "tight revision loop";
+  if(chain==="run_test → run_test") return "re-running tests";
+  return "";
+}
+function shortModel(name){return name.replace("claude-","");}
+function primaryModel(turns){
+  const c={};turns.forEach(t=>{c[t.model]=(c[t.model]||0)+t.seq.length;});
+  return Object.entries(c).sort((a,b)=>b[1]-a[1])[0][0];
+}
+function _mins(t){
+  if(!t) return null;
+  const [h,m]=t.split(":").map(Number);
+  return (Number.isFinite(h)&&Number.isFinite(m)) ? h*60+m : null;
+}
+// Span from the earliest to the latest turn time, not first-to-last: transcript
+// timestamps are not always monotonic, so first-minus-last could go negative.
+// Returns null when there are too few times to span (e.g. an atoms-only session).
+function timeSpan(turns){
+  const xs=turns.map(t=>_mins(t.t)).filter(v=>v!=null);
+  if(xs.length<2) return null;
+  const lo=Math.min(...xs), hi=Math.max(...xs);
+  const start=turns.find(t=>_mins(t.t)===lo).t, end=turns.find(t=>_mins(t.t)===hi).t;
+  return {start, end, mins:hi-lo};
+}
+// Prefer the real ISO duration the adapter computed (handles multi-day sessions);
+// fall back to the HH:MM span only for the demo, which carries no real timing.
+function durationMin(session){
+  const m=session.meta&&session.meta.durationMin;
+  if(typeof m==="number") return m;
+  const s=timeSpan(session.turns||[]);
+  return s?s.mins:null;
+}
+function fmtDur(m){
+  if(m==null) return null;
+  if(m<90) return m+" min";
+  if(m<1440) return Math.round(m/60)+" h";
+  return Math.round(m/1440)+" d";
+}
+// Stage, EARNED from the session's own procedure mix -- not hand-labeled.
+// No tests + read/search dominant -> explore; high fail-rate tight loop with
+// little reading -> debug; otherwise edit+test feature work -> build.
+function classifyStage(turns){
+  let actions=0,tests=0,fails=0,reads=0;
+  turns.forEach(t=>{
+    t.seq.forEach(a=>{actions++;if(a==="run_test")tests++;if(a==="read_file"||a==="search_repo")reads++;});
+    if(t.outcome==="fail")fails++;
+  });
+  if(tests===0) return "explore";
+  const failRate=turns.length?fails/turns.length:0;
+  const readShare=actions?reads/actions:0;
+  if(failRate>=0.4 && readShare<0.2) return "debug";
+  return "build";
+}
+function colorForModel(name){const i=META.models.findIndex(m=>m.name===name);return modelColors[(i<0?0:i)%modelColors.length];}
+
+function renderHeader(){
+  document.getElementById("ident").innerHTML=
+    `<div class="idrow"><span class="k">platform</span><span class="v">${META.client}</span></div>`+
+    `<div class="idrow"><span class="k">workspace</span><span class="v">${META.project}</span></div>`+
+    `<div class="idrow"><span class="k">session</span><span class="v hash">${META.id}</span></div>`;
+  const itag = META.illustrative!==false ? " illustrative" : (META.promptsParaphrased ? " paraphrased prompts" : "");
+  document.getElementById("intent").innerHTML=(META.intent||"")+(itag?`<span class="tag">${itag.trim()}</span>`:"");
+  let actions=0;
+  SESSION.forEach(t=>{actions+=t.seq.length;});
+  const apx=(actions/SESSION.length).toFixed(1);
+  const row=(k,v)=>`<div class="idrow"><span class="k">${k}</span><span class="v">${v}</span></div>`;
+  let html=(META.date?row("date",META.date):"");
+  const dur=durationMin({meta:META,turns:SESSION});
+  if(dur!=null) html+=row("duration",fmtDur(dur));
+  html+=row("turns",SESSION.length)+row("tool calls",actions)+row("tool calls / prompt",apx);
+  document.getElementById("stats").innerHTML=html;
+}
+
+function buildAtoms(){
+  atomsEl.innerHTML="";fills={};
+  PRESENT.forEach(k=>{
+    const row=document.createElement("div");row.className="atom";row.dataset.k=k;
+    row.innerHTML=`<span class="dot"></span><span class="nm">${LAB[k]}</span>`+
+      `<span class="track"><span class="fill" style="background:${COLOR[k]}"></span></span><span class="pc">0%</span>`;
+    row.onclick=()=>toggleFilter(k);
+    atomsEl.appendChild(row);
+    fills[k]={fill:row.querySelector(".fill"),pc:row.querySelector(".pc")};
+  });
+}
+
+function childrenHtml(tn){
+  const runs=[];let i=0;
+  while(i<tn.seq.length){let j=i;while(j<tn.seq.length&&tn.seq[j]===tn.seq[i])j++;runs.push([tn.seq[i],j-i]);i=j;}
+  return runs.map(([a,n],idx)=>{
+    const last=idx===runs.length-1, name=a==="other"?"bash":a;
+    let badge="";
+    if(last&&tn.outcome==="pass")badge=` <span class="badge pass">✓ tests pass</span>`;
+    if(last&&tn.outcome==="fail")badge=` <span class="badge fail">✗ tests fail</span>`;
+    return `<div class="act"><span class="br">${last?"└─":"├─"}</span><span style="color:${COLOR[a]}">${name}${n>1?" × "+n:""}</span>${badge}</div>`;
+  }).join("");
+}
+function buildTimeline(){
+  tlEl.innerHTML="";turnEls=[];
+  SESSION.forEach((tn,i)=>{
+    const turnNo=i+1;
+    const d=document.createElement("div");
+    d.className="turn";
+    d.dataset.idx=turnNo-1;
+    d.dataset.atoms=[...new Set(tn.seq)].join(",");
+    d.innerHTML=`<span class="node" style="background:${COLOR[dominant(tn.seq)]}"></span>`+
+      `<div class="turnmain">`+
+        `<div class="when">Turn ${turnNo} · <b>${tn.t}</b><span class="mtag" style="color:${colorForModel(tn.model)}">${shortModel(tn.model)}</span></div>`+
+        (tn.prompt?`<div class="pr-count">prompt · ${tn.prompt.length} chars</div><div class="pr-text">"${tn.prompt}"</div>`:"")+
+        `<div class="acts">${childrenHtml(tn)}</div>`+
+      `</div>`+
+      `<div class="plan">${tn.plan}</div>`;
+    d.onclick=()=>{if(playing)pause(false);};
+    tlEl.appendChild(d);
+    turnEls[turnNo-1]=d;
+  });
+}
+
+function setPlayhead(p, scroll){
+  const lo=Math.max(0,p-WIN);
+  const win=FLAT.slice(lo,p);
+  const sh=shares(win);
+  PRESENT.forEach(k=>{fills[k].fill.style.width=(sh[k]*100)+"%";fills[k].pc.textContent=Math.round(sh[k]*100)+"%";});
+  const proc=topProcedure(win);
+  if(proc){
+    document.getElementById("procChain").textContent=proc.chain;
+    document.getElementById("procW").textContent=Math.round(proc.weight*100)+"% of steps";
+    const g=gloss(proc.chain);
+    document.getElementById("procGloss").textContent=g?` · ${g}`:"";
+  }
+  let nowEl=null, firstInwin=null, hasPast=false;
+  for(let i=0;i<SESSION.length;i++){
+    const {s,e}=RANGE[i], el=turnEls[i];
+    let zone;
+    if(s>=p) zone="future";
+    else if(s<p && p<=e) zone="now";
+    else if(e>lo && s<p) zone="inwin";
+    else zone="past";
+    el.className="turn"+(zone==="future"?" future":zone==="now"?" now inwin":zone==="inwin"?" inwin":"");
+    if(zone==="now") nowEl=el;
+    if((zone==="inwin"||zone==="now") && !firstInwin) firstInwin=el;
+    if(zone==="past") hasPast=true;
+  }
+  if(firstInwin && hasPast) tlEl.insertBefore(divider, firstInwin); else if(divider.parentNode) divider.remove();
+  // Scroll ONLY the timeline container, never the page, so the reader can
+  // scroll the page freely during replay.
+  if(scroll && nowEl && nowEl!==lastNow){
+    const tr=nowEl.getBoundingClientRect(), cr=tlEl.getBoundingClientRect();
+    if(tr.top < cr.top) tlEl.scrollTop += tr.top - cr.top - 10;
+    else if(tr.bottom > cr.bottom) tlEl.scrollTop += tr.bottom - cr.bottom + 10;
+  }
+  lastNow=nowEl;
+}
+
+function toggleFilter(k){if(playing)pause(false);selected=selected===k?null:k;applyFilter();}
+function clearFilter(){selected=null;applyFilter();}
+function applyFilter(){
+  document.querySelectorAll(".atom").forEach(r=>r.classList.toggle("sel",r.dataset.k===selected));
+  const note=document.getElementById("fnote");
+  note.innerHTML = selected
+    ? `showing turns that used <b>${LAB[selected]}</b> · <a onclick="clearFilter()">show all</a>` : "";
+  let firstMatch=null;
+  turnEls.forEach(t=>{
+    const has=!selected || (t.dataset.atoms||"").split(",").includes(selected);
+    t.classList.toggle("dim",!has);
+    if(has && selected && !firstMatch && !t.classList.contains("future")) firstMatch=t;
+  });
+  if(firstMatch){
+    const tr=firstMatch.getBoundingClientRect(), cr=tlEl.getBoundingClientRect();
+    tlEl.scrollTop += tr.top - cr.top - 10;
+  }
+}
+function closeTip(){document.getElementById("tip").classList.add("hidden");}
+// Privacy dial: "atoms only" hides prompt + plan text (what to_shareable exports);
+// "prompts shown" is the local view. (--paraphrase is the runner's middle ground.)
+// One toggle: pressed (on) = prompt text is shown, unpressed = hidden.
+function togglePriv(){
+  const showing=document.body.classList.toggle("pmode-shown");
+  document.body.classList.toggle("pmode-counts",!showing);
+  document.getElementById("privtog").classList.toggle("on",showing);
+}
+
+// ---- replay ----
+const btn=document.getElementById("replayBtn"), tri=btn.querySelector(".tri"), rlab=document.getElementById("rlab");
+function setBtn(state){
+  if(state==="playing"){tri.textContent="⏸";rlab.textContent="Pause";}
+  else if(state==="paused"){tri.textContent="▶";rlab.textContent="Resume";}
+  else {tri.textContent="▶";rlab.textContent="Replay session";}
+}
+function pause(ended){playing=false;if(timer){clearInterval(timer);timer=null;}setBtn(ended?"ended":"paused");}
+function play(){
+  if(playing)return;
+  clearFilter();
+  if(playhead>=FLAT.length)playhead=1;
+  playing=true;setBtn("playing");
+  if(timer)clearInterval(timer);
+  timer=setInterval(()=>{
+    setPlayhead(playhead, true);
+    if(playhead>=FLAT.length){pause(true);return;}
+    playhead++;
+  },150);
+}
+function toggleReplay(){playing?pause(false):play();}
+
+// ---- session switcher ----
+const TAGS={
+  build:"writing then verifying code; edit and run_test dominate",
+  explore:"reading and searching to understand code; few edits, no tests",
+  debug:"repeated edit then run_test loops, often failing before a pass",
+};
+function renderSwitcher(){
+  const ov=document.getElementById("overviewNav");
+  if(ov){ov.innerHTML="";
+    if(IS_LOCAL){
+      const b=document.createElement("button");
+      b.innerHTML=
+        '<span class="ovrow"><svg class="ovico" width="15" height="12" viewBox="0 0 15 12" aria-hidden="true">'
+        +'<rect x="0" y="7" width="2.6" height="5"/><rect x="4" y="4" width="2.6" height="8"/>'
+        +'<rect x="8" y="6" width="2.6" height="6"/><rect x="12" y="1" width="2.6" height="11"/></svg>'
+        +'<span class="nnm">overview</span></span>'
+        +'<span class="nmeta">run length across sessions</span>';
+      b.onclick=()=>{if(playing)pause(false);setView("overview");};
+      ov.appendChild(b);
+    }
+  }
+  const el=document.getElementById("switch");el.innerHTML="";
+  const matched=new Set(matchedSessions());
+  SESSIONS.forEach((s,i)=>{
+    const b=document.createElement("button");
+    if(i===current)b.className="active";
+    if(SESSQ.trim()&&!matched.has(s))b.classList.add("hidden");  // query filters the rail too
+    const stage=classifyStage(s.turns);
+    const dur=durationMin(s), pm=primaryModel(s.turns);
+    b.innerHTML=`<span class="nnm">${s.meta.name}</span>`+
+      `<span class="nmeta">${s.meta.project}${s.meta.date?` · ${s.meta.date}`:''}${dur!=null?` · ${fmtDur(dur)}`:''}</span>`+
+      `<span class="nmeta">${s.meta.client}${pm?` · ${shortModel(pm)}`:''}</span>`;
+    if(TAGS[stage]) b.title=`${stage}: ${TAGS[stage]}`;
+    b.onclick=()=>load(i);
+    el.appendChild(b);
+  });
+}
+
+// Aggregate view: run-length is the agent actions after each human prompt, i.e.
+// the length of each turn's seq. The histogram is computed from the same
+// injected sessions that power the per-session replay; no extra data path.
+function renderAutonomy(){
+  const au=document.getElementById("autonomy");
+  // Build the query bar once and keep it; only the chart below re-renders, so
+  // typing in the query never loses focus.
+  if(!document.getElementById("sq")){
+    au.innerHTML='<div class="sqbar"><span>⌕</span><input id="sq" autocomplete="off" '
+      +'placeholder="grep your sessions · atom pattern, e.g.  (read_file ){3,}" oninput="onSessQuery(this.value)"></div>'
+      +'<div class="sqnote" id="sqnote"></div><div id="autochart"></div>';
+    document.getElementById("sq").value=SESSQ;
+  }
+  const matched=matchedSessions();
+  const runs=[]; matched.forEach(s=>s.turns.forEach(t=>{if(Array.isArray(t.seq))runs.push(t.seq.length);}));
+  const bad=sessionRe()===false;
+  document.getElementById("sqnote").innerHTML = SESSQ.trim()
+    ? `${matched.length} / ${SESSIONS.length} sessions match`+(bad?' · <span style="color:var(--edit)">invalid pattern</span>':"")
+    : `${SESSIONS.length} session${SESSIONS.length>1?"s":""}`;
+  const chart=document.getElementById("autochart");
+  if(!runs.length){chart.innerHTML='<p class="cap2">no matching runs</p>';return;}
+  const W=5, top=Math.max(...runs);
+  const sorted=[...runs].sort((a,b)=>a-b);
+  const median=sorted[Math.floor((sorted.length-1)/2)];
+  const mean=runs.reduce((a,b)=>a+b,0)/runs.length;
+  const p95=sorted[Math.min(sorted.length-1,Math.floor(sorted.length*0.95))];
+  const cap=Math.max(W*4,Math.ceil(p95/W)*W), clipped=cap<top;
+  const nb=cap/W+1, counts=new Array(nb).fill(0);
+  runs.forEach(r=>counts[Math.min(Math.floor(r/W),nb-1)]++);
+  const SW=720,SH=300,ml=44,mr=14,mt=20, pw=SW-ml-mr, ph=SH-mt-44;
+  const xmax=nb*W, bw=pw/nb, ymax=Math.max(...counts);
+  const xpx=v=>ml+(v/xmax)*pw, ypx=c=>mt+ph-(c/ymax)*ph;
+  let bars="";
+  counts.forEach((c,i)=>{if(!c)return;const x=ml+i*bw,h=(c/ymax)*ph;
+    bars+=`<rect x="${x.toFixed(1)}" y="${(mt+ph-h).toFixed(1)}" width="${(bw-0.6).toFixed(1)}" height="${h.toFixed(1)}" fill="var(--edit)"/>`;});
+  let yt="";const stepY=[1,2,5,10,20,50,100,200,500,1000].find(s=>ymax/s<=4)||2000;
+  for(let v=0;v<=ymax;v+=stepY){const y=ypx(v);
+    yt+=`<text x="${ml-9}" y="${(y+3).toFixed(0)}" text-anchor="end" font-size="10" fill="var(--mut)">${v}</text>`
+      +`<line x1="${ml-5}" y1="${y.toFixed(1)}" x2="${ml}" y2="${y.toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;}
+  let xt="";const step=cap<=30?5:(cap<=80?10:25);
+  for(let v=0;v<=cap;v+=step){const x=xpx(v);const lab=(v===cap&&clipped)?`${v}+`:`${v}`;
+    xt+=`<text x="${x.toFixed(1)}" y="${(mt+ph+17).toFixed(0)}" text-anchor="middle" font-size="10" fill="var(--mut)">${lab}</text>`;}
+  const base=`<line x1="${ml}" y1="${(mt+ph).toFixed(1)}" x2="${SW-mr}" y2="${(mt+ph).toFixed(1)}" stroke="var(--line)" stroke-width="1"/>`;
+  const svg=`<svg viewBox="0 0 ${SW} ${SH}" width="100%" role="img" aria-label="Actions per human prompt">${bars}${base}${yt}${xt}`
+    +`<text x="${ml+pw/2}" y="${SH-6}" text-anchor="middle" font-size="11" fill="var(--mut)">actions after one prompt</text></svg>`;
+  const st=(v,l)=>`<div class="stat"><div class="sv">${v}</div><div class="sl">${l}</div></div>`;
+  chart.innerHTML=`<p class="cap">Actions per human prompt <span class="hint">· across ${matched.length} session${matched.length>1?"s":""}</span></p>`
+    +`<div class="chart">${svg}</div><p class="cap2">histogram of agent run lengths between prompts</p>`
+    +`<div class="astats">${st(matched.length,"sessions")}${st(runs.length,"runs")}${st(median,"median run")}${st(mean.toFixed(1),"mean run")}${st(top,"longest run")}</div>`;
+}
+
+function setView(v){
+  const det=document.getElementById("detail"), au=document.getElementById("autonomy");
+  const overview=v==="overview";
+  det.classList.toggle("hidden",overview);
+  au.classList.toggle("hidden",!overview);
+  document.querySelectorAll("#overviewNav button").forEach(b=>b.classList.toggle("active",overview));
+  // Only one thing is active: the overview, or the current session -- never both.
+  document.querySelectorAll("#switch button").forEach((b,i)=>b.classList.toggle("active",!overview&&i===current));
+}
+
+function load(idx){
+  if(timer){clearInterval(timer);timer=null;}
+  setView("detail");
+  current=idx;
+  META=SESSIONS[idx].meta;
+  SESSION=SESSIONS[idx].turns;
+  FLAT=[];RANGE=[];
+  SESSION.forEach(tn=>{const s=FLAT.length;FLAT.push("prompt_ai");tn.seq.forEach(a=>FLAT.push(a));RANGE.push({s,e:FLAT.length});});
+  PRESENT=ORDER.filter(k=>k==="prompt_ai"||SESSION.some(t=>t.seq.includes(k)));
+  selected=null;lastNow=null;playing=false;playhead=FLAT.length;
+  renderSwitcher();
+  renderHeader();
+  buildAtoms();
+  buildTimeline();
+  document.getElementById("atomsHint").textContent= FLAT.length>WIN ? `· last ${WIN} of ${FLAT.length} atoms` : `· ${FLAT.length} atoms`;
+  document.getElementById("winLeg").textContent=` = inside the ${WIN}-atom fingerprint window`;
+  divider.textContent=`earlier · outside the ${WIN}-atom window`;
+  play();
+}
+
+// When embedded in the explorer, the explorer's sidebar is the nav: hide our own
+// top bar AND rail, and use the full width -- the parent lists the sessions.
+const PARAMS=new URLSearchParams(location.search);
+const EMBED=PARAMS.has("embed");
+// On the hosted Space the parent asks for the bundled demo (demo_session.json):
+// one anonymized, atoms-only session exported through to_shareable. It carries no
+// prompt text, code, or paths, so it is safe to ship.
+const WANT_DEMO=PARAMS.has("demo");
+if(EMBED){
+  const tb=document.querySelector(".topbar"); if(tb)tb.style.display="none";
+  const nv=document.querySelector(".nav"); if(nv)nv.style.display="none";
+  document.body.style.padding="22px 24px 40px";
+}
+
+// Was the panel handed real session data (local runner or the bundled demo),
+// as opposed to the synthetic walkthrough? Drives the run-length overview and
+// dropping the standalone site links. Set true when the demo loads.
+let HAS_REAL=IS_LOCAL;
+// Show the run-length overview as the landing view only when there are several
+// sessions to aggregate; a single bundled demo lands on its own detail instead.
+let SHOW_OVERVIEW=IS_LOCAL;
+
+// Boot once SESSIONS is final. Kept in a function so the bundled demo can be
+// fetched first without blocking parse.
+function boot(){
+  // Newest session first when a recency key is present; stable, so the demo
+  // (no `ended`) keeps its authored order.
+  SESSIONS.sort((a,b)=>String(b.meta.ended||"").localeCompare(String(a.meta.ended||"")));
+  // The local runner opens this file from a temp dir, so the relative site links
+  // (essay, explorer) cannot resolve -- drop them; the local panel stands alone.
+  if(HAS_REAL){document.querySelectorAll(".topnav a").forEach(a=>a.remove());}
+  load(0);
+  if(SHOW_OVERVIEW){renderAutonomy();setView("overview");}
+  // Embedded: hand the session list (metadata only) to the explorer so it can show
+  // them in the global rail, and take selection commands back. One rail, not two.
+  if(EMBED && window.parent!==window){
+    const list=SESSIONS.map((s,i)=>({i,name:s.meta.name,client:s.meta.client,
+      date:s.meta.date||"",dur:fmtDur(durationMin(s))||"",model:shortModel(primaryModel(s.turns))||""}));
+    window.parent.postMessage({type:"procgrep-sessions",list,hasOverview:SHOW_OVERVIEW},"*");
+    window.addEventListener("message",e=>{
+      const m=e.data; if(!m||m.type!=="procgrep-select")return;
+      if(playing)pause(false);
+      if(m.index==null)setView("overview"); else load(m.index);
+    });
+  }
+}
+
+if(WANT_DEMO && !IS_LOCAL){
+  fetch("demo_session.json").then(r=>r.json()).then(d=>{
+    const arr=Array.isArray(d)?d:[d];
+    if(arr.length){SESSIONS=arr;IS_LOCAL=true;HAS_REAL=true;SHOW_OVERVIEW=arr.length>1;}
+  }).catch(()=>{}).finally(boot);
+}else{
+  boot();
+}
+</script>
+</body>
+</html>

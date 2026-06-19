@@ -95,6 +95,8 @@ SUGGESTED = (
     "ElenaFu/SWE-agent-trajectories",
     "nebius/SWE-rebench-openhands-trajectories",
     "SWE-bench/SWE-smith-trajectories",
+    "nvidia/Nemotron-SFT-Agentic-v2",
+    "AlienKevin/SWE-ZERO-12M-trajectories",
 )
 
 # Canonical atom palette (kept in sync with the static explorer).

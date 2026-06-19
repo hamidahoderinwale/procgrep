@@ -1,0 +1,14 @@
+/* procgrep shared palette: the single source of truth for the base tokens used
+   across the essay, explorer, and session panel. Page-specific tokens (the
+   panel's atom and outcome colors, its lighter rule shade) stay with the page
+   that uses them and alias these where they match. */
+:root{
+  --paper:#F7F5F2;
+  --ink:#14110E;
+  --copper:#CB4D20;
+  --blue:#5692E5;
+  --teal:#20A380;
+  --olive:#585E53;
+  --rule:#d9d4cc;
+  --gray:#b7b1a7;
+}
