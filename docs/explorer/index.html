@@ -93,6 +93,13 @@ body.hide-noise .noisetog{background:var(--ink);color:var(--paper);border-color:
 .back{color:var(--copper);cursor:pointer;margin-bottom:14px;display:inline-block}
 .note{color:var(--olive);max-width:70ch}
 a.plain{color:var(--copper);cursor:pointer}
+.cswitch{display:inline-flex;border:1px solid var(--ink);border-radius:7px;overflow:hidden;margin:0 0 16px}
+.cswitch button{font-family:var(--mono);font-size:12px;border:0;background:#fff;color:var(--olive);padding:7px 15px;cursor:pointer;display:flex;flex-direction:column;gap:1px;align-items:flex-start}
+.cswitch button.on{background:var(--ink);color:#fff}
+.cswitch .sub{font-size:10px;opacity:.7}
+.cgroup{display:contents}
+body.corpus-eval .cgroup[data-c="sess"]{display:none}
+body.corpus-sess .cgroup[data-c="eval"]{display:none}
 @media(max-width:720px){
   body{padding-left:0}
   .railnav{position:static;width:auto;height:auto;padding:12px 16px;background:#EFEAE2;
@@ -109,15 +116,19 @@ a.plain{color:var(--copper);cursor:pointer}
   .barbg{width:84px}.mix{width:120px}.rlab{width:92px}.qhmodel{min-width:74px}
   #q{font-size:16px}
 }
-</style></head><body>
+</style></head><body class="corpus-eval">
 <nav class="railnav">
-  <h2>eval traces</h2>
-  <button class="ritem act" id="nav-query" onclick="show('query')">query</button>
-  <button class="ritem" id="nav-permodel" onclick="show('permodel')">per-model</button>
-  <button class="ritem" id="nav-curate" onclick="show('curate')">curate</button>
-  <button class="ritem" id="nav-why" onclick="show('why')">why structural</button>
-  <h2 class="railgrp">live sessions</h2>
-  <button class="ritem" id="nav-sessions" onclick="show('sessions')">sessions</button>
+  <div class="cgroup" data-c="eval">
+    <h2>eval traces</h2>
+    <button class="ritem act" id="nav-query" onclick="show('query')">query</button>
+    <button class="ritem" id="nav-permodel" onclick="show('permodel')">per-model</button>
+    <button class="ritem" id="nav-curate" onclick="show('curate')">curate</button>
+    <button class="ritem" id="nav-why" onclick="show('why')">why structural</button>
+  </div>
+  <div class="cgroup" data-c="sess">
+    <h2>live sessions</h2>
+    <button class="ritem" id="nav-sessions" onclick="show('sessions')">sessions</button>
+  </div>
 </nav>
 <div class="wrap">
 <div class="topbar"><a class="mark" href="../index.html">procgrep</a>
@@ -125,6 +136,11 @@ a.plain{color:var(--copper);cursor:pointer}
   <a href="../index.html">essay</a>
   <a class="active" href="index.html">explorer</a>
 </nav></div>
+
+<div class="cswitch">
+  <button id="c-eval" class="on" onclick="pickCorpus('eval')">eval traces<span class="sub">remote · public</span></button>
+  <button id="c-sess" onclick="pickCorpus('sess')">your sessions<span class="sub">local · private</span></button>
+</div>
 
 <!-- QUERY (hero / default) -->
 <div id="query">
@@ -564,6 +580,15 @@ function show(id){
   if(id==='sessions'){const f=document.getElementById('sessframe');if(!f.getAttribute('src'))f.src='../live_fingerprint.html?embed=1';}
   if(id==='browse')renderBrowse();
   window.scrollTo(0,0);
+}
+// Corpus switcher: the only place the eval/sessions split shows. Gates the rail
+// to the chosen corpus and opens its default view; view logic is unchanged.
+function pickCorpus(c){
+  document.body.classList.remove('corpus-eval','corpus-sess');
+  document.body.classList.add('corpus-'+c);
+  document.getElementById('c-eval').classList.toggle('on',c==='eval');
+  document.getElementById('c-sess').classList.toggle('on',c==='sess');
+  show(c==='sess'?'sessions':'query');
 }
 document.getElementById('q').addEventListener('input',e=>onType(e.target.value));
 
