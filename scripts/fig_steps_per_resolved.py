@@ -17,10 +17,9 @@ import sys
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from figtheme import init, style_axes, BLUE, COPPER, GREEN, OLIVE, MAGENTA, INK
+from figtheme import BLUE, COPPER, GREEN, INK, MAGENTA, OLIVE, init, style_axes
 
 init()
 
@@ -78,7 +77,7 @@ def main() -> None:
 
     fig, ax = plt.subplots(figsize=(6.2, 3.6))
     y_pos = range(len(agents))
-    bars = ax.barh(list(y_pos), values, color=colors, height=0.6)
+    ax.barh(list(y_pos), values, color=colors, height=0.6)
 
     for i, val in enumerate(values):
         ax.text(val + 2, i, f"{val:.0f}", va="center", fontsize=8.5, color=INK)

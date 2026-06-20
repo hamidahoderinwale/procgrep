@@ -7,24 +7,25 @@ Shows the fitted P(resolve) curve with a 95% bootstrap band as a function of
 canonical trajectory length on a log10 x-axis.
 """
 
-import sys
 import json
+import sys
 from pathlib import Path
 
-import numpy as np
-import pandas as pd
 import matplotlib.pyplot as plt
+import numpy as np
 from sklearn.linear_model import LogisticRegression
 
 sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
-from figtheme import init, style_axes, BLUE, RULE, INK
+from figtheme import BLUE, init, style_axes
 
 ROOT = Path("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces")
 
 init()
 
-rows = [json.loads(l) for l in open(ROOT / "output/paper2_pilot/bpe_sequences_extended.jsonl")]
-pf = json.load(open(ROOT / "output/paper2_pilot/extended_pass_fail.json"))
+with open(ROOT / "output/paper2_pilot/bpe_sequences_extended.jsonl") as fh:
+    rows = [json.loads(line) for line in fh]
+with open(ROOT / "output/paper2_pilot/extended_pass_fail.json") as fh:
+    pf = json.load(fh)
 res = {k: set(v.get("resolved", [])) for k, v in pf.items()}
 
 L, y = [], []

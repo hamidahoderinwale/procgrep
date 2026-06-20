@@ -15,21 +15,28 @@ Style: procgrep figtheme.
 Output: ~/learning-from-dev/procgrep/docs/figures/fig_patch_files_passrate.png
 """
 
-import sys, json, re, glob, os
+import glob
+import json
+import os
+import re
+import sys
+
 sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
 
 from collections import defaultdict
 from pathlib import Path
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.lines as mlines
-from figtheme import init, style_axes, BLUE, COPPER, GREEN, OLIVE, MAGENTA, INK, RULE
+import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
+from figtheme import init, style_axes
 
 init()
 
 CACHE = Path("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/trajectories/.cache")
-pf    = json.load(open("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json"))
+with open("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json") as fh:
+    pf = json.load(fh)
 
 NAME = {
     "20240402_sweagent_claude3opus":                          "Claude-3",
@@ -61,9 +68,9 @@ PLUS = re.compile(r"^\+\+\+ b/(\S+)", re.M)
 def patch_files(diff: str) -> int:
     if not diff or not diff.strip():
         return 0
-    files = set(m.group(2) for m in GIT.finditer(diff))
+    files = {m.group(2) for m in GIT.finditer(diff)}
     if not files:
-        files = set(m.group(1) for m in PLUS.finditer(diff))
+        files = {m.group(1) for m in PLUS.finditer(diff)}
     return len(files)
 
 
@@ -84,7 +91,8 @@ for key, agent in NAME.items():
     for fp in glob.glob(str(d / "*.json")):
         iid = os.path.basename(fp)[:-5]
         try:
-            o = json.load(open(fp))
+            with open(fp) as fh:
+                o = json.load(fh)
         except Exception:
             continue
         sub = o.get("info", {}).get("submission", "") or ""
@@ -110,7 +118,6 @@ for key, agent in NAME.items():
         if t >= 5:
             rows.append({"agent": agent, "bin": b, "pass_rate": 100 * p / t, "n": t})
 
-import pandas as pd
 df = pd.DataFrame(rows)
 df = df[df.agent.isin(FAM_COLORS)]
 

@@ -9,12 +9,12 @@ Output: ~/learning-from-dev/procgrep/docs/figures/fig_bpe_vs_prefixspan.png
 """
 
 import sys
+
 sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
 
 import matplotlib.pyplot as plt
-import matplotlib.patches as mpatches
 import numpy as np
-from figtheme import init, style_axes, BLUE, COPPER, INK, RULE, OLIVE
+from figtheme import BLUE, COPPER, INK, RULE, init, style_axes
 
 init()
 
@@ -38,7 +38,7 @@ ax.set_xlim(0, 0.75)
 ax.set_title("Vocabulary induction: BPE vs PrefixSpan", fontsize=11)
 
 # Value labels on bars
-for bar, val in zip(bars, values):
+for bar, val in zip(bars, values, strict=False):
     ax.text(val + 0.012, bar.get_y() + bar.get_height() / 2,
             f"{val:.3f}", va="center", ha="left", fontsize=9,
             color=INK, fontfamily="monospace")

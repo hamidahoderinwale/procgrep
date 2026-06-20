@@ -19,10 +19,9 @@ from collections import Counter
 from pathlib import Path
 
 import matplotlib.pyplot as plt
-import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from figtheme import init, style_axes, BLUE, COPPER, GREEN, OLIVE, INK, RULE
+from figtheme import BLUE, COPPER, GREEN, init, style_axes
 
 init()
 
@@ -109,7 +108,7 @@ def main() -> None:
     ax.set_ylim(bottom=0)
 
     style_axes(ax)
-    legend = ax.legend(frameon=False, fontsize=9, loc="lower right")
+    ax.legend(frameon=False, fontsize=9, loc="lower right")
 
     fig.tight_layout()
     OUT.parent.mkdir(parents=True, exist_ok=True)

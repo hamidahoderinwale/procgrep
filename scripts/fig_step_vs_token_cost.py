@@ -9,17 +9,17 @@ overstates or understates token cost. Agents without token data show step
 dots only.
 """
 
-import sys
 import json
-from pathlib import Path
+import sys
 from collections import Counter, defaultdict
+from pathlib import Path
 
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
+import matplotlib.pyplot as plt
+import numpy as np
 
 sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
-from figtheme import init, style_axes, BLUE, MAGENTA, RULE, INK, OLIVE
+from figtheme import BLUE, INK, MAGENTA, RULE, init, style_axes
 
 ROOT = Path("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces")
 
@@ -109,7 +109,7 @@ for i, agent in enumerate(agents_in_data):
     y_positions = list(range(len(visible_stages)))
     stage_labels = [s for s, _, _ in visible_stages]
 
-    for j, (s, sf, tf) in enumerate(visible_stages):
+    for j, (_s, sf, tf) in enumerate(visible_stages):
         if sf >= THRESHOLD and tf is not None and tf >= THRESHOLD:
             ax.plot([sf, tf], [j, j], color=RULE, linewidth=1.2, zorder=1)
         if sf >= THRESHOLD:

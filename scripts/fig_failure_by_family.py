@@ -26,7 +26,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from figtheme import init, style_axes, BLUE, COPPER, GREEN, OLIVE, INK, RULE
+from figtheme import BLUE, COPPER, GREEN, INK, init, style_axes
 
 init()
 
@@ -105,7 +105,7 @@ def main() -> None:
 
     fig, axes = plt.subplots(1, 3, figsize=(9, 3.2), sharey=True)
 
-    for ax, cat in zip(axes, cat_order):
+    for ax, cat in zip(axes, cat_order, strict=False):
         for fam, color in FAMILY_COLOR.items():
             rates = family_rates[fam][cat]
             if not rates:
