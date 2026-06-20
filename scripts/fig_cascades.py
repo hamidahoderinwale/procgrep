@@ -175,7 +175,7 @@ def _panel(ax, series, xlabel, title):
 
 
 def main() -> None:
-    out = Path("docs/figures")
+    out = Path("plateau/figures")  # PLATEAU interface-exploration figs, kept separate from the main essay (docs/figures)
     out.mkdir(parents=True, exist_ok=True)
     cc_sizes, cc_edits = _cc_turns_and_edits()
     cur_sizes, cur_edits = _cursor_turns_and_edits()
@@ -207,7 +207,7 @@ def main() -> None:
         "cascade_size": {"Claude Code": len(cc_sizes), "Cursor agent": len(cur_sizes.get("agent", [])),
                          "Cursor chat": len(cur_sizes.get("chat", []))},
     }
-    print("wrote docs/figures/cascade_size_ccdf.png + file_degree_ccdf.png")
+    print("wrote plateau/figures/cascade_size_ccdf.png + file_degree_ccdf.png")
     print(json.dumps(summary))
 
 
