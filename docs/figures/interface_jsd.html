@@ -1,4 +1,14 @@
-/* Shared D3 v7 chart module for the procgrep explorer and essay.
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>cross-interface procedural divergence</title>
+<style>body{margin:0;background:#F7F5F2;color:#14110E;
+font-family:ui-monospace,Menlo,monospace;font-size:13px}
+.wrap{max-width:620px;margin:0 auto;padding:24px}</style>
+</head><body><div class="wrap"><div id="interface-jsd"></div></div>
+<script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
+<script>window.PROCGREP_PALETTE={paper:"#F7F5F2",ink:"#14110E",rule:"#d9d4cc",copper:"#CB4D20",blue:"#5692E5",teal:"#20A380",olive:"#585E53",gray:"#b7b1a7"};</script>
+<script>/* Shared D3 v7 chart module for the procgrep explorer and essay.
    Two reusable charts in the editorial palette: a log-x scatter and a log-x
    dot plot. Each is a pure function that mounts into a container element and
    returns nothing; data and options are passed in. Tufte-minimal: thin rules,
@@ -533,3 +543,17 @@
     labelToggle: labelToggle, showTip: showTip, moveTip: moveTip, hideTip: hideTip,
   };
 })(window);
+</script>
+<script id="interface-jsd-data" type="application/json">{"labels": ["Claude Code", "Codex", "Gemini CLI", "OpenCode"], "values": [[0.0, 0.417, 0.212, 0.353], [0.417, 0.0, 0.33, 0.298], [0.212, 0.33, 0.0, 0.275], [0.353, 0.298, 0.275, 0.0]], "vmax": 0.417}</script>
+<script>
+(function(){
+  var el=document.getElementById('interface-jsd-data'); if(!el)return;
+  var mount=document.getElementById('interface-jsd'); if(!mount||!window.ProcgrepCharts)return;
+  var d=JSON.parse(el.textContent);
+  ProcgrepCharts.matrix(mount,d.labels,d.values,{
+    width:560,vmax:d.vmax,unit:'JSD',
+    title:'Pairwise procedural divergence by interface',
+    ariaLabel:'pairwise action-mix JSD between four coding interfaces'});
+})();
+</script>
+</body></html>
