@@ -164,7 +164,7 @@ def main() -> None:
     if not sliced:
         raise SystemExit("no traces long enough to slice into thirds; aborting.")
 
-    # --- 1. Mean-fingerprint JSD between slice positions --------------------
+    # 1. Mean-fingerprint JSD between slice positions
     vocab = fit_bpe((s.atoms for s in sliced), vocab_size=args.vocab_size, seed=args.seed)
     fps = encode(sliced, vocab=vocab)
 
@@ -181,7 +181,7 @@ def main() -> None:
                 value = jsd(means[a], means[b])
                 print(f"  {a:>10s} vs {b:<10s}  {value:>8.4f}")
 
-    # --- 2. LOGO probe with slice-position as label -------------------------
+    # 2. LOGO probe with slice-position as label
     # `group` IS the label here, so leave-one-group-out using `label_field="group"`
     # would tautologically train on examples whose label is never the held-out
     # label. Instead we use the original trace id as the group, so each fold
@@ -240,7 +240,7 @@ def main() -> None:
         if pos in cross_slice.per_group_accuracy:
             print(f"  held-out {pos:>8s}: {cross_slice.per_group_accuracy[pos]:.2f}")
 
-    # --- 3. Top atoms by slice position -------------------------------------
+    # 3. Top atoms by slice position
     print("\ntop atoms by slice position (raw counts):")
     for pos in SLICE_POSITIONS:
         seqs = [s.atoms for s in sliced if s.group == pos]

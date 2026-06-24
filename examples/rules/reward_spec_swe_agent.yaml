@@ -1,10 +1,8 @@
 # procgrep reward specification — SWE-bench coding agent
 # Defines partial reward based on procedural milestones.
-#
 # Use case: supplement binary pass/fail with a [0, 1] procedural score
 # that rewards correct exploration, diagnosis, and verification even when
 # the final test doesn't pass. Train with: r_total = w_pass * pass + w_proc * proc_score
-#
 # Each phase is evaluated left-to-right; later phases require earlier ones.
 # Penalties are subtracted regardless of phase completion.
 
@@ -14,7 +12,7 @@ description: >
   test-driven implementation, and iterative refinement. Penalises known
   failure modes (edit streaks without tests, stuck reading loops).
 
-# ── Phases (additive, order-dependent) ────────────────────────────────────────
+# Phases (additive, order-dependent)
 phases:
 
   - name: exploration
@@ -63,7 +61,7 @@ phases:
 # Maximum possible procedural score (phases only): 0.90
 # Binary pass contributes separately in training objective.
 
-# ── Failure-mode penalties ─────────────────────────────────────────────────────
+# Failure-mode penalties
 penalties:
 
   - name: edit_streak
@@ -88,7 +86,7 @@ penalties:
     before_first: edit
     penalty: 0.05
 
-# ── Bonus rewards ──────────────────────────────────────────────────────────────
+# Bonus rewards
 bonuses:
 
   - name: test_driven
@@ -107,6 +105,6 @@ bonuses:
     max_gap: 10
     reward: 0.05
 
-# ── Scoring floor/ceiling ──────────────────────────────────────────────────────
+# Scoring floor/ceiling
 floor: 0.00      # minimum score regardless of penalties
 ceiling: 1.00    # cap at 1.0 (binary pass can take this)

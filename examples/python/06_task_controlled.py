@@ -79,7 +79,7 @@ def main() -> None:
         f"shared vocabulary: {vocab.size} tokens ({len(vocab.atoms)} atoms + {len(vocab.merges)} merges)\n"
     )
 
-    # ---------- (a) cross-agent at fixed task ----------
+    # (a) cross-agent at fixed task
     print("=" * 64)
     print("(a) cross-agent JSD at fixed instance_id")
     print("=" * 64)
@@ -109,7 +109,7 @@ def main() -> None:
         if str(record["row"]) < str(record["col"]):
             print(f"    {record['row']:10s} vs {record['col']:10s} JSD = {record['jsd']:.4f}")
 
-    # ---------- (b) success-vs-failure at fixed task ----------
+    # (b) success-vs-failure at fixed task
     print("\n" + "=" * 64)
     print("(b) success-vs-failure JSD at fixed instance_id")
     print("=" * 64)

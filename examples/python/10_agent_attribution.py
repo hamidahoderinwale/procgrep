@@ -162,26 +162,26 @@ def main() -> None:
     print(f"  agents : {agents}")
     print(f"  groups : {groups}")
 
-    # --- Representation 1: BPE procedure fingerprint ----------------------------
+    # Representation 1: BPE procedure fingerprint
     vocab = fit_bpe((t.atoms for t in traces), vocab_size=args.vocab_size, seed=args.seed)
     fps: list[Fingerprint] = encode(traces, vocab=vocab)
     bpe_result = leave_one_group_out(fps, label_field="agent", seed=args.seed)
 
-    # --- Representation 2: raw atom-frequency -------------------------------
+    # Representation 2: raw atom-frequency
     atom_vocab = sorted({a for t in traces for a in t.atoms})
     x_atoms = np.stack([atom_frequency_distribution(t, atom_vocab) for t in traces], axis=0)
     labels = np.array([t.agent for t in traces])
     group_arr = np.array([t.group for t in traces])
     atom_overall, atom_per = evaluate_logo(x_atoms, labels, group_arr, seed=args.seed)
 
-    # --- Representation 3: length-only --------------------------------------
+    # Representation 3: length-only
     x_len = np.array([[len(t.atoms)] for t in traces], dtype=float)
     len_overall, len_per = evaluate_logo(x_len, labels, group_arr, seed=args.seed)
 
-    # --- Floor: majority-class predictor ------------------------------------
+    # Floor: majority-class predictor
     maj_overall, maj_per = majority_class_logo(labels, group_arr)
 
-    # --- Report -------------------------------------------------------------
+    # Report
     print("\nleave-one-group-out attribution accuracy (predict agent from held-out group):")
     header = f"  {'representation':22s} {'overall':>9s}  " + "  ".join(f"{g:>10s}" for g in groups)
     print(header)

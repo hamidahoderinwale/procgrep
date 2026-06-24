@@ -43,13 +43,10 @@ from procgrep.types import (
     Trace,
 )
 
-# ---------------------------------------------------------------------------
 # Native-to-canonical projection.
-#
 # Maps SWE-agent native action names to procgrep's canonical 11-atom
 # alphabet. In a real adapter this would live next to the adapter; here
 # we surface it inline so the example is self-contained.
-# ---------------------------------------------------------------------------
 
 NATIVE_TO_CANONICAL: dict[str, Atom] = {
     # Edit family
@@ -75,15 +72,12 @@ def to_canonical(atom: Atom) -> Atom:
     return NATIVE_TO_CANONICAL.get(atom, ATOM_OTHER)
 
 
-# ---------------------------------------------------------------------------
 # Synthetic parent and child corpora.
-#
 # Each trace is one solved bug-fix attempt. The parent uses ``str_replace``
 # for its edits; the child uses ``str_replace_editor``. Same canonical
 # behavior (both are EDITs), different native action names. This is a
 # common pattern when a fine-tune subtly shifts which tool variant the
 # agent prefers without changing what it's doing categorically.
-# ---------------------------------------------------------------------------
 
 
 def _trace(trace_id: str, agent: str, atoms: list[str], resolved: bool) -> Trace:
@@ -139,9 +133,7 @@ child_traces = [
 ]
 
 
-# ---------------------------------------------------------------------------
 # Run the diff under both alphabets in a single call.
-# ---------------------------------------------------------------------------
 
 diff = lineage_diff(
     parent=parent_traces,
@@ -155,9 +147,7 @@ diff = lineage_diff(
 )
 
 
-# ---------------------------------------------------------------------------
 # Show how the two alphabets differ at the axis level.
-# ---------------------------------------------------------------------------
 
 print("=" * 72)
 print(f"LineageDiff: {diff.parent_label} -> {diff.child_label}")

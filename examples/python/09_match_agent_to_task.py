@@ -173,7 +173,7 @@ def main() -> None:
     }
     best_overall_agent = max(resolves_per_agent, key=lambda a: resolves_per_agent[a])
 
-    # --- evaluation ----------------------------------------------------
+    # evaluation
     print("\nleave-one-task-out evaluation:")
     print(f"  {'task':24s} {'best-fit':12s} {'fit?':>4s}  {'best-overall':12s} {'b-o?':>4s}")
     fit_solves = 0
@@ -238,7 +238,7 @@ def main() -> None:
                 random_total += 1
     random_mean = random_total / args.random_seeds if args.random_seeds else 0.0
 
-    # --- summary -------------------------------------------------------
+    # summary
     print(f"\nsummary (over {n_evaluated} held-out tasks):")
     print(
         f"  match-by-fit         resolves {fit_solves}/{n_evaluated}  ({100 * fit_solves / max(n_evaluated, 1):.0f}%)"

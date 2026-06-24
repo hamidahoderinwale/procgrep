@@ -41,13 +41,10 @@ Usage:
 
 from __future__ import annotations
 
-# ---------------------------------------------------------------------------
 # Parent traces: Claude 3.7 Sonnet via SWE-agent on SWE-smith instances.
-# ---------------------------------------------------------------------------
 
 # Option A (recommended) -- load directly from HuggingFace.
 # Requires: pip install datasets
-#
 #     from procgrep.hf import from_hf
 #     parent_traces = from_hf(
 #         "SWE-bench/SWE-smith-trajectories",
@@ -59,7 +56,6 @@ from __future__ import annotations
 #     )
 
 # Option B -- load from a locally-downloaded JSONL mirror.
-#
 #     parent_records = list(read_jsonl(Path("data/swe-smith-trajectories.jsonl")))
 #     parent_traces = canonicalize(
 #         parent_records,
@@ -68,13 +64,10 @@ from __future__ import annotations
 #         agent_field="model",
 #     )
 
-# ---------------------------------------------------------------------------
 # Child traces: SWE-agent-LM-32B via SWE-agent on a comparable task suite.
-# ---------------------------------------------------------------------------
 
 # Option A -- if a public release of SWE-agent-LM-32B trajectories
 # exists, load via from_hf with a matching split:
-#
 #     child_traces = from_hf(
 #         "<dataset-id>/swe-agent-lm-32b-trajectories",
 #         adapter="swe-smith",     # same chat-format schema as parent
@@ -85,7 +78,6 @@ from __future__ import annotations
 
 # Option B -- load from your own JSONL after running the model
 # against SWE-bench Verified or SWE-smith with the SWE-agent scaffold:
-#
 #     child_records = list(read_jsonl(Path("data/swe-agent-lm-32b.jsonl")))
 #     child_traces = canonicalize(
 #         child_records,
@@ -94,12 +86,9 @@ from __future__ import annotations
 #         agent_field="model",
 #     )
 
-# ---------------------------------------------------------------------------
 # Compute the structured diff.
-# ---------------------------------------------------------------------------
 
 # Once both sides are loaded, the audit is a single call:
-#
 #     diff = lineage_diff(
 #         parent=parent_traces,
 #         child=child_traces,
@@ -108,7 +97,6 @@ from __future__ import annotations
 #         along=["vocabulary", "entropy", "outcome_quadrant"],
 #         outcome_field="resolved",
 #     )
-#
 #     print(diff.summary())
 #     report_path = Path("case_study_1_report.md")
 #     report_path.write_text(diff.to_markdown())

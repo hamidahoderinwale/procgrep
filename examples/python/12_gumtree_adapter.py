@@ -71,7 +71,7 @@ def main() -> None:
     print(f"  agents:    {sorted({t.agent for t in traces})}")
     print(f"  languages: {sorted({t.group or '?' for t in traces})}")
 
-    # --- Atom-level vocabulary -------------------------------------------------
+    # Atom-level vocabulary
     atom_counter: Counter[str] = Counter()
     for t in traces:
         atom_counter.update(t.atoms)
@@ -80,7 +80,7 @@ def main() -> None:
     for atom, count in atom_counter.most_common(10):
         print(f"  {count:>4d}  {atom}")
 
-    # --- BPE + per-agent JSD ---------------------------------------------------
+    # BPE + per-agent JSD
     vocab = fit_bpe((t.atoms for t in traces), vocab_size=args.vocab_size, seed=0)
     print(f"\nfit a BPE vocabulary of size {vocab.size}")
 
@@ -91,7 +91,7 @@ def main() -> None:
         if str(r["row"]) < str(r["col"]):
             print(f"  {r['row']:15s} vs {r['col']:15s}  JSD = {r['jsd']:.4f}")
 
-    # --- Raw gumtree JSON -> adapter input -------------------------------------
+    # Raw gumtree JSON -> adapter input
     # Illustrate the optional `parse_gumtree_jsondiff` helper. The payload
     # below mimics what `gumtree jsondiff <before.py> <after.py>` would emit
     # for a small refactor (insert a method call, delete an identifier).

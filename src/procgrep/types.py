@@ -23,6 +23,11 @@ TraceAdapter: TypeAlias = Callable[[Mapping[str, object]], AtomSequence]
 """Maps a raw trace record to an atom sequence."""
 
 
+# The canonical ATOM alphabet is the LEAF level of the action grammar: each raw
+# tool-call/command canonicalizes to exactly one of these (see ingest/adapters).
+# The higher level (recurring multi-atom PROCEDURES) is learned by BPE over atom
+# sequences in bpe.py; display the resulting two-level hierarchy as a tree with
+# `procgrep vocab-tree` (render_vocab_tree): atoms are leaves, procedures are nodes.
 ATOM_LOCALIZE: Atom = "localize"
 ATOM_READ_FILE: Atom = "read_file"
 ATOM_EDIT: Atom = "edit"
