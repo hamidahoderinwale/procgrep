@@ -72,6 +72,7 @@ from procgrep.types import (
     ATOM_RUN_CODE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
+    ATOM_THINK,
     ATOM_VERSION_CONTROL,
     Atom,
     AtomSequence,
@@ -81,6 +82,10 @@ _EDIT_TOOLS = {"edit", "write", "notebookedit", "multiedit"}
 _READ_TOOLS = {"read", "notebookread"}
 _SEARCH_TOOLS = {"grep", "glob"}
 _WEB_TOOLS = {"websearch", "webfetch"}
+# Plan-management tools map to think, matching the other interface adapters
+# (opencode todowrite, codex update_plan, gemini write_todos / exit_plan_mode) so
+# planning is one shared atom across interfaces rather than CC-only ``other``.
+_THINK_TOOLS = {"todowrite", "exitplanmode"}
 _TEST_CMD = re.compile(
     r"(pytest|(^|\s|/)tests?\b|unittest|jest|mocha|vitest|tox|"
     r"go test|cargo test|npm (run )?test|yarn test|make test|gradle test)",
@@ -123,12 +128,48 @@ def _classify_bash(command: str) -> str:
     return "bash"
 
 
+# A file read or directory listing done through the shell, by leading verb. This
+# is split out from `_classify_bash` because Claude Code rarely shells out to
+# read a file (it has Read/Glob tools), but the other terminal agents routinely
+# do -- Codex reads files with ``sed -n``/``cat``/``nl``, lists with ``ls``. The
+# terminal-agent adapters layer this on so that idiom is recovered as read_file /
+# search_repo instead of collapsing to ``other``; claude-code's own mapping is
+# left unchanged. ``Select-String`` is the PowerShell grep, ``Get-ChildItem`` its
+# directory listing, ``Get-Content`` its cat.
+_READ_CMD = re.compile(
+    r"(^|\s|;|&|\|)(cat|sed|head|tail|nl|less|more|bat|Get-Content)\b", re.IGNORECASE
+)
+_LIST_CMD = re.compile(
+    r"(^|\s|;|&|\|)(ls|tree|Get-ChildItem|Select-String)\b", re.IGNORECASE
+)
+
+
+def _classify_terminal_command(command: str) -> str:
+    """Classify a terminal command, extending `_classify_bash` with read / list.
+
+    Tries the shared `_classify_bash` verbs first (test, vcs, package, lint,
+    search, run); then the read and directory-listing idioms the non-Claude-Code
+    terminal agents lean on. Like `_classify_bash`, the command is classified by
+    its leading verb only and then discarded -- only the category crosses the
+    boundary.
+    """
+    subkind = _classify_bash(command)
+    if subkind != "bash":
+        return subkind
+    if _READ_CMD.search(command):
+        return "bash_read"
+    if _LIST_CMD.search(command):
+        return "bash_search"
+    return "bash"
+
+
 CLAUDE_RULES: tuple[EventRule, ...] = (
     EventRule(field_in("kind", {"user_prompt"}), (ATOM_PROMPT_AI,)),
     EventRule(field_in("kind", {*_EDIT_TOOLS, "file_snapshot"}), (ATOM_EDIT,)),
     EventRule(field_in("kind", _READ_TOOLS), (ATOM_READ_FILE,)),
     EventRule(field_in("kind", _SEARCH_TOOLS), (ATOM_SEARCH_REPO,)),
     EventRule(field_in("kind", _WEB_TOOLS), (ATOM_SEARCH_REPO,)),
+    EventRule(field_in("kind", _THINK_TOOLS), (ATOM_THINK,)),
     EventRule(field_in("kind", {"bash_test"}), (ATOM_RUN_TEST,)),
     EventRule(field_in("kind", {"bash_search"}), (ATOM_SEARCH_REPO,)),
     EventRule(field_in("kind", {"bash_vcs"}), (ATOM_VERSION_CONTROL,)),
@@ -140,17 +181,38 @@ CLAUDE_RULES: tuple[EventRule, ...] = (
 _MAP = make_event_adapter(rules=CLAUDE_RULES)
 
 
+# Harness-injected user turns that are not the human typing: task notifications,
+# system reminders, slash-command echoes, captured command output. They arrive as
+# role=user text, so without this guard they're miscounted as human prompts and
+# become false intent-cliff boundaries (~15% of turns in local transcripts).
+_INJECTED_PREFIXES = (
+    "<task-notification>",
+    "<system-reminder>",
+    "<command-name>",
+    "<command-message>",
+    "<command-args>",
+    "<local-command-stdout>",
+    "<bash-stdout>",
+    "<bash-stderr>",
+)
+
+
 def _is_human_prompt(content: Any) -> bool:
-    """A user turn typed by the human, not a tool-result echoed back as a user event."""
+    """A user turn typed by the human, not a tool-result or harness-injected event."""
     if isinstance(content, str):
-        return bool(content.strip())
-    if isinstance(content, list):
+        text = content
+    elif isinstance(content, list):
         has_text = any(isinstance(b, Mapping) and b.get("type") == "text" for b in content)
         has_tool_result = any(
             isinstance(b, Mapping) and b.get("type") == "tool_result" for b in content
         )
-        return has_text and not has_tool_result
-    return False
+        if not (has_text and not has_tool_result):
+            return False
+        text = _prompt_text(content)
+    else:
+        return False
+    stripped = text.strip()
+    return bool(stripped) and not stripped.startswith(_INJECTED_PREFIXES)
 
 
 def _flatten(record: Mapping[str, Any]) -> list[dict[str, Any]]:
@@ -341,6 +403,31 @@ def _prompt_text(content: Any) -> str:
     return ""
 
 
+# Tool names whose input carries an edited file path, for the per-cascade module
+# rollup (where a goal landed). Lower-cased for matching.
+_EDIT_TOOLS = frozenset(
+    {"edit", "write", "multiedit", "notebookedit", "str_replace_editor",
+     "str_replace_based_edit_tool", "create_file"}
+)
+
+
+def _module_dir(fp: str, root: str) -> str:
+    """Directory of an edited file, made relative to the session root when possible.
+
+    Keeps the rollup module-relative (e.g. ``src/license``) instead of an absolute
+    home path, so the per-cascade rollup can be surfaced without leaking the
+    machine's filesystem layout. Falls back to the trailing two path components.
+    """
+    p = Path(fp)
+    if root:
+        try:
+            return str(p.relative_to(root).parent)
+        except ValueError:
+            pass
+    parts = p.parent.parts
+    return str(Path(*parts[-2:])) if len(parts) >= 2 else (p.parent.name or ".")
+
+
 def to_shareable(record: Mapping[str, Any]) -> dict[str, Any]:
     """The one sanctioned export payload: atoms + hashed id + counts-only metadata.
 
@@ -396,7 +483,8 @@ def build_panel_session(
                 turns.append(cur)
             text = _prompt_text(content)
             prompt = paraphrase(text) if (paraphrase is not None and text) else text
-            cur = {"t": _clock(line.get("timestamp")), "model": "", "prompt": prompt, "plan": "", "seq": []}
+            cur = {"t": _clock(line.get("timestamp")), "model": "", "prompt": prompt,
+                   "plan": "", "seq": [], "edits": {}}
         elif kind == "assistant" and isinstance(content, list):
             if cur is None:
                 continue
@@ -415,6 +503,18 @@ def build_panel_session(
                     cur["seq"].append(_BASH_ATOM[_classify_bash(str(command))])
                 else:
                     cur["seq"].append(_tool_atom(name))
+                    if name.lower() in _EDIT_TOOLS:
+                        tool_input = block.get("input")
+                        fp = (
+                            tool_input.get("file_path")
+                            or tool_input.get("path")
+                            or tool_input.get("notebook_path")
+                            if isinstance(tool_input, Mapping)
+                            else None
+                        )
+                        if fp:
+                            d = _module_dir(str(fp), cwd)
+                            cur["edits"][d] = cur["edits"].get(d, 0) + 1
         elif kind == "file-history-snapshot" and cur is not None:
             cur["seq"].append(ATOM_EDIT)
     if cur is not None and cur["seq"]:

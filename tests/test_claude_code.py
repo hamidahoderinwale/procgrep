@@ -192,3 +192,33 @@ def test_build_panel_session_is_prompt_anchored_and_local() -> None:
     ps2 = build_panel_session(record, paraphrase=lambda s: s.upper())
     assert ps2["turns"][0]["prompt"] == "SCAFFOLD IT"  # shown, rewritten
     assert ps2["meta"]["promptsParaphrased"] is True
+
+
+def test_harness_injected_user_turns_are_not_human_prompts() -> None:
+    # Task-notifications, system reminders, and command echoes arrive as role=user
+    # text but are not the human typing -- they must not become prompt boundaries.
+    for wrapper in ("<task-notification>\nAgent came to rest",
+                    "<system-reminder>be careful</system-reminder>",
+                    "<command-name>/loop</command-name>",
+                    "<local-command-stdout>done</local-command-stdout>"):
+        assert claude_code_adapter({"events": [_user_prompt(wrapper)]}) == []
+    # a genuine prompt that merely mentions the word is still human
+    assert claude_code_adapter({"events": [_user_prompt("the task-notification never fired")]}) == [
+        ATOM_PROMPT_AI
+    ]
+
+
+def test_build_panel_session_rolls_up_edited_paths_module_relative() -> None:
+    from procgrep.ingest.adapters.claude_code import build_panel_session
+
+    record = {"events": [
+        {"type": "user", "message": {"content": "fix the license graph"}, "cwd": "/repo"},
+        {"type": "assistant", "message": {"model": "claude-opus-4-8", "content": [
+            {"type": "tool_use", "name": "Edit", "input": {"file_path": "/repo/src/license/spdx.py"}},
+            {"type": "tool_use", "name": "Write", "input": {"file_path": "/repo/src/license/eval.py"}},
+            {"type": "tool_use", "name": "Read", "input": {"file_path": "/repo/src/license/spdx.py"}},
+        ]}},
+    ]}
+    turn = build_panel_session(record)["turns"][0]
+    # two edits in src/license; the Read does not count; path is repo-relative, not absolute
+    assert turn["edits"] == {"src/license": 2}

@@ -7,12 +7,14 @@ Registered: ``swe-agent``, ``swe-smith`` and ``swe-smith-native`` (share the
 swe-agent atom map), ``mini-swe-agent``, ``openhands``, ``react-text``,
 ``agentless``, ``dars``, ``moatless``, ``gumtree`` (fine-grained
 node-typed AST atoms), ``cursor-companion`` (human+AI sessions from Cursor
-IDE via the cursor-telemetry companion service), and ``claude-code``
-(Claude Code session transcripts from ``~/.claude/projects/``).
+IDE via the cursor-telemetry companion service), ``claude-code``
+(Claude Code session transcripts from ``~/.claude/projects/``), and the other
+SWE-chat terminal-agent formats ``opencode``, ``codex``, and ``gemini-cli``
+(each mapping its own tool/event vocabulary into the same atom alphabet).
 
-Both interactive adapters (``cursor-companion``, ``claude-code``) extend the
-atom alphabet with ``prompt_ai`` to mark human-to-AI handoffs -- an event
-type absent from autonomous-agent traces. All identifying fields (workspace
+The interactive adapters (``cursor-companion``, ``claude-code``, ``opencode``,
+``codex``, ``gemini-cli``) extend the atom alphabet with ``prompt_ai`` to mark
+human-to-AI handoffs -- an event type absent from autonomous-agent traces. All identifying fields (workspace
 paths, session ids, file names, prompt text) are hashed or dropped before
 they reach the atom sequence; only action structure crosses the boundary.
 
@@ -30,11 +32,14 @@ from __future__ import annotations
 from procgrep.ingest.adapters import (
     agentless,
     claude_code,
+    codex,
     cursor_companion,
     dars,
+    gemini_cli,
     gumtree,
     mini_swe_agent,
     moatless,
+    opencode,
     openhands,
     react_text,
     swe_agent,
@@ -44,11 +49,14 @@ from procgrep.ingest.adapters import (
 __all__ = [
     "agentless",
     "claude_code",
+    "codex",
     "cursor_companion",
     "dars",
+    "gemini_cli",
     "gumtree",
     "mini_swe_agent",
     "moatless",
+    "opencode",
     "openhands",
     "react_text",
     "swe_agent",

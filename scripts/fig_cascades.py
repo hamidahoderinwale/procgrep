@@ -19,16 +19,21 @@ from __future__ import annotations
 import glob
 import json
 import sqlite3
+import sys
 from collections import Counter, defaultdict
 from pathlib import Path
 
 import matplotlib.pyplot as plt
 import numpy as np
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+from figtheme import BLUE, COPPER, INK, OLIVE, RULE, init
 from procgrep.ingest.adapters.cursor_vscdb import _EDIT_TOOLS, _atom_for_bubble, _normalize_tool
 
-# Project palette (theme.css).
-COPPER, BLUE, OLIVE, RULE, INK = "#CB4D20", "#5692E5", "#585E53", "#d9d4cc", "#14110E"
+init()
+plt.rcParams["font.family"] = "sans-serif"
+plt.rcParams["font.sans-serif"] = ["Arial", "Helvetica", "DejaVu Sans"]
+plt.rcParams["mathtext.fontset"] = "dejavusans"
 DROP = {"think", "other"}  # action atoms only
 CC_EDIT = {"Edit", "Write", "MultiEdit", "NotebookEdit"}
 LIVE = str(Path("~/Library/Application Support/Cursor/User/globalStorage/state.vscdb").expanduser())
@@ -87,9 +92,11 @@ def _cursor_turns_and_edits():
     for k, v in con.cursor().execute(
         "SELECT key, value FROM cursorDiskKV WHERE key >= 'composerData:' AND key < 'composerData;'"
     ).fetchall():
+        if not v:
+            continue
         try:
             o = json.loads(v)
-        except json.JSONDecodeError:
+        except (json.JSONDecodeError, TypeError):
             continue
         comps.append((k.split(":", 1)[1], o.get("unifiedMode") or "?",
                       [h.get("bubbleId") for h in o.get("fullConversationHeadersOnly", []) if h.get("bubbleId")]))
@@ -100,11 +107,11 @@ def _cursor_turns_and_edits():
         seq, efiles = [], []
         for bid in hdrs:
             r = c2.execute("SELECT value FROM cursorDiskKV WHERE key=?", (f"bubbleId:{cid}:{bid}",)).fetchone()
-            if not r:
+            if not r or not r[0]:
                 continue
             try:
                 b = json.loads(r[0])
-            except json.JSONDecodeError:
+            except (json.JSONDecodeError, TypeError):
                 continue
             if b.get("type") == 1:
                 if seq:
@@ -179,7 +186,6 @@ def main() -> None:
     out.mkdir(parents=True, exist_ok=True)
     cc_sizes, cc_edits = _cc_turns_and_edits()
     cur_sizes, cur_edits = _cursor_turns_and_edits()
-    plt.rcParams["font.family"] = "monospace"
 
     # Figure 1: cascade size CCDF
     fig, ax = plt.subplots(figsize=(6.2, 4.4))
@@ -187,7 +193,7 @@ def main() -> None:
         ("Claude Code", COPPER, cc_sizes),
         ("Cursor agent", BLUE, cur_sizes.get("agent", [])),
         ("Cursor chat", OLIVE, cur_sizes.get("chat", [])),
-    ], "cascade size, actions per prompt", "Cascade-size distribution by interface")
+    ], "Cascade size", "Cascade-size distribution by interface")
     fig.tight_layout()
     fig.savefig(out / "cascade_size_ccdf.png", dpi=200, facecolor="white")
     plt.close(fig)
@@ -198,7 +204,7 @@ def main() -> None:
         ("Claude Code", COPPER, _degrees(cc_edits)),
         ("Cursor agent", BLUE, _degrees(cur_edits.get("agent", []))),
         ("Cursor chat", OLIVE, _degrees(cur_edits.get("chat", []))),
-    ], "file co-edit degree", "File co-edit degree by interface")
+    ], "File co-edit degree", "File co-edit degree by interface")
     fig.tight_layout()
     fig.savefig(out / "file_degree_ccdf.png", dpi=200, facecolor="white")
     plt.close(fig)
