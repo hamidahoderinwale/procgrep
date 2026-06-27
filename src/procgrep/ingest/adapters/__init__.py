@@ -43,6 +43,7 @@ from procgrep.ingest.adapters import (
     openhands,
     react_text,
     swe_agent,
+    swe_agent_traj,
     swe_smith,
 )
 
@@ -60,5 +61,6 @@ __all__ = [
     "openhands",
     "react_text",
     "swe_agent",
+    "swe_agent_traj",
     "swe_smith",
 ]
