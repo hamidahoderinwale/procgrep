@@ -15,13 +15,14 @@ from procgrep.types import (
     ATOM_ERROR,
     ATOM_OTHER,
     ATOM_READ_FILE,
+    ATOM_RUN_CODE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
     ATOM_SUBMIT,
     ATOM_THINK,
 )
 
-# --- chain stripping --------------------------------------------------------
+# chain stripping.
 
 
 def test_strip_chain_prefix_drops_cd_and_chain() -> None:
@@ -35,7 +36,7 @@ def test_strip_chain_prefix_passes_through_when_no_cd() -> None:
     assert _strip_chain_prefix("  cat foo  ") == "cat foo"
 
 
-# --- single-command classification -----------------------------------------
+# single-command classification.
 
 
 def test_classify_read_family() -> None:
@@ -89,7 +90,7 @@ def test_classify_unknown_command_yields_other() -> None:
     assert _classify_command("   ") == ATOM_OTHER
 
 
-# --- full-trace traversal --------------------------------------------------
+# full-trace traversal.
 
 
 def _make_trace(messages: list[dict], exit_status: str | None = "Submitted") -> dict:
@@ -218,7 +219,7 @@ def test_adapter_degrades_on_malformed_action_entry() -> None:
     assert atoms == [ATOM_READ_FILE]
 
 
-# --- adapter registration --------------------------------------------------
+# adapter registration.
 
 
 def test_adapter_registered_under_name_mini_swe_agent() -> None:
@@ -262,3 +263,37 @@ def test_canonicalize_via_adapter_round_trip() -> None:
     assert t.agent == "deepseek-coder-6.7b"
     assert t.group == "open-mid"
     assert t.atoms == [ATOM_THINK, ATOM_SEARCH_REPO, ATOM_READ_FILE]
+
+
+# Running python scripts and inline snippets.
+
+
+def test_classify_python_script_is_run_code() -> None:
+    assert _classify_command("python reproduce_issue.py") == ATOM_RUN_CODE
+    assert _classify_command("python3 debug.py") == ATOM_RUN_CODE
+
+
+def test_classify_python_inline_snippet_is_run_code() -> None:
+    assert _classify_command('python -c "import astropy; print(astropy.__version__)"') == ATOM_RUN_CODE
+
+
+def test_classify_python_test_runner_still_run_test() -> None:
+    # Test runners are matched before the python->run_code fallback.
+    assert _classify_command("python -m pytest tests/") == ATOM_RUN_TEST
+    assert _classify_command("python -m unittest") == ATOM_RUN_TEST
+
+
+def test_classify_cd_then_python_script_is_run_code() -> None:
+    # The cd /repo && python repro.py idiom (OpenHands / Kimi prefix nearly
+    # every command this way) was collapsing to other.
+    assert _classify_command("cd /workspace/proj && python repro.py") == ATOM_RUN_CODE
+
+
+def test_strip_chain_prefix_handles_multiline_command() -> None:
+    cmd = 'cd /repo && python -c "\nimport numpy as np\nprint(np.zeros(3))\n"'
+    assert _strip_chain_prefix(cmd).startswith("python -c")
+
+
+def test_classify_cd_then_multiline_python_is_run_code() -> None:
+    cmd = 'cd /repo && python -c "\nimport sys\nprint(sys.version)\n"'
+    assert _classify_command(cmd) == ATOM_RUN_CODE

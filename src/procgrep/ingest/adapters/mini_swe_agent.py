@@ -33,6 +33,7 @@ from procgrep.types import (
     ATOM_ERROR,
     ATOM_OTHER,
     ATOM_READ_FILE,
+    ATOM_RUN_CODE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
     ATOM_SUBMIT,
@@ -67,6 +68,10 @@ _BASH_COMMAND_ATOM: dict[str, Atom] = {
     "tox": ATOM_RUN_TEST,
     "nose2": ATOM_RUN_TEST,
     "django-admin": ATOM_RUN_TEST,
+    # Running a script or inline snippet (test runners are matched earlier, so
+    # only non-test python reaches here): the agent's repro / debug loop.
+    "python": ATOM_RUN_CODE,
+    "python3": ATOM_RUN_CODE,
     "mkdir": ATOM_CREATE_FILE,
     "touch": ATOM_CREATE_FILE,
     "rm": ATOM_DELETE_FILE,
@@ -89,10 +94,15 @@ _GIT_SUBMIT_PATTERNS = (re.compile(r"\bgit\s+(diff|apply|format-patch)\b"),)
 
 
 def _strip_chain_prefix(cmd: str) -> str:
-    """Strip leading ``cd X && `` / ``cd X ;`` chains."""
+    """Strip leading ``cd X && `` / ``cd X ;`` chains.
+
+    DOTALL so the trailing command survives embedded newlines (agents
+    write ``cd repo && python -c "<multiline snippet>"``); without it the
+    whole command would keep its ``cd`` prefix and misclassify as other.
+    """
     out = cmd.strip()
     while True:
-        match = re.match(r"^cd\s+\S+\s*(&&|;)\s*(.+)$", out)
+        match = re.match(r"^cd\s+\S+\s*(&&|;)\s*(.+)$", out, re.DOTALL)
         if not match:
             return out
         out = match.group(2).strip()
