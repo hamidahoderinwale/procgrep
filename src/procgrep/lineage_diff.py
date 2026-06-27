@@ -21,14 +21,24 @@ Axes:
 Additional axes (``"recovery"``, ``"failures"``, ``"ood"``,
 ``"phase"``) are designed but unimplemented; add them as concrete
 audits require.
+
+A diff is only meaningful above its noise floor: the divergence two
+groups show when they differ by a nuisance factor (scaffold, adapter)
+rather than lineage. :func:`noise_floor` measures that baseline from a
+same-model control; ``exclude_atoms`` drops adapter-sensitive atoms
+(e.g. ``think``, ``other``) so the diff reads the action repertoire
+rather than classification quirks; and ``provenance_field`` warns when
+the two sides come from different harnesses.
 """
 
 from __future__ import annotations
 
 import math
+import warnings
 from collections import Counter, defaultdict
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass, replace
+from itertools import combinations
 
 from procgrep.jsd import jsd as _jsd
 from procgrep.types import Atom, Trace
@@ -145,6 +155,8 @@ def lineage_diff(
     alphabet: str | Sequence[str] = "canonical",
     canonical_projection: Callable[[Atom], Atom] | None = None,
     conditional_context_k: int = 1,
+    exclude_atoms: Sequence[Atom] | None = None,
+    provenance_field: str | None = None,
 ) -> LineageDiff:
     """Compute a structured procedural-level diff.
 
@@ -166,6 +178,15 @@ def lineage_diff(
         conditional_context_k: Prefix length for the ``"conditional"``
             axis. Larger k captures longer-range structure but yields
             sparser distributions.
+        exclude_atoms: Atoms to drop from every trace before diffing.
+            Use for adapter-sensitive atoms (``think``, ``other``)
+            whose counts reflect classification differences between
+            adapters more than behavior, so the diff reads the robust
+            action repertoire. Applied after ``canonical_projection``.
+        provenance_field: If set, warn when parent and child carry
+            different values for this metadata key (e.g. ``scaffold``
+            or ``adapter``). Cross-harness diffs conflate lineage with
+            the nuisance noise floor; see :func:`noise_floor`.
 
     Raises:
         ValueError: Unknown axis name, or ``"outcome_quadrant"``
@@ -174,6 +195,10 @@ def lineage_diff(
     parent_list = list(parent)
     child_list = list(child)
 
+    if provenance_field is not None:
+        _warn_on_provenance_mismatch(parent_list, child_list, provenance_field)
+
+    exclude = set(exclude_atoms) if exclude_atoms else None
     alphabets: list[str] = [alphabet] if isinstance(alphabet, str) else list(alphabet)
 
     all_axes: list[AxisResult] = []
@@ -185,6 +210,10 @@ def lineage_diff(
             c_traces = _project_traces(child_list, canonical_projection)
         else:
             p_traces, c_traces = parent_list, child_list
+
+        if exclude:
+            p_traces = _filter_atoms(p_traces, exclude)
+            c_traces = _filter_atoms(c_traces, exclude)
 
         for axis_name in along:
             result = _compute_axis(
@@ -251,6 +280,43 @@ def _project_traces(
         )
         for t in traces
     ]
+
+
+def _filter_atoms(traces: list[Trace], exclude: set[Atom]) -> list[Trace]:
+    """New Traces with ``exclude`` atoms removed; other fields preserved."""
+    return [
+        Trace(
+            trace_id=t.trace_id,
+            agent=t.agent,
+            atoms=[a for a in t.atoms if a not in exclude],
+            group=t.group,
+            metadata=t.metadata,
+        )
+        for t in traces
+    ]
+
+
+def _warn_on_provenance_mismatch(
+    parent: list[Trace],
+    child: list[Trace],
+    field: str,
+) -> None:
+    """Warn when the two sides differ on a provenance key.
+
+    Differing scaffolds or adapters make the diff measure the nuisance
+    noise floor as much as lineage; the warning points to the fix.
+    None values (untagged traces) are ignored.
+    """
+    p_vals = {t.metadata.get(field) for t in parent} - {None}
+    c_vals = {t.metadata.get(field) for t in child} - {None}
+    if p_vals and c_vals and p_vals != c_vals:
+        warnings.warn(
+            f"lineage_diff: parent and child differ on provenance {field!r} "
+            f"(parent={sorted(map(str, p_vals))}, child={sorted(map(str, c_vals))}). "
+            f"Cross-{field} divergence conflates lineage with the {field} noise floor; "
+            f"compare within a fixed {field} or calibrate with noise_floor().",
+            stacklevel=3,
+        )
 
 
 def _diff_vocabulary(parent: list[Trace], child: list[Trace]) -> AxisResult:
@@ -514,6 +580,105 @@ def _median(values: Sequence[float]) -> float:
     return 0.5 * (ordered[mid - 1] + ordered[mid])
 
 
+@dataclass(frozen=True)
+class NoiseFloor:
+    """Baseline divergence from a nuisance factor, not lineage.
+
+    Produced by :func:`noise_floor`. ``per_axis`` maps each axis to the
+    ``min`` / ``mean`` / ``max`` of ``abs(summary_value)`` across the
+    same-model partition pairs. A real lineage diff is only credible
+    once it clears this floor on the axes it claims.
+
+    Attributes:
+        by: Metadata key whose values defined the partitions.
+        groups: The distinct partition labels, sorted.
+        n_pairs: Number of unordered partition pairs compared.
+        per_axis: Axis name to ``{"min", "mean", "max"}`` of the
+            divergence magnitude across pairs.
+        pairs: Flat ``(group_a, group_b, axis, summary_value)`` rows.
+    """
+
+    by: str
+    groups: tuple[str, ...]
+    n_pairs: int
+    per_axis: Mapping[str, Mapping[str, float]]
+    pairs: tuple[tuple[str, str, str, float], ...]
+
+    def summary(self) -> str:
+        """One-line-per-axis text summary of the floor magnitudes."""
+        lines = [f"NoiseFloor over {self.by!r}: groups={list(self.groups)}, n_pairs={self.n_pairs}"]
+        for axis, stats in self.per_axis.items():
+            lines.append(f"  {axis}: max={stats['max']:.4f} mean={stats['mean']:.4f} |divergence|")
+        return "\n".join(lines)
+
+
+def noise_floor(
+    traces: Sequence[Trace],
+    *,
+    by: str,
+    along: Sequence[str] = DEFAULT_AXES,
+    **lineage_kwargs: object,
+) -> NoiseFloor:
+    """Measure the divergence a nuisance factor induces, not lineage.
+
+    Partition ``traces`` (which should all come from the *same* model)
+    by ``metadata[by]``, then run :func:`lineage_diff` on every
+    unordered pair of partitions. Because the model is held fixed, any
+    divergence is a floor attributable to ``by`` (scaffold, adapter,
+    inference setting), not to a lineage edge. Report a lineage diff
+    only as a signal that clears this floor.
+
+    Aggregates ``abs(summary_value)`` per axis so signed axes (entropy
+    shift) and arbitrary partition ordering do not cancel. Pass the
+    same axis and projection kwargs you use for the real diff so the
+    floor is measured on a like-for-like basis. Single-alphabet only;
+    axis names collide across alphabets.
+
+    Args:
+        traces: Same-model traces, each tagged with ``metadata[by]``.
+        by: Metadata key whose distinct values define the partitions.
+        along: Axes to measure, as in :func:`lineage_diff`.
+        lineage_kwargs: Forwarded to :func:`lineage_diff` (e.g.
+            ``canonical_projection``, ``exclude_atoms``,
+            ``conditional_context_k``).
+
+    Raises:
+        ValueError: Fewer than two non-empty partitions.
+    """
+    groups: dict[str, list[Trace]] = defaultdict(list)
+    for trace in traces:
+        key = trace.metadata.get(by)
+        if key is not None:
+            groups[str(key)].append(trace)
+    keys = sorted(groups)
+    if len(keys) < 2:
+        raise ValueError(
+            f"noise_floor needs >= 2 partitions on metadata {by!r}; "
+            f"found {len(keys)} ({keys}). Tag traces with the nuisance factor first."
+        )
+
+    per_axis_vals: dict[str, list[float]] = defaultdict(list)
+    pairs: list[tuple[str, str, str, float]] = []
+    for a, b in combinations(keys, 2):
+        diff = lineage_diff(groups[a], groups[b], parent_label=a, child_label=b, along=along, **lineage_kwargs)  # type: ignore[arg-type]
+        for axis in diff.axes:
+            magnitude = abs(axis.summary_value)
+            per_axis_vals[axis.axis].append(magnitude)
+            pairs.append((a, b, axis.axis, axis.summary_value))
+
+    per_axis = {
+        axis: {"min": min(vals), "mean": _mean(vals), "max": max(vals)}
+        for axis, vals in per_axis_vals.items()
+    }
+    return NoiseFloor(
+        by=by,
+        groups=tuple(keys),
+        n_pairs=len(keys) * (len(keys) - 1) // 2,
+        per_axis=per_axis,
+        pairs=tuple(pairs),
+    )
+
+
 # Exposed so external packages can register additional axes without
 # touching this module's private namespace.
 AxisFn = Callable[[list[Trace], list[Trace]], AxisResult]
@@ -524,5 +689,7 @@ __all__ = [
     "AxisFn",
     "AxisResult",
     "LineageDiff",
+    "NoiseFloor",
     "lineage_diff",
+    "noise_floor",
 ]

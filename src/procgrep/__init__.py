@@ -14,7 +14,8 @@ Modules:
 - ``bpe`` / ``encode``: vocabulary induction and trajectory encoding.
 - ``jsd``: pairwise and group-level Jensen-Shannon divergence.
 - ``lineage_diff``: four-axis structural comparison between two agent groups
-  (vocabulary, entropy, outcome-quadrant, conditional).
+  (vocabulary, entropy, outcome-quadrant, conditional). ``noise_floor``
+  calibrates it against a same-model nuisance control.
 - ``probe``: leave-one-group-out predictive transfer probe.
 - ``reward``: declarative ``ProcedureSpec`` (phases, penalties, target) that
   scores trajectories into a [0, 1] partial reward and derives from winners.
@@ -45,7 +46,7 @@ from procgrep.ingest.adapters.gumtree import (
 from procgrep.ingest.hf import from_hf
 from procgrep.jsd import JsdMatrix, jsd, jsd_matrix
 from procgrep.library import ProcedureLibrary
-from procgrep.lineage_diff import AxisResult, LineageDiff, lineage_diff
+from procgrep.lineage_diff import AxisResult, LineageDiff, NoiseFloor, lineage_diff, noise_floor
 from procgrep.patterns import PatternReport, load_patterns, match_patterns
 from procgrep.probe import ProbeResult, leave_one_group_out
 from procgrep.program import (
@@ -100,6 +101,7 @@ __all__ = [
     "GuardArtifact",
     "JsdMatrix",
     "LineageDiff",
+    "NoiseFloor",
     "OptimizeReport",
     "PatternReport",
     "Penalty",
@@ -138,6 +140,7 @@ __all__ = [
     "load_spec",
     "load_vocab",
     "match_patterns",
+    "noise_floor",
     "optimize",
     "parse_gumtree_jsondiff",
     "register_adapter",

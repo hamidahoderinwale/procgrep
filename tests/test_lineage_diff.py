@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import math
+import warnings
 
 import pytest
 
@@ -10,14 +11,18 @@ from procgrep.lineage_diff import (
     DEFAULT_AXES,
     AxisResult,
     LineageDiff,
+    NoiseFloor,
     lineage_diff,
+    noise_floor,
 )
 from procgrep.types import (
     ATOM_EDIT,
+    ATOM_OTHER,
     ATOM_READ_FILE,
     ATOM_RUN_TEST,
     ATOM_SEARCH_REPO,
     ATOM_SUBMIT,
+    ATOM_THINK,
     Trace,
 )
 
@@ -43,7 +48,7 @@ def _trace(
     )
 
 
-# Top-level lineage_diff -----------------------------------------------------
+# Top-level lineage_diff.
 
 
 def test_returns_lineage_diff_with_default_axes() -> None:
@@ -86,7 +91,7 @@ def test_outcome_quadrant_requires_outcome_field() -> None:
         lineage_diff(parent, child, along=["outcome_quadrant"])
 
 
-# Vocabulary axis ------------------------------------------------------------
+# Vocabulary axis.
 
 
 def test_vocabulary_identical_sets_jaccard_1() -> None:
@@ -137,7 +142,7 @@ def test_vocabulary_reports_sizes() -> None:
     assert axis.detail["child_vocab_size"] == 1
 
 
-# Entropy axis ---------------------------------------------------------------
+# Entropy axis.
 
 
 def test_entropy_identical_concentrated_traces_shift_zero() -> None:
@@ -197,7 +202,7 @@ def test_entropy_reports_median() -> None:
     assert "child_median" in axis.detail
 
 
-# Outcome quadrant axis ------------------------------------------------------
+# Outcome quadrant axis.
 
 
 def test_outcome_quadrant_basic() -> None:
@@ -243,7 +248,7 @@ def test_outcome_quadrant_with_missing_field_treats_as_fail() -> None:
     assert axis.detail["child_pass_n"] == 1
 
 
-# LineageDiff methods --------------------------------------------------------
+# LineageDiff methods.
 
 
 def test_summary_is_multiline_string() -> None:
@@ -293,7 +298,7 @@ def test_to_records_is_json_serializable() -> None:
     assert len(payload["axes"]) == len(DEFAULT_AXES)
 
 
-# AxisResult -----------------------------------------------------------------
+# AxisResult.
 
 
 def test_axis_result_is_frozen_dataclass() -> None:
@@ -314,7 +319,7 @@ def test_lineage_diff_is_frozen_dataclass() -> None:
         diff.parent_label = "other"  # type: ignore[misc]
 
 
-# Multi-resolution alphabets (Option C) -------------------------------------
+# Multi-resolution alphabets (Option C)
 
 
 def test_default_alphabet_is_canonical() -> None:
@@ -475,7 +480,7 @@ def test_outcome_quadrant_works_under_multiple_alphabets() -> None:
     assert {a.alphabet for a in diff.axes} == {"canonical", "native"}
 
 
-# Conditional axis ----------------------------------------------------------
+# Conditional axis.
 
 
 def test_conditional_identical_corpora_zero_divergence() -> None:
@@ -584,3 +589,161 @@ def test_conditional_in_default_dispatch_error_message() -> None:
     child = [_trace("c", [ATOM_EDIT])]
     with pytest.raises(ValueError, match="conditional"):
         lineage_diff(parent, child, along=["definitely_not_a_real_axis"])
+
+
+def _tagged(trace_id: str, atoms: list[str], scaffold: str) -> Trace:
+    """A Trace tagged with a provenance/partition key for the new features."""
+    return Trace(trace_id=trace_id, agent="agent", atoms=atoms, group=None, metadata={"scaffold": scaffold})
+
+
+# exclude_atoms.
+
+
+def test_exclude_atoms_removes_them_from_vocabulary() -> None:
+    """Dropping adapter-sensitive atoms can recover an otherwise shared vocabulary."""
+    parent = [_trace("p", [ATOM_EDIT, ATOM_THINK, ATOM_EDIT])]
+    child = [_trace("c", [ATOM_EDIT, ATOM_OTHER, ATOM_EDIT])]
+    before = lineage_diff(parent, child, along=["vocabulary"]).axes[0].summary_value
+    after = lineage_diff(
+        parent, child, along=["vocabulary"], exclude_atoms=[ATOM_THINK, ATOM_OTHER]
+    ).axes[0].summary_value
+    assert before == pytest.approx(1 / 3)  # {edit} shared of {edit, think, other}
+    assert after == pytest.approx(1.0)  # only edit remains on both sides
+
+
+def test_exclude_atoms_none_is_noop() -> None:
+    """The default leaves every atom in place."""
+    parent = [_trace("p", [ATOM_EDIT, ATOM_THINK])]
+    child = [_trace("c", [ATOM_EDIT, ATOM_THINK])]
+    base = lineage_diff(parent, child, along=["vocabulary"]).axes[0].detail["shared"]
+    assert ATOM_THINK in base
+
+
+def test_exclude_atoms_applies_after_projection() -> None:
+    """Exclusion is on the projected alphabet, not the raw atoms."""
+    parent = [_trace("p", ["X", ATOM_EDIT])]
+    child = [_trace("c", ["X", ATOM_EDIT])]
+    # X projects to think, then think is excluded, leaving only edit.
+    diff = lineage_diff(
+        parent,
+        child,
+        along=["vocabulary"],
+        canonical_projection=lambda a: ATOM_THINK if a == "X" else a,
+        exclude_atoms=[ATOM_THINK],
+    )
+    assert diff.axes[0].detail["shared"] == [ATOM_EDIT]
+
+
+def test_exclude_atoms_does_not_mutate_input() -> None:
+    """Filtering builds new traces; caller atoms are untouched."""
+    parent_atoms = [ATOM_EDIT, ATOM_THINK]
+    parent = [_trace("p", parent_atoms)]
+    child = [_trace("c", [ATOM_EDIT, ATOM_THINK])]
+    lineage_diff(parent, child, along=["vocabulary"], exclude_atoms=[ATOM_THINK])
+    assert parent_atoms == [ATOM_EDIT, ATOM_THINK]
+
+
+# provenance_field guardrail.
+
+
+def test_provenance_mismatch_warns() -> None:
+    """Different scaffolds on the two sides trigger a warning."""
+    parent = [_tagged("p", [ATOM_EDIT], "openhands")]
+    child = [_tagged("c", [ATOM_EDIT], "sweagent")]
+    with pytest.warns(UserWarning, match="provenance 'scaffold'"):
+        lineage_diff(parent, child, along=["vocabulary"], provenance_field="scaffold")
+
+
+def test_provenance_match_does_not_warn() -> None:
+    """Matching scaffolds raise no warning."""
+    parent = [_tagged("p", [ATOM_EDIT], "openhands")]
+    child = [_tagged("c", [ATOM_EDIT], "openhands")]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        lineage_diff(parent, child, along=["vocabulary"], provenance_field="scaffold")
+
+
+def test_provenance_field_none_never_warns() -> None:
+    """Without the opt-in, mismatched scaffolds are not checked."""
+    parent = [_tagged("p", [ATOM_EDIT], "openhands")]
+    child = [_tagged("c", [ATOM_EDIT], "sweagent")]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        lineage_diff(parent, child, along=["vocabulary"])
+
+
+def test_provenance_untagged_traces_ignored() -> None:
+    """Traces missing the key contribute no provenance value, so no warning."""
+    parent = [_trace("p", [ATOM_EDIT])]  # no scaffold metadata
+    child = [_trace("c", [ATOM_EDIT])]
+    with warnings.catch_warnings():
+        warnings.simplefilter("error")
+        lineage_diff(parent, child, along=["vocabulary"], provenance_field="scaffold")
+
+
+# noise_floor.
+
+
+def test_noise_floor_identical_partitions_floor_is_clean() -> None:
+    """Same atoms across scaffolds: vocabulary floor 1.0, conditional floor 0.0."""
+    traces = [
+        _tagged("a1", [ATOM_EDIT, ATOM_RUN_TEST], "openhands"),
+        _tagged("b1", [ATOM_EDIT, ATOM_RUN_TEST], "sweagent"),
+    ]
+    nf = noise_floor(traces, by="scaffold", along=["vocabulary", "conditional"])
+    assert isinstance(nf, NoiseFloor)
+    assert nf.per_axis["vocabulary"]["max"] == pytest.approx(1.0)
+    assert nf.per_axis["conditional"]["max"] == pytest.approx(0.0)
+
+
+def test_noise_floor_counts_pairs_and_groups() -> None:
+    """Three partitions give C(3, 2) = 3 pairs."""
+    traces = [
+        _tagged("a", [ATOM_EDIT], "x"),
+        _tagged("b", [ATOM_EDIT], "y"),
+        _tagged("c", [ATOM_EDIT], "z"),
+    ]
+    nf = noise_floor(traces, by="scaffold", along=["vocabulary"])
+    assert nf.groups == ("x", "y", "z")
+    assert nf.n_pairs == 3
+    assert len(nf.pairs) == 3
+
+
+def test_noise_floor_uses_magnitude_for_signed_axes() -> None:
+    """Entropy shift sign must not cancel; the floor is its magnitude."""
+    # 'lo' is concentrated (entropy 0), 'hi' is diverse (entropy > 0); the
+    # pair's entropy summary is negative, but the floor reports the magnitude.
+    traces = [
+        _tagged("lo1", [ATOM_EDIT, ATOM_EDIT, ATOM_EDIT, ATOM_EDIT], "lo"),
+        _tagged("hi1", [ATOM_EDIT, ATOM_READ_FILE, ATOM_RUN_TEST, ATOM_SEARCH_REPO], "hi"),
+    ]
+    nf = noise_floor(traces, by="scaffold", along=["entropy"])
+    assert nf.per_axis["entropy"]["max"] > 0.5
+
+
+def test_noise_floor_requires_two_partitions() -> None:
+    """A single partition cannot define a floor."""
+    traces = [_tagged("a", [ATOM_EDIT], "only")]
+    with pytest.raises(ValueError, match=">= 2 partitions"):
+        noise_floor(traces, by="scaffold")
+
+
+def test_noise_floor_forwards_kwargs_to_lineage_diff() -> None:
+    """exclude_atoms passed through changes the measured floor."""
+    traces = [
+        _tagged("a", [ATOM_EDIT, ATOM_THINK], "x"),
+        _tagged("b", [ATOM_EDIT, ATOM_OTHER], "y"),
+    ]
+    floored = noise_floor(traces, by="scaffold", along=["vocabulary"]).per_axis["vocabulary"]["max"]
+    cleaned = noise_floor(
+        traces, by="scaffold", along=["vocabulary"], exclude_atoms=[ATOM_THINK, ATOM_OTHER]
+    ).per_axis["vocabulary"]["max"]
+    assert cleaned > floored  # dropping the adapter-only atoms recovers shared vocab
+
+
+def test_noise_floor_summary_is_string() -> None:
+    """summary() renders one line per axis."""
+    traces = [_tagged("a", [ATOM_EDIT], "x"), _tagged("b", [ATOM_EDIT], "y")]
+    text = noise_floor(traces, by="scaffold", along=["vocabulary"]).summary()
+    assert "NoiseFloor over 'scaffold'" in text
+    assert "vocabulary" in text
