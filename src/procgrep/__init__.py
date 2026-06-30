@@ -36,6 +36,7 @@ from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, render_vocab_
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.cluster import Embedder, cluster_tasks, hf_embedder
 from procgrep.encode import Fingerprint, encode
+from procgrep.guard import GuardDecision, ProcedureGuard
 from procgrep.ingest import adapters as adapters
 from procgrep.ingest.adapters.gumtree import (
     gumtree_adapter,
@@ -99,6 +100,7 @@ __all__ = [
     "GroupAtomFrequencies",
     "GroupEntropyStats",
     "GuardArtifact",
+    "GuardDecision",
     "JsdMatrix",
     "LineageDiff",
     "NoiseFloor",
@@ -107,6 +109,7 @@ __all__ = [
     "Penalty",
     "Phase",
     "ProbeResult",
+    "ProcedureGuard",
     "ProcedureLibrary",
     "ProcedureSpec",
     "ProcedureVocabulary",
