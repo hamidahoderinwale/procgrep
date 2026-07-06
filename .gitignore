@@ -60,3 +60,6 @@ data/*.parquet
 
 # Kept local; not part of the upstream repo (README is the canonical doc)
 CHANGELOG.md
+
+# The plateau RCT is a separate project, kept local; not part of the procgrep repo.
+plateau/
