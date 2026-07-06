@@ -57,3 +57,6 @@ data/*.parquet
 # secrets
 .env
 .env.local
+
+# Kept local; not part of the upstream repo (README is the canonical doc)
+CHANGELOG.md
