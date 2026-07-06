@@ -82,7 +82,6 @@ include = [
     "examples",
     "README.md",
     "NOTES.md",
-    "FAQ.md",
     "METRICS.md",
     "STUDIES.md",
     "CITATION.cff",

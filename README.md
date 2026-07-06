@@ -60,7 +60,7 @@ for row in matrix.to_records():
 
 **Procedures.** Recurring multi-step patterns learned from the corpus via BPE (the same algorithm used to tokenize text for language model training). A procedure might be `search_repo → read_file → think`, a pattern frequent enough to be worth naming.
 
-**Fingerprint.** A trajectory encoded as a distribution over procedures: how often each appeared. Two trajectories with similar fingerprints approached the problem similarly.
+**Fingerprint.** A trajectory encoded as a distribution over procedures: how often each appeared. Two trajectories with similar fingerprints approached the problem similarly. It is a count vector over the vocabulary, not a hash or an embedding, so you can read *which* procedures drive a difference; trajectories can share one.
 
 **JSD.** Jensen-Shannon divergence: how different two fingerprints are. 0 = identical, 1 = completely non-overlapping. Used to compare agents, groups, or training conditions.
 
@@ -118,7 +118,7 @@ for trace_id, violations in report.violations.items():
     print(trace_id, violations)
 ```
 
-The `examples/rules/known_failure_patterns.yaml` file includes patterns validated on SWE-bench: edit streaks without tests, stuck reading loops, no exploration before editing.
+The `examples/rules/known_failure_patterns.yaml` file includes patterns validated on SWE-bench: edit streaks without tests, stuck reading loops, no exploration before editing. The matcher expresses contiguous runs, prefix requirements, and absence over the atom sequence, not temporal windows, variable binding, or probabilistic thresholds.
 
 ### Score a trajectory against a procedural spec
 
@@ -252,5 +252,9 @@ pip install procgrep[dev]      # development dependencies
 - **Privacy model for interactive adapters.** The canonical ingest keeps only atoms and hashed identifiers (session ids, workspace paths) by default (`anonymize=True`); `to_shareable()` exports atoms and counts, never prompt text. The local panel can show your own prompts on your machine, but only the shareable export crosses the boundary.
 - **Procedural library.** `ProcedureLibrary("dir/")` saves derived or authored specs as YAML: reusable, git-versioned procedural memory. `spec.to_yaml()` round-trips with `from_yaml`, and library entries plug into `enforce` / `verify` / `score` unchanged (no new object model).
 - **Task clustering uses a pluggable embedder.** `cluster_tasks(texts, embedder)` takes any `Callable[[list[str]], ndarray]`, with a local `hf_embedder("<model>")` default that keeps text on-machine.
+- **procgrep sees only logged actions.** Some scaffolds run steps that never surface as tool calls: one Moatless trace hid 71 internal `RunTests`, so procgrep would report "no tests run", accurate about the log, not the behavior. Audit each new adapter once for what it surfaces.
+- **Procedural layer, not NL layer.** procgrep characterizes the tool-call trajectory an agent produces, complementary to prompt/demonstration optimizers like DSPy that shape what it's told; it depends on neither and calls no model.
+- **Coding-agent alphabet today.** The atom set targets coding tool-call traces; the canonicalization and fingerprinting machinery is domain-general, but GUI/browser traces would want a different alphabet, an open research question rather than a config.
+- **Add a scaffold** by registering a `TraceAdapter` (a callable from one raw record to an `AtomSequence`); see `examples/python/05_custom_adapter.py`.
 
-See [METRICS.md](METRICS.md) for the full list of measurements, [STUDIES.md](STUDIES.md) for worked case studies, and [FAQ.md](FAQ.md) for common questions. Runnable demos are in [`examples/`](examples/); the live-explorer backend in [`space/`](space/); the essay, figures, and reference pages in [`docs/`](docs/).
+See [METRICS.md](METRICS.md) for the full list of measurements and [STUDIES.md](STUDIES.md) for worked case studies. Cite via the repository's `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation. Runnable demos are in [`examples/`](examples/); the live-explorer backend in [`space/`](space/); the essay, figures, and reference pages in [`docs/`](docs/).
