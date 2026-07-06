@@ -14,5 +14,5 @@ render from. Read this when you want to know what lives where under `docs/`.
 - `assets/` — shared CSS and images for the hosted pages.
 
 GitHub Pages serves the site from this directory; `index.html` is the landing
-page. The reference docs (`FAQ.md`, `METRICS.md`, `STUDIES.md`) live at the repo
-root next to `README.md`.
+page. The reference docs (`METRICS.md`, `STUDIES.md`) live at the repo root next
+to `README.md`.
