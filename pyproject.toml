@@ -81,7 +81,6 @@ include = [
     "tests",
     "examples",
     "README.md",
-    "CHANGELOG.md",
     "NOTES.md",
     "FAQ.md",
     "METRICS.md",
