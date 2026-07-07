@@ -1,0 +1,26 @@
+{
+  "Claude Code": {
+    "Claude Code": 0.0,
+    "Codex": 0.417,
+    "Gemini CLI": 0.212,
+    "OpenCode": 0.353
+  },
+  "Codex": {
+    "Claude Code": 0.417,
+    "Codex": 0.0,
+    "Gemini CLI": 0.33,
+    "OpenCode": 0.298
+  },
+  "Gemini CLI": {
+    "Claude Code": 0.212,
+    "Codex": 0.33,
+    "Gemini CLI": 0.0,
+    "OpenCode": 0.275
+  },
+  "OpenCode": {
+    "Claude Code": 0.353,
+    "Codex": 0.298,
+    "Gemini CLI": 0.275,
+    "OpenCode": 0.0
+  }
+}

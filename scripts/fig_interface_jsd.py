@@ -4,10 +4,10 @@ Adds interface as a fourth fingerprint axis alongside lineage, family, and
 scaffold: pairwise action-mix JSD between four coding interfaces.
 
 Design decisions (benefit / price):
-1. Read the matrix from plateau/results.json (cross_interface_bpe) rather than
-   recompute, since it is the validated asset that feeds the plateau paper.
-   Benefit: one source of truth across both documents. Price: regenerating the
-   divergence numbers is the plateau pipeline's job, not this figure's.
+1. Read the matrix from a committed data file (docs/paper/data/interface_jsd_matrix.json)
+   rather than recompute. Benefit: self-contained and reproducible from the repo
+   alone. Price: the divergence numbers are produced upstream of this figure and
+   checked in as the validated asset; this figure only renders them.
 2. Match the canonical agent matrix exactly: same teal sequential ramp, mono
    labels, top-left title, JSD colorbar. Benefit: the two matrices read as one
    family. Price: the ramp is hardcoded to that figure, not figtheme's palette.
@@ -26,7 +26,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
 from figtheme import INK, OLIVE, init  # noqa: E402
 
-RESULTS = ROOT / "plateau" / "results.json"
+RESULTS = ROOT / "docs" / "paper" / "data" / "interface_jsd_matrix.json"
 OUT = ROOT / "docs" / "figures" / "fig_interface_jsd_matrix.png"
 OUT_JSON = ROOT / "docs" / "paper" / "data" / "interface_jsd.json"
 OUT_HTML = ROOT / "docs" / "figures" / "interface_jsd.html"
@@ -68,7 +68,7 @@ TEAL = LinearSegmentedColormap.from_list("procgrep_teal", ["#dcebe5", "#3f9183",
 
 
 def main() -> int:
-    mat = json.loads(RESULTS.read_text())["cross_interface_bpe"]["procedure_jsd_matrix"]
+    mat = json.loads(RESULTS.read_text())
     labels = list(mat)
     z = [[mat[r][c] for c in labels] for r in labels]
 
