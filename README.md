@@ -189,7 +189,7 @@ print(report.behavior_moved, report.outcome_delta, report.verdict)
 
 `enforce` supports four modes: `prompt`, `guard`, `reward` (a deterministic dense process reward whose per-step increments sum to the full-trajectory score), and `decode` (an `allowed(prefix)` mask over the action grammar for constrained decoding). `optimize` searches a spec's penalty caps and phase set offline against a discrimination metric, returning a tuned spec and a report. All are model-free: they emit artifacts or score traces; none runs an agent.
 
-Roadmap: a `Runner` that executes agents under a spec in sandboxes and feeds the resulting traces back to `verify`. It is kept outside the core on purpose, procgrep emits and measures while the scaffold runs the model, which is what keeps the measurements exactly reproducible.
+The runner exists as [`runner/`](runner/) (`procgrep-runner`, a separate package): it executes paired baseline/enforced arms under a spec in sandboxes via mini-swe-agent, seals a run manifest, and feeds the traces back to `verify` with paired-bootstrap confidence intervals. It is kept outside the core on purpose, procgrep emits and measures while the scaffold runs the model, which is what keeps the measurements exactly reproducible.
 
 ---
 

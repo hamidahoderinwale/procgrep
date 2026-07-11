@@ -63,3 +63,6 @@ CHANGELOG.md
 
 # The plateau RCT is a separate project, kept local; not part of the procgrep repo.
 plateau/
+
+# The runner package lockfile is large (>500 KB); its env is recreated by `uv sync`.
+runner/uv.lock
