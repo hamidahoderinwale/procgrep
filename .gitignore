@@ -66,3 +66,4 @@ plateau/
 
 # The runner package lockfile is large (>500 KB); its env is recreated by `uv sync`.
 runner/uv.lock
+runner/runs/

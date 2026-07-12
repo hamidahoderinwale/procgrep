@@ -1,0 +1,11 @@
+# Modal sandbox overrides for gate/pilot runs. startup/deployment timeouts
+# bumped for cold-start congestion (rct lesson). step_limit is the real
+# runaway guard: OpenRouter runs have reported instance_cost 0.0, so
+# cost_limit alone may never bind.
+environment:
+  environment_class: swerex_modal
+  startup_timeout: 600.0
+  deployment_timeout: 1800.0
+agent:
+  cost_limit: 4.0
+  step_limit: 80

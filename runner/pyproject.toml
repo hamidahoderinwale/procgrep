@@ -16,7 +16,9 @@ dependencies = [
 
 [project.optional-dependencies]
 swebench = ["datasets>=2.14"]
-modal = ["mini-swe-agent[modal]>=2.4"]
+# swe-rex backs the swerex_modal environment class; 1.4.0 needs the
+# encrypted-tunnel patch (scripts/patch_swerex.py) after every reinstall.
+modal = ["mini-swe-agent[modal]>=2.4", "swe-rex>=1.4"]
 
 [project.scripts]
 procgrep-runner = "procgrep_runner.cli:app"

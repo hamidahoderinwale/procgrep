@@ -23,8 +23,11 @@ Design decisions:
 
 from __future__ import annotations
 
+import contextlib
 import copy
 import json
+import os
+import signal
 import subprocess
 import sys
 import traceback
@@ -271,31 +274,40 @@ def run_instance_subprocess(
     """Run one instance in a child process; the child prints its row as JSON.
 
     Any failure mode (crash, timeout, garbled output) degrades to a row with a
-    runner ``exit_status`` so the batch keeps going.
+    runner ``exit_status`` so the batch keeps going. The child runs in its own
+    process group and the whole group is killed on timeout: sandbox tunnel
+    descendants inherit the output pipes, and killing only the child leaves
+    the pipe read blocked forever (observed as a 25h mid-batch hang).
     """
     base = {"instance_id": instance_id, "arm": arm, "replicate": replicate, "submitted": False}
+    proc = subprocess.Popen(
+        argv_builder(run_dir, instance_id, arm, replicate),
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        start_new_session=True,
+    )
     try:
-        proc = subprocess.run(
-            argv_builder(run_dir, instance_id, arm, replicate),
-            capture_output=True,
-            text=True,
-            timeout=timeout,
-        )
+        stdout, stderr = proc.communicate(timeout=timeout)
     except subprocess.TimeoutExpired:
+        with contextlib.suppress(ProcessLookupError):
+            os.killpg(proc.pid, signal.SIGKILL)
+        with contextlib.suppress(subprocess.TimeoutExpired):
+            proc.communicate(timeout=30)
         return {**base, "exit_status": "RunnerTimeout"}
     if proc.returncode != 0:
         return {
             **base,
             "exit_status": "RunnerSubprocessError",
             "returncode": proc.returncode,
-            "stderr_tail": proc.stderr[-2000:],
+            "stderr_tail": stderr[-2000:],
         }
-    for line in reversed(proc.stdout.strip().splitlines()):
+    for line in reversed(stdout.strip().splitlines()):
         try:
             return json.loads(line)
         except json.JSONDecodeError:
             continue
-    return {**base, "exit_status": "RunnerProtocolError", "stdout_tail": proc.stdout[-2000:]}
+    return {**base, "exit_status": "RunnerProtocolError", "stdout_tail": stdout[-2000:]}
 
 
 def run_paired(
