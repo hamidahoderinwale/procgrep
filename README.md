@@ -19,8 +19,9 @@ When a coding agent attempts a task, it leaves a sequence of actions: search the
 - **What makes one agent fail where another succeeds?** Find the action-sequence patterns exclusive to failures.
 - **Did fine-tuning change how the model works, not just whether it passes?** Compare parent and child trajectories across four structural axes.
 - **Is this trajectory heading toward failure?** Match against known failure patterns early enough to act on it.
+- **Did my intervention actually change anything?** Identically configured agent populations differ procedurally on their own; procgrep measures that same-condition noise floor, so a claimed effect can be read against it instead of against zero.
 
-Beyond reading traces, procgrep lets you *program* a target procedure: specify it, compile it to a reward, decode mask, guard, or scaffold config, and verify the result.
+Beyond reading traces, procgrep lets you *program* a target procedure: specify it, compile it to a reward, decode mask, guard, or scaffold config, and verify the result against the noise floor of same-condition runs.
 
 ---
 
@@ -185,7 +186,7 @@ report = verify(before_traces, after_traces, spec, vocab)
 print(report.behavior_moved, report.outcome_delta, report.verdict)
 ```
 
-`verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result, so a null result is located, not just observed.
+`verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result, so a null result is located, not just observed. Read both axes against replicates: two populations produced by the *same* configuration already differ (in our runs, by more than most published intervention effects), so the reference point for "behavior moved" is that same-condition floor, never zero.
 
 `enforce` supports four modes: `prompt`, `guard`, `reward` (a deterministic dense process reward whose per-step increments sum to the full-trajectory score), and `decode` (an `allowed(prefix)` mask over the action grammar for constrained decoding). `optimize` searches a spec's penalty caps and phase set offline against a discrimination metric, returning a tuned spec and a report. All are model-free: they emit artifacts or score traces; none runs an agent.
 
