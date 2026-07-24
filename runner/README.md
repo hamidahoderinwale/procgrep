@@ -1,11 +1,10 @@
 # procgrep-runner: paired-arm agent execution for procgrep
 
 procgrep-runner executes agents under a `ProcedureSpec` in sandboxes and feeds
-the resulting traces back to `procgrep.verify`. It is the runner the procgrep
-roadmap promised, kept outside the core on purpose: procgrep emits enforcement
-artifacts and measures traces; this package hosts the scaffold
-([mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent)) that runs the
-model.
+the resulting traces back to `procgrep.verify`. It is kept outside the core on
+purpose: procgrep emits enforcement artifacts and measures traces; this package
+hosts the scaffold ([mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent))
+that runs the model.
 
 ## Installation
 
