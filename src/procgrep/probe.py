@@ -106,7 +106,6 @@ def leave_one_group_out(
 
 
 def _extract_labels(fps: list[Fingerprint], label_field: str) -> npt.NDArray[np.str_]:
-    """Pull prediction labels out of the fingerprints."""
     if label_field == "group":
         return np.array([fp.group for fp in fps])
     if label_field == "agent":

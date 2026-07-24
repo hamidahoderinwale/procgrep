@@ -77,7 +77,6 @@ def _arguments(call: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _tool_name(call: Mapping[str, Any]) -> str:
-    """Extract the function/tool name from a tool call."""
     fn = call.get("function")
     if isinstance(fn, Mapping) and fn.get("name"):
         return str(fn["name"])
