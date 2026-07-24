@@ -13,7 +13,8 @@ terminal classifier. A non-empty ``thought`` prepends ATOM_THINK, matching the
 
 from __future__ import annotations
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from procgrep.canonicalize import register_adapter
 from procgrep.ingest.adapters.claude_code import _classify_terminal_command
