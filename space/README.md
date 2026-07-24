@@ -21,7 +21,7 @@ explorer or its hosting. The static, embedded-data version lives in the paper re
 The static explorer embeds every trace's atom spine in the HTML, so it is bounded by page
 weight (a few hundred traces per dataset) and ships only datasets pre-profiled offline.
 A Space has a backend, so it can load full datasets on demand and ingest any HF set. It also
-runs on HF infrastructure, where reading HF datasets is fast — the parquet streaming that
+runs on HF infrastructure, where reading HF datasets is fast: the parquet streaming that
 times out elsewhere is not a problem here.
 
 ## Design decisions (benefit / price)
@@ -38,9 +38,9 @@ times out elsewhere is not a problem here.
 
 ## Endpoints
 
-- `GET /` — the query frontend.
-- `GET /datasets` — suggested datasets + which are warm in cache.
-- `POST /query` — `{dataset, pattern}` → match count, per-model rates, matched-vs-all action
+- `GET /`: the query frontend.
+- `GET /datasets`: suggested datasets + which are warm in cache.
+- `POST /query`: `{dataset, pattern}` → match count, per-model rates, matched-vs-all action
   mix, and a sample of matched traces.
 
 ## Run locally
