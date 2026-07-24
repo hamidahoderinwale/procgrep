@@ -194,9 +194,7 @@ def _swe_smith_row(traj_id: str, action: str) -> dict[str, Any]:
 
 def test_ingest_streams_and_canonicalizes() -> None:
     rows = [_swe_smith_row("t1", "edit"), _swe_smith_row("t2", "pytest")]
-    schema = DatasetSchema(
-        "acme/smith", "default", "train", tuple(rows[0].keys()), tuple(rows)
-    )
+    schema = DatasetSchema("acme/smith", "default", "train", tuple(rows[0].keys()), tuple(rows))
 
     def fake_load_dataset(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         return rows
@@ -215,9 +213,7 @@ def test_ingest_streams_and_canonicalizes() -> None:
 
 def test_ingest_honors_limit() -> None:
     rows = [_swe_smith_row(f"t{i}", "edit") for i in range(5)]
-    schema = DatasetSchema(
-        "acme/smith", "default", "train", tuple(rows[0].keys()), tuple(rows)
-    )
+    schema = DatasetSchema("acme/smith", "default", "train", tuple(rows[0].keys()), tuple(rows))
 
     def fake_load_dataset(*args: Any, **kwargs: Any) -> list[dict[str, Any]]:
         return rows

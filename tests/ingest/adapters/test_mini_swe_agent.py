@@ -274,7 +274,9 @@ def test_classify_python_script_is_run_code() -> None:
 
 
 def test_classify_python_inline_snippet_is_run_code() -> None:
-    assert _classify_command('python -c "import astropy; print(astropy.__version__)"') == ATOM_RUN_CODE
+    assert (
+        _classify_command('python -c "import astropy; print(astropy.__version__)"') == ATOM_RUN_CODE
+    )
 
 
 def test_classify_python_test_runner_still_run_test() -> None:

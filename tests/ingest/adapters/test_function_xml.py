@@ -52,12 +52,20 @@ def test_file_editor_operations_map() -> None:
 
 
 def test_finish_is_submit() -> None:
-    rec = {"messages": [_assistant("<function=finish>\n  <parameter=command>submit</parameter>\n</function>")]}
+    rec = {
+        "messages": [
+            _assistant("<function=finish>\n  <parameter=command>submit</parameter>\n</function>")
+        ]
+    }
     assert function_xml_adapter(rec) == [ATOM_SUBMIT]
 
 
 def test_reasoning_prose_emits_one_think() -> None:
-    rec = {"messages": [_assistant("Let me explore the repo first.\n" + _bash("cd /repo && python repro.py"))]}
+    rec = {
+        "messages": [
+            _assistant("Let me explore the repo first.\n" + _bash("cd /repo && python repro.py"))
+        ]
+    }
     # Prose -> think; the cd-chained python script -> run_code (shared classifier).
     assert function_xml_adapter(rec) == [ATOM_THINK, ATOM_RUN_CODE]
 

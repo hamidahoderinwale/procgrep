@@ -67,7 +67,9 @@ def test_run_shell_command_is_classified_with_read_recovery() -> None:
 
 
 def test_write_file_and_symbol_edits_are_edits_unknown_is_other() -> None:
-    record = {"events": [_gemini(_call("write_file"), _call("insert_after_symbol"), _call("ask_user"))]}
+    record = {
+        "events": [_gemini(_call("write_file"), _call("insert_after_symbol"), _call("ask_user"))]
+    }
     assert gemini_cli_adapter(record) == [ATOM_EDIT, ATOM_EDIT, "other"]
 
 
