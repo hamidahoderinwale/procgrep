@@ -6,10 +6,12 @@
 # Usage: bash scripts/capture_replay.sh
 set -euo pipefail
 cd "$(dirname "$0")/.."
-BIN="$HOME/Library/Caches/ms-playwright/chromium_headless_shell-1223/chrome-headless-shell-mac-arm64/chrome-headless-shell"
-FF="$(command -v ffmpeg || echo /opt/homebrew/bin/ffmpeg)"
-FR=/tmp/procgrep_replay_frames
-rm -rf "$FR"; mkdir -p "$FR"
+## Resolve tools: CHROME_BIN wins, else newest Playwright shell; ffmpeg from PATH
+BIN="${CHROME_BIN:-$(ls -d "$HOME"/Library/Caches/ms-playwright/chromium_headless_shell-*/chrome-headless-shell-mac-arm64/chrome-headless-shell 2>/dev/null | sort -V | tail -1)}"
+[ -x "${BIN:-}" ] || { echo "no headless chromium: set CHROME_BIN or run 'npx playwright install chromium'" >&2; exit 1; }
+FF="$(command -v ffmpeg)" || { echo "ffmpeg not on PATH" >&2; exit 1; }
+FR="$(mktemp -d -t procgrep_replay_frames)"
+trap 'rm -rf "$FR"' EXIT
 
 cat > "$FR/frame.html" <<'EOF'
 <!doctype html><html><head><meta charset="utf-8"><style>
