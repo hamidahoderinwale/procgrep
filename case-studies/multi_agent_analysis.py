@@ -146,7 +146,7 @@ def main() -> None:
     print("Saved: canonical_heatmap.png")
 
     # 4. JSD matrices at canonical and native via procgrep.jsd_matrix
-    # We need to fit a BPE vocabulary first so the encode step has a vocab.
+    # fit BPE first: encode() requires a vocab
     print()
     print("=" * 88)
     print("Fitting BPE + encoding for JSD matrix (canonical)")
@@ -164,13 +164,11 @@ def main() -> None:
     mat_c = jsd_matrix(fps_c, group_by="agent")
     mat_n = jsd_matrix(fps_n, group_by="agent")
 
-    # Render the matrix as a heatmap. JsdMatrix exposes ``to_array()`` (numpy
-    # 2D array) and ``to_records()`` (list of {row, col, jsd} dicts); we extract
-    # group names from the first ``row`` value per unique-row in records.
+    # JsdMatrix has no group-name accessor: recover group order from
+    # first-seen "row" values in to_records()
     for label, mat, suffix in [("canonical", mat_c, "canonical"), ("native", mat_n, "native")]:
         values = mat.to_array()
         records = mat.to_records()
-        # Group names in canonical order (preserve first-seen order in records)
         seen: list[str] = []
         for r in records:
             if r["row"] not in seen:

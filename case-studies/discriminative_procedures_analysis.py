@@ -1,6 +1,6 @@
 """Run discriminative_procedures on the key comparative pairs.
 
-Three comparisons:
+Four comparisons:
   1. Claude-4 Sonnet vs old-cluster agents (Claude-3 Opus + GPT-4 + GPT-4o)
   2. SWE-agent-LM-32B vs old-cluster agents
   3. SWE-agent-LM-32B vs Claude-4 Sonnet  (mutual nearest neighbours)
@@ -142,7 +142,6 @@ def main() -> None:
         print(f"  Vocabulary: {len(vocab.atoms)} atoms + {len(vocab.merges)} merges")
         fps = encode(traces, vocab=vocab)
 
-        # Save the fitted vocabulary
         from procgrep import save_vocab
 
         save_vocab(vocab, RESULTS / f"procedure_vocab_{layer}_n500.json")
@@ -171,7 +170,7 @@ def main() -> None:
             fps, vocab, "SWE-agent-LM-32B", "Claude-4 Sonnet", traces
         )
 
-        # Pass vs fail (labeled trajectories only)
+        # 4. Pass vs fail (labeled trajectories only)
         pass_traces = [
             t
             for t in traces
@@ -192,7 +191,6 @@ def main() -> None:
 
         all_results[layer] = layer_results
 
-        # Also save human-readable text
         out_txt = OUT_DIR / f"top_procedures_{layer}_n500.txt"
         lines = []
         for comp, sides in layer_results.items():

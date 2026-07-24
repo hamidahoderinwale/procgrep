@@ -1,6 +1,6 @@
-"""Regression analysis: what predicts pass/fail?
+"""Regression analysis: what predicts pass/fail on SWE-agent-LM-32B trajectories?
 
-Questions an analysis engineer at Cursor would ask:
+Six questions:
   1. Which procedural features correlate with passing? (logistic regression)
   2. Does trajectory length predict pass rate? (calibration)
   3. What's the edit:test ratio in passing vs failing runs?
@@ -25,7 +25,7 @@ from sklearn.preprocessing import StandardScaler
 HERE = Path(__file__).parent
 RES = HERE / "results"
 
-# ── Load data ────────────────────────────────────────────────────────────────
+## Load data
 
 
 def load_labeled():
@@ -99,7 +99,7 @@ def early_atoms(r, k=5):
     }
 
 
-# ── Analysis 1: Feature correlations with resolved ──────────────────────────
+## Analysis 1: Feature correlations with resolved
 
 
 def analysis_correlations(df):
@@ -140,7 +140,7 @@ def analysis_correlations(df):
     print()
 
 
-# ── Analysis 2: Logistic regression ─────────────────────────────────────────
+## Analysis 2: Logistic regression
 
 
 def analysis_logistic(df):
@@ -194,7 +194,7 @@ def analysis_logistic(df):
     print()
 
 
-# ── Analysis 3: Pass rate by trajectory length ───────────────────────────────
+## Analysis 3: Pass rate by trajectory length
 
 
 def analysis_length_vs_pass(df):
@@ -221,7 +221,7 @@ def analysis_length_vs_pass(df):
     print()
 
 
-# ── Analysis 4: Edit:test ratio vs pass rate ──────────────────────────────────
+## Analysis 4: Edit:test ratio vs pass rate
 
 
 def analysis_edit_test_ratio(df):
@@ -230,7 +230,6 @@ def analysis_edit_test_ratio(df):
     print("   (how many edits per test run)")
     print("=" * 72)
     df_c = df.dropna(subset=["resolved"]).copy()
-    # Bin edit_to_test into buckets
     bins = [0, 0.5, 1.0, 1.5, 2.0, 3.0, float("inf")]
     labels = [
         "<0.5 (tests >> edits)",
@@ -253,7 +252,7 @@ def analysis_edit_test_ratio(df):
     print()
 
 
-# ── Analysis 5: Early prediction (first 5 atoms) ─────────────────────────────
+## Analysis 5: Early prediction (first 5 atoms)
 
 
 def analysis_early_prediction():
@@ -292,7 +291,7 @@ def analysis_early_prediction():
     print()
 
 
-# ── Analysis 6: Cost efficiency ───────────────────────────────────────────────
+## Analysis 6: Cost efficiency
 
 
 def analysis_cost_efficiency(df):
@@ -312,7 +311,7 @@ def analysis_cost_efficiency(df):
         f"  expected cost/resolution: ${expected_cost_per_resolution:.2f}  (avg_cost / pass_rate)"
     )
     print()
-    # Top 20% of trajectories by cost — do they pass more?
+    # top 20% of trajectories by cost: do they pass more?
     threshold = df_c["instance_cost"].quantile(0.8)
     expensive = df_c[df_c["instance_cost"] >= threshold]["resolved"].mean()
     cheap = df_c[df_c["instance_cost"] < threshold]["resolved"].mean()
@@ -321,7 +320,7 @@ def analysis_cost_efficiency(df):
     print()
 
 
-# ── Run ──────────────────────────────────────────────────────────────────────
+## Run
 
 if __name__ == "__main__":
     df = load_labeled()
