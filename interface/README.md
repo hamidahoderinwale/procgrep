@@ -18,7 +18,7 @@ only where it explains.
 - **glenncatteeuw**: purposeful motion; interaction as storytelling.
 - **Adaption**: (URL TBD; fold in once confirmed).
 
-## L1 · Ecosystem (the map)
+## Ecosystem view (the map)
 
 Leads with **findings**, then the live index.
 
@@ -30,9 +30,9 @@ Leads with **findings**, then the live index.
   fragmentation is.*
 - **Release timeline**: datasets by `last_modified` (HF). *Decision: what's current.*
 - **The index**: sortable table: dataset · downloads · likes · adapter · #models ·
-  median length · exact-dup% · shortest→diverse · last-modified. Row → L2.
+  median length · exact-dup% · shortest→diverse · last-modified. A row opens its dataset view.
 
-## L2 · Dataset (the profile)
+## Dataset view (the profile)
 
 - **Header**: id, downloads/likes, adapter+confidence, last-modified, n traces.
 - **By model** *(agent_field)*: group traces by the producing model; per model:
@@ -46,9 +46,9 @@ Leads with **findings**, then the live index.
   by step position). *Decision: characterize "how" this corpus solves tasks.*
 - **Temporal**: per-step wall-clock is rarely in the data. Show the
   **step-position arc** (atom share vs step index) + dataset recency + model era;
-  surface token/cost timing only when a dataset carries it. Row → L3.
+  surface token/cost timing only when a dataset carries it. A row opens its trace view.
 
-## L3 · Trace (the conversation)
+## Trace view (the conversation)
 
 Drill into one trajectory: *the conversations themselves*, not just stats.
 
@@ -74,10 +74,10 @@ Drill into one trajectory: *the conversations themselves*, not just stats.
 Static pages over precomputed, cacheable JSON: re-running discover → sniff →
 curate refreshes them (dynamic, not frozen):
 
-- `catalog.json` → L1 (have a v1 already).
+- `catalog.json` feeds the ecosystem view (a v1 exists already).
 - per-dataset `profile.json` (model breakdown, length dist, fingerprint, sampled
-  traces) → L2. **New engine step: `profile_dataset()` (group by model + sample).**
-- sampled-trace JSON (atoms aligned to turns) → L3.
+  traces) feeds the dataset view. **New engine step: `profile_dataset()` (group by model + sample).**
+- sampled-trace JSON (atoms aligned to turns) feeds the trace view.
 
 Deployable as an HF Space / Vercel. Stack stays close to clean defaults: one
 static page + light JS, the theme palette, charts in the data-viz house style.
