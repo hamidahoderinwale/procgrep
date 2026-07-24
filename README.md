@@ -59,7 +59,7 @@ for row in matrix.to_records():
 
 **Procedures.** Recurring multi-step patterns learned from the corpus via BPE (the same algorithm used to tokenize text for language model training). A procedure might be `search_repo → read_file → think`, a pattern frequent enough to be worth naming.
 
-**Fingerprint.** A trajectory encoded as a distribution over procedures: how often each appeared. Two trajectories with similar fingerprints approached the problem similarly. It is a count vector over the vocabulary, not a hash or an embedding, so you can read *which* procedures drive a difference; trajectories can share one.
+**Fingerprint.** A trajectory encoded as a distribution over procedures: how often each appeared. Two trajectories with similar fingerprints approached the problem similarly. It is a plain count vector over the procedure vocabulary, not a hash or an embedding: unlike a hash, two trajectories can legitimately share one; unlike an embedding, you can read exactly which procedures make two fingerprints differ.
 
 **JSD.** Jensen-Shannon divergence: how different two fingerprints are. 0 = identical, 1 = completely non-overlapping. Used to compare agents, groups, or training conditions.
 
