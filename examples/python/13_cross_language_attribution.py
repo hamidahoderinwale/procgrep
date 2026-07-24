@@ -46,7 +46,7 @@ from procgrep.stats import discriminative_procedures
 warnings.filterwarnings("ignore", category=FutureWarning, module=r"sklearn\..*")
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_TRACES = ROOT / "examples" / "synthetic_gumtree_traces.jsonl"
+DEFAULT_TRACES = ROOT / "examples" / "data" / "synthetic_gumtree_traces.jsonl"
 
 
 def parse_args() -> argparse.Namespace:

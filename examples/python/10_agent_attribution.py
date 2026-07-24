@@ -26,7 +26,7 @@ We compare the BPE-procedure fingerprint against three naive baselines:
    training fold. Floor.
 
 The script runs on the bundled multi-language gumtree fixture
-(``examples/synthetic_gumtree_traces.jsonl``), where the agents have
+(``examples/data/synthetic_gumtree_traces.jsonl``), where the agents have
 deliberately different procedural signatures (``agent_alpha`` =
 surgical updates, ``agent_beta`` = rip-and-replace). Pass ``--traces``
 to point at a different corpus.
@@ -64,7 +64,7 @@ from procgrep.io import read_jsonl
 warnings.filterwarnings("ignore", category=FutureWarning, module=r"sklearn\..*")
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_TRACES = ROOT / "examples" / "synthetic_gumtree_traces.jsonl"
+DEFAULT_TRACES = ROOT / "examples" / "data" / "synthetic_gumtree_traces.jsonl"
 
 
 def parse_args() -> argparse.Namespace:
