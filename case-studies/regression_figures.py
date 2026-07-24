@@ -27,33 +27,12 @@ OUT.mkdir(parents=True, exist_ok=True)
 
 
 def load():
-    rows = []
-    for r in [
-        json.loads(l) for l in (RES / "fingerprints_child_n500.jsonl").read_text().splitlines()
-    ]:
-        if r.get("resolved") is None:
-            continue
-        atoms = [a for a in r.get("atoms_canonical", []) if a != "think"]
-        n = max(1, len(atoms))
-        cnt = Counter(atoms)
-        rich = {}
-        rows.append(
-            {
-                "resolved": int(r["resolved"]),
-                "edit_frac": cnt.get("edit", 0) / n,
-                "read_frac": cnt.get("read_file", 0) / n,
-                "test_frac": cnt.get("run_test", 0) / n,
-                "search_frac": cnt.get("search_repo", 0) / n,
-                "create_frac": cnt.get("create_file", 0) / n,
-                "error_frac": cnt.get("error", 0) / n,
-                "edit_to_test": cnt.get("edit", 0) / max(1, cnt.get("run_test", 1)),
-                "n_actions": n,
-            }
-        )
-    df = pd.DataFrame(rows)
+    # rich features are optional; their columns fall back to 0 when the file is absent
+    rd = {}
     rf = RES / "rich_features_20250511_sweagent_lm_32b.jsonl"
     if rf.exists():
-        rd = {json.loads(l)["instance_id"]: json.loads(l) for l in rf.read_text().splitlines()}
+        parsed = [json.loads(l) for l in rf.read_text().splitlines()]
+        rd = {row["instance_id"]: row for row in parsed}
     fp_rows = [
         json.loads(l) for l in (RES / "fingerprints_child_n500.jsonl").read_text().splitlines()
     ]
