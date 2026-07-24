@@ -37,7 +37,6 @@ def load():
         n = max(1, len(atoms))
         cnt = Counter(atoms)
         rich = {}
-        # Try to join rich features
         rows.append(
             {
                 "resolved": int(r["resolved"]),
@@ -52,11 +51,9 @@ def load():
             }
         )
     df = pd.DataFrame(rows)
-    # Join rich features
     rf = RES / "rich_features_20250511_sweagent_lm_32b.jsonl"
     if rf.exists():
         rd = {json.loads(l)["instance_id"]: json.loads(l) for l in rf.read_text().splitlines()}
-        # re-load with instance_id
     fp_rows = [
         json.loads(l) for l in (RES / "fingerprints_child_n500.jsonl").read_text().splitlines()
     ]
@@ -190,7 +187,6 @@ def fig_length_vs_pass():
             tooltip=["bin", alt.Tooltip("pass_rate:Q", format=".0%"), alt.Tooltip("n:Q")],
         )
     )
-    # annotate n on each point
     txt = (
         alt.Chart(stats)
         .mark_text(dy=-12, fontSize=8, color=NEAR_BLACK)

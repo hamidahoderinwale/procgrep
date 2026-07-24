@@ -24,7 +24,7 @@ RES = HERE / "results"
 OUT = RES / "paper_figures"
 OUT.mkdir(parents=True, exist_ok=True)
 
-# ── helpers ──────────────────────────────────────────────────────────────────
+## helpers
 
 SWEBENCH_AGENTS = [  # SWE-agent format (same scaffold = clean comparison)
     "Claude-3 Opus",
@@ -142,7 +142,7 @@ def save(chart, name):
     return path
 
 
-# ── Figure 1: JSD Heatmaps (canonical + native side-by-side) ─────────────────
+## Figure 1: JSD Heatmaps (canonical + native side-by-side)
 
 
 def fig_jsd_heatmaps():
@@ -199,7 +199,7 @@ def fig_jsd_heatmaps():
     return save(chart, "fig1_jsd_heatmaps")
 
 
-# ── Figure 2: Canonical atom distributions ───────────────────────────────────
+## Figure 2: Canonical atom distributions
 
 
 def fig_canonical_atoms():
@@ -278,7 +278,7 @@ def fig_canonical_atoms():
     return save(chart, "fig2_canonical_atoms")
 
 
-# ── Figure 3: Native top-12 vocabulary heat-strip ────────────────────────────
+## Figure 3: Native top-12 vocabulary heat-strip
 
 
 def fig_native_heatstrip():
@@ -331,7 +331,7 @@ def fig_native_heatstrip():
     return save(chart, "fig3_native_heatstrip")
 
 
-# ── Figure 4: Procgrep metrics (effective vocab + entropy + seq length) ───────
+## Figure 4: Procgrep metrics (effective vocab + entropy + seq length)
 
 
 def fig_procgrep_metrics():
@@ -405,7 +405,7 @@ def fig_procgrep_metrics():
     return save(chart, "fig4_procgrep_metrics")
 
 
-# ── Figure 5: Identification probe F1 ────────────────────────────────────────
+## Figure 5: Identification probe F1
 
 
 def fig_probe_f1():
@@ -447,7 +447,7 @@ def fig_probe_f1():
     )
 
 
-# ── Figure 6: Token verbosity + cost ─────────────────────────────────────────
+## Figure 6: Token verbosity + cost
 
 
 def fig_tokens_cost():
@@ -512,7 +512,7 @@ def fig_tokens_cost():
     return save(chart, "fig6_tokens_cost")
 
 
-# ── Figure 7: File consumption ────────────────────────────────────────────────
+## Figure 7: File consumption
 
 
 def fig_files():
@@ -549,7 +549,7 @@ def fig_files():
     return save(chart, "fig7_files")
 
 
-# ── Figure 8: Shell command taxonomy ─────────────────────────────────────────
+## Figure 8: Shell command taxonomy
 
 
 def fig_shell_taxonomy():
@@ -658,7 +658,7 @@ def fig_shell_taxonomy():
     return save(chart, "fig8_shell_taxonomy")
 
 
-# ── Figure 9: OOD score by pass / fail ────────────────────────────────────────
+## Figure 9: OOD score by pass / fail
 
 
 def fig_ood():
@@ -689,7 +689,7 @@ def fig_ood():
     return save(chart, "fig9_ood_scores")
 
 
-# ── Figure 10: Within-trajectory drift ───────────────────────────────────────
+## Figure 10: Within-trajectory drift
 
 
 def fig_drift():
@@ -734,7 +734,7 @@ def fig_drift():
     return save(chart, "fig10_drift")
 
 
-# ── Figure 11a: Agent identity step patterns ─────────────────────────────────
+## Figure 11a: Agent identity step patterns
 
 
 def _is_repetition_of(longer: list[str], shorter: list[str]) -> bool:
@@ -813,8 +813,8 @@ def fig_discriminative_agents():
     rows = []
     for agent_key, (label, color, comp_key) in DISPLAY.items():
         procs = raw.get(comp_key, {}).get(agent_key, [])
-        # Totally exclusive, 2–6 steps (single atoms are BPE artifacts;
-        # longer entries are partial extensions of shorter primitives)
+        # totally exclusive, 2 to 8 steps: single atoms are BPE artifacts;
+        # longer entries are partial extensions of shorter primitives
         excl = sorted(
             [
                 p
@@ -910,7 +910,7 @@ def fig_discriminative_agents():
     )
 
 
-# ── Figure 11b: Pass / fail step patterns ────────────────────────────────────
+## Figure 11b: Pass / fail step patterns
 
 
 def fig_discriminative_outcomes():
@@ -1008,7 +1008,7 @@ def fig_discriminative_outcomes():
     )
 
 
-# ── Figure 12: Tier 1B SODP scatter ──────────────────────────────────────────
+## Figure 12: Tier 1B SODP scatter
 
 
 def fig_tier1b():
@@ -1026,8 +1026,7 @@ def fig_tier1b():
 
     data = json.loads(src.read_text())
 
-    # Rebuild per-instance records from stored SODP/DOSP + stats
-    # We only have aggregates in the JSON; re-derive from fingerprint files
+    # the JSON stores only aggregates; re-derive per-instance JSD from fingerprint files
     fp_files = {
         "Claude-3.5 Sonnet": RES / "fingerprints_claude3.5sonnet_n500.jsonl",
         "Claude-4 Sonnet": RES / "fingerprints_claude4sonnet_n500.jsonl",
@@ -1116,7 +1115,7 @@ def fig_tier1b():
         )
     )
 
-    # Mark the Q75 threshold for each pair as a reference line
+    # q75 rule = the SODP threshold used in tier1b_matched_pairs.py
     q75_data = df.groupby("pair")["jsd"].quantile(0.75).reset_index().rename(columns={"jsd": "q75"})
     rule = (
         alt.Chart(q75_data)
@@ -1137,7 +1136,7 @@ def fig_tier1b():
     )
 
 
-# ── Figure 13: Discriminative bigrams ─────────────────────────────────────────
+## Figure 13: Discriminative bigrams
 
 
 def fig_discriminative_bigrams():
@@ -1222,7 +1221,7 @@ def fig_discriminative_bigrams():
     return save(chart, "fig13_discriminative_bigrams")
 
 
-# ── Run all ───────────────────────────────────────────────────────────────────
+## Run all
 
 if __name__ == "__main__":
     print("Generating figures → results/paper_figures/")
@@ -1261,7 +1260,7 @@ if __name__ == "__main__":
         print(f"  {p.name}")
 
 
-# ── Figure 14: Positional divergence line chart ───────────────────────────────
+## Figure 14: Positional divergence line chart
 
 
 def fig_positional_divergence():
@@ -1298,7 +1297,6 @@ def fig_positional_divergence():
             y="jsd:Q",
         )
     )
-    # Annotate step 1 peak
     peak = df.loc[df["jsd"].idxmax()]
     ann = (
         alt.Chart(
