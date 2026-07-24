@@ -16,6 +16,7 @@ import re
 import ssl
 import sys
 import time
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path

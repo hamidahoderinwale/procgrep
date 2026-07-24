@@ -18,6 +18,7 @@ import re
 import ssl
 import sys
 import time
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -125,7 +126,7 @@ def fingerprint_openhands(messages: list) -> tuple[list[str], list[str]]:
         if isinstance(tool_calls, str):
             try:
                 tool_calls = json.loads(tool_calls)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 tool_calls = []
         for tc in tool_calls if isinstance(tool_calls, list) else []:
             action = tool_call_to_action(tc)
