@@ -5,7 +5,7 @@ discovered dataset, so we can see -- across the whole ecosystem, not a curated
 list -- which formats dominate and what fraction procgrep can parse today.
 This is the data backbone for a browsable index UI.
 
-    python case-studies/ecosystem_catalog.py --top 60 --out catalog.json
+    python interface/ecosystem_catalog.py --top 60 --out catalog.json
 """
 
 from __future__ import annotations
@@ -15,8 +15,8 @@ import json
 import re
 from collections import Counter
 
-from procgrep.ingest.discover import discover
 from procgrep.ingest import plan
+from procgrep.ingest.discover import discover
 
 # Coarse out-of-scope domains (no discrete tool/code actions to canonicalize).
 _OUT_OF_SCOPE = re.compile(
@@ -28,9 +28,15 @@ _OUT_OF_SCOPE = re.compile(
 # Which eval/benchmark a dataset targets (most-specific first so rebench/zero
 # win over the generic swe-bench match).
 _BENCHMARKS = [
-    ("SWE-rebench", r"rebench"), ("SWE-smith", r"swe-?smith"), ("SWE-Gym", r"swe-?gym"),
-    ("SWE-Zero", r"swe-?zero"), ("R2E-Gym", r"r2e"), ("Terminal-Bench", r"terminal"),
-    ("OSWorld", r"osworld"), ("WebVoyager", r"webvoyager"), ("SWE-bench", r"swe-?bench"),
+    ("SWE-rebench", r"rebench"),
+    ("SWE-smith", r"swe-?smith"),
+    ("SWE-Gym", r"swe-?gym"),
+    ("SWE-Zero", r"swe-?zero"),
+    ("R2E-Gym", r"r2e"),
+    ("Terminal-Bench", r"terminal"),
+    ("OSWorld", r"osworld"),
+    ("WebVoyager", r"webvoyager"),
+    ("SWE-bench", r"swe-?bench"),
 ]
 
 
@@ -64,14 +70,26 @@ def main() -> None:
         }
         try:
             p = plan(m.id, timeout=25.0)
-            row |= {"adapter": p.adapter, "confidence": p.confidence,
-                    "supported": p.confidence > 0.0, "candidate": p.candidate}
-        except Exception as e:  # noqa: BLE001 - one bad dataset must not abort the sweep
-            row |= {"adapter": None, "confidence": 0.0, "supported": False, "candidate": False,
-                    "error": f"{type(e).__name__}: {str(e)[:80]}"}
+            row |= {
+                "adapter": p.adapter,
+                "confidence": p.confidence,
+                "supported": p.confidence > 0.0,
+                "candidate": p.candidate,
+            }
+        except Exception as e:
+            row |= {
+                "adapter": None,
+                "confidence": 0.0,
+                "supported": False,
+                "candidate": False,
+                "error": f"{type(e).__name__}: {str(e)[:80]}",
+            }
         rows.append(row)
-        tag = row.get("adapter") or ("out-of-scope" if row["out_of_scope"]
-              else ("trace?-unsupported" if row.get("candidate") else "not-a-trace"))
+        tag = row.get("adapter") or (
+            "out-of-scope"
+            if row["out_of_scope"]
+            else ("trace?-unsupported" if row.get("candidate") else "not-a-trace")
+        )
         print(f"{row['downloads']:>8} dl  {row['id']:<54} {tag}", flush=True)
 
     payload = {"generated": args.generated, "n_discovered": len(metas), "datasets": rows}
@@ -82,15 +100,19 @@ def main() -> None:
     sup = [r for r in rows if r["supported"]]
     candidates = [r for r in rows if r.get("candidate")]
     fmt_gap = [r for r in candidates if not r["supported"]]
-    not_trace = [r for r in rows if not r.get("candidate") and not r["supported"] and not r["out_of_scope"]]
+    not_trace = [
+        r for r in rows if not r.get("candidate") and not r["supported"] and not r["out_of_scope"]
+    ]
     oos = [r for r in rows if r["out_of_scope"]]
     print(f"\nsniffed {len(rows)}:")
     print(f"  parseable      {len(sup)}  {dict(Counter(r['adapter'] for r in sup))}")
     print(f"  format-gap     {len(fmt_gap)}  (trace datasets, adapter missing — the roadmap)")
     print(f"  not-a-trace    {len(not_trace)}  (no conversation column — benchmarks/corpora)")
     print(f"  out-of-scope   {len(oos)}  (non-tool domains)")
-    print(f"  COVERAGE among trace candidates: {len(sup)}/{len(candidates)} = "
-          f"{len(sup)/max(len(candidates),1):.0%}")
+    print(
+        f"  COVERAGE among trace candidates: {len(sup)}/{len(candidates)} = "
+        f"{len(sup) / max(len(candidates), 1):.0%}"
+    )
     print(f"wrote {args.out}")
 
 

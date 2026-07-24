@@ -114,6 +114,7 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**/*.py" = ["B011"]  # allow assert False
+"interface/*.py" = ["RUF001"]  # embedded page uses real typography (multiplication sign, micro, less-or-equal)
 
 [tool.ruff.format]
 quote-style = "double"
