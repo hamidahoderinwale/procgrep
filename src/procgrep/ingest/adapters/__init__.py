@@ -5,7 +5,8 @@ canonical name in `procgrep.canonicalize`.
 
 Registered: ``swe-agent``, ``swe-smith`` and ``swe-smith-native`` (share the
 swe-agent atom map), ``mini-swe-agent``, ``openhands``, ``react-text``,
-``agentless``, ``dars``, ``moatless``, ``gumtree`` (fine-grained
+``agentless``, ``dars``, ``moatless``, ``prompt-completion`` (OpenAI-style
+prompt/completion SFT tool-use corpora), ``gumtree`` (fine-grained
 node-typed AST atoms), ``cursor-companion`` (human+AI sessions from Cursor
 IDE via the cursor-telemetry companion service), ``claude-code``
 (Claude Code session transcripts from ``~/.claude/projects/``), and the other
@@ -42,6 +43,7 @@ from procgrep.ingest.adapters import (
     moatless,
     opencode,
     openhands,
+    prompt_completion,
     react_text,
     swe_agent,
     swe_agent_traj,
@@ -61,6 +63,7 @@ __all__ = [
     "moatless",
     "opencode",
     "openhands",
+    "prompt_completion",
     "react_text",
     "swe_agent",
     "swe_agent_traj",

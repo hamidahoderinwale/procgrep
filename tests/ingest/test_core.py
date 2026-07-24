@@ -100,7 +100,7 @@ def test_sniff_returns_all_sniffers_ranked_in_unit_range() -> None:
         ({"messages": [{"role": "assistant", "tool_calls": [{"function": {"name": "x"}}]}]},),
     )
     ranked = sniff(schema)
-    assert len(ranked) == 5
+    assert len(ranked) == 6
     confs = [r.confidence for r in ranked]
     assert confs == sorted(confs, reverse=True)
     assert all(0.0 <= c <= 1.0 for c in confs)

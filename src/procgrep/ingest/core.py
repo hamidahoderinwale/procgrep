@@ -333,7 +333,20 @@ def _sniff_react_text(schema: DatasetSchema) -> float:
     return 0.8 if has_fence else 0.0
 
 
+def _sniff_prompt_completion(schema: DatasetSchema) -> float:
+    # OpenAI-style prompt/completion column pair; confident when a completion
+    # turn carries structured tool_calls, tentative on the bare column pair.
+    if "completion" not in schema.columns:
+        return 0.0
+    for row in schema.sample_rows:
+        turns = _decode_conv(row.get("completion"))
+        if turns and any(isinstance(m, Mapping) and m.get("tool_calls") for m in turns):
+            return 0.9
+    return 0.45 if "prompt" in schema.columns else 0.0
+
+
 SNIFFERS: tuple[Sniffer, ...] = (
+    Sniffer("prompt-completion", _sniff_prompt_completion),
     Sniffer("openhands", _sniff_openhands),
     Sniffer("mini-swe-agent", _sniff_mini_swe),
     Sniffer("react-text", _sniff_react_text),
