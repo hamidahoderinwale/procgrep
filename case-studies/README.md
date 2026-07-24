@@ -1,4 +1,4 @@
-# procgrep — empirical case studies
+# procgrep: empirical case studies
 
 Reproduces the empirical results in *Procedural Grep: Structural Variation for Agent Rollouts*. Each script reads fingerprint JSONLs (one row per trajectory: `instance_id`, `atoms_canonical`, `atoms_native`, `resolved`) and writes a JSON or PNG.
 
@@ -23,21 +23,21 @@ Adapter scripts convert raw trajectory formats into a uniform fingerprint JSONL.
 ## Analysis
 
 **Per-agent fingerprints**
-- `multi_agent_analysis.py` — pairwise JSD matrix, identification probe
-- `behavioral_features.py` — search-first %, edit streaks, recovery, interleave
-- `discriminative_procedures_analysis.py` — BPE habits exclusive to each agent
-- `discriminative_bigrams.py` — transition-level fingerprints
+- `multi_agent_analysis.py`: pairwise JSD matrix, identification probe
+- `behavioral_features.py`: search-first %, edit streaks, recovery, interleave
+- `discriminative_procedures_analysis.py`: BPE habits exclusive to each agent
+- `discriminative_bigrams.py`: transition-level fingerprints
 
 **Cross-agent comparison**
-- `positional_divergence.py` — per-step JSD between agent pairs
-- `metric_comparison.py` — JSD vs KL / Hellinger / TV / Cosine robustness
-- `identification_probe_stratified.py` — stratified k-fold agent identification
-- `tier1b_matched_pairs.py` — same-outcome-different-procedure (SODP) pairs
+- `positional_divergence.py`: per-step JSD between agent pairs
+- `metric_comparison.py`: JSD vs KL / Hellinger / TV / Cosine robustness
+- `identification_probe_stratified.py`: stratified k-fold agent identification
+- `tier1b_matched_pairs.py`: same-outcome-different-procedure (SODP) pairs
 
 **Outcome-aware**
-- `regression_analysis.py` — outcome prediction from procedural features (AUC = 0.81)
-- `ood_analysis.py` — per-trajectory OOD score distribution
-- `patch_type_figures.py` — source-only vs source+tests breakdown
+- `regression_analysis.py`: outcome prediction from procedural features (AUC = 0.81)
+- `ood_analysis.py`: per-trajectory OOD score distribution
+- `patch_type_figures.py`: source-only vs source+tests breakdown
 
 ## Figures
 
