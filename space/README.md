@@ -13,7 +13,7 @@ pinned: false
 **Intent.** A Hugging Face Docker Space that runs ProcGrep server-side: it ingests a
 trajectory dataset, canonicalizes it into an action vocabulary, and answers structural
 queries over the **whole** dataset, not a fixed sample. Read this when changing the live
-explorer or its hosting. The static, embedded-data version lives in the paper repo at
+explorer or its hosting. The static, embedded-data version lives in this repo at
 `docs/explorer/`; this Space is the version that scales past the embed's size limit.
 
 ## Why a Space and not just the static page
