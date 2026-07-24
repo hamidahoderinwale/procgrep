@@ -36,6 +36,15 @@ times out elsewhere is not a problem here.
 4. **Queries are regexes over the canonical atom spine.** One query language shared with the
    static essay's query box. Price: the spine drops argument-level detail, by design.
 
+## Deploying
+
+`.github/workflows/deploy-space.yml` syncs this folder to the Space and
+factory-rebuilds it on every `space/` change on `main`, weekly (to pick up
+library changes, since the image installs procgrep from `git@main`), and on
+manual dispatch. It needs the `HF_TOKEN` repository secret. The manual
+fallback is `HfApi().upload_folder(folder_path="space", repo_id="midah/procgrep-explorer", repo_type="space")`
+plus `restart_space(..., factory_reboot=True)`.
+
 ## Endpoints
 
 - `GET /`: the query frontend.
