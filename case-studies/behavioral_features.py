@@ -4,7 +4,7 @@ Extracts per-trajectory features beyond simple atom fractions:
   - search_first: does the agent search before its first edit? (exploration-first)
   - edit_run_max: longest consecutive edit streak (batch-style vs interleaved)
   - think_early_frac: fraction of think atoms in first 25% of trajectory (upfront planning)
-  - error_recovery_rate: fraction of errors followed by a successful test within 3 steps
+  - error_recovery_rate: fraction of errors followed by a test run within 3 steps
   - read_before_first_edit: how many reads before the first edit (scoping breadth)
   - interleave_score: fraction of edits immediately followed by a test
 
