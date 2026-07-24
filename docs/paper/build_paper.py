@@ -186,7 +186,7 @@ FT_JS = r"""
   const W=560,RH=34,PADL=160,PADR=20,PADT=18,PADB=46,H=PADT+D.length*RH+PADB;
   const x=d3.scaleLinear().domain([0,1]).range([PADL,W-PADR]);
   mount.innerHTML=
-    `<div class="jtip" id="ft-tip"><span class="dim">Forward = the agent does what it said (says→does). Reverse = it said what it did (did→says). Hover a marker.</span></div>`+
+    `<div class="jtip" id="ft-tip"><span class="dim">Forward = the agent does what it said (says→does). Reverse = it said what it did (did→says).</span></div>`+
     `<div class="ftleg"><span><svg width=14 height=14><circle cx=7 cy=7 r=5 fill="#585E53"/></svg> forward</span>`+
     `<span><svg width=14 height=14><polygon points="7,2 12,12 2,12" fill="#585E53"/></svg> reverse</span>`+
     `<span><i style="background:#CB4D20"></i>Claude</span><span><i style="background:#5692E5"></i>GPT</span></div>`;
