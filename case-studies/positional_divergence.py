@@ -76,8 +76,7 @@ def run():
 
     agent_names = list(corpora.keys())
 
-    # ── Absolute position profiles ────────────────────────────────────────────
-    # For each agent and position k, distribution over atoms at position k.
+    ## Absolute position profiles
     abs_profiles: dict[str, dict[int, np.ndarray]] = {}
     for name, seqs in corpora.items():
         pos_counts: dict[int, Counter] = defaultdict(Counter)
@@ -90,7 +89,6 @@ def run():
             if sum(cnt.values()) >= 10  # at least 10 trajectories reach this depth
         }
 
-    # Cross-agent mean JSD at each position
     print("=" * 68)
     print("ABSOLUTE POSITION DIVERGENCE  (mean pairwise JSD across all agent pairs)")
     print(f"{'Step k':>8s}  {'Mean JSD':>10s}  {'Most-divergent pair'}")
@@ -119,7 +117,6 @@ def run():
     peak_k = max(abs_divergence, key=abs_divergence.get)
     print(f"\n  Peak divergence at step {peak_k}  (JSD={abs_divergence[peak_k]:.3f})")
 
-    # Which atom drives the divergence at the peak step?
     print(f"\n  Atom distribution at peak step k={peak_k}:")
     print(f"  {'Agent':25s}" + "".join(f"  {a[:8]:>8s}" for a in CANON))
     for name in agent_names:
@@ -131,7 +128,7 @@ def run():
             row += f"  {v:8.3f}"
         print(row)
 
-    # ── Relative position profiles ────────────────────────────────────────────
+    ## Relative position profiles
     print("\n" + "=" * 68)
     print("RELATIVE POSITION DIVERGENCE  (trajectory deciles 0%–100%)")
     print("=" * 68)
@@ -169,7 +166,6 @@ def run():
         bar = "█" * int(mean_jsd * 30)
         print(f"  {label:>8s}  {mean_jsd:.3f}  {bar}  [{max_pair[0]} vs {max_pair[1]}]")
 
-    # ── Save results ──────────────────────────────────────────────────────────
     out = {
         "absolute": {str(k): v for k, v in abs_divergence.items()},
         "relative": {str(b): v for b, v in rel_divergence.items()},

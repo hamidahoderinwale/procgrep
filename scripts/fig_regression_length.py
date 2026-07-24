@@ -56,7 +56,7 @@ for _ in range(300):
 boot = np.array(boot)
 lo, hi = np.percentile(boot, [2.5, 97.5], axis=0)
 
-x_vals = 10 ** grid
+x_vals = 10**grid
 
 fig, ax = plt.subplots(figsize=(6.2, 4.4))
 

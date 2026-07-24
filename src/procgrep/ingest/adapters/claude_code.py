@@ -58,6 +58,7 @@ import collections
 import json
 import re
 from collections.abc import Callable, Mapping
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -78,7 +79,7 @@ from procgrep.types import (
     AtomSequence,
 )
 
-_EDIT_TOOLS = {"edit", "write", "notebookedit", "multiedit"}
+_EDIT_EVENT_KINDS = {"edit", "write", "notebookedit", "multiedit"}
 _READ_TOOLS = {"read", "notebookread"}
 _SEARCH_TOOLS = {"grep", "glob"}
 _WEB_TOOLS = {"websearch", "webfetch"}
@@ -102,7 +103,9 @@ _LINT_CMD = re.compile(
     re.IGNORECASE,
 )
 _SEARCH_CMD = re.compile(r"(^|\s|;|&|\|)(grep|rg|ag|ack|find|fd)\b", re.IGNORECASE)
-_RUN_CMD = re.compile(r"(^|\s|;|&|\|)(python3?|node|deno|bun|ruby|go run|cargo run|make|\./)", re.IGNORECASE)
+_RUN_CMD = re.compile(
+    r"(^|\s|;|&|\|)(python3?|node|deno|bun|ruby|go run|cargo run|make|\./)", re.IGNORECASE
+)
 
 # A Bash command -> a privacy-safe sub-kind, ordered most-specific first. The
 # command is classified by its leading verb/keywords and then DISCARDED in
@@ -139,9 +142,7 @@ def _classify_bash(command: str) -> str:
 _READ_CMD = re.compile(
     r"(^|\s|;|&|\|)(cat|sed|head|tail|nl|less|more|bat|Get-Content)\b", re.IGNORECASE
 )
-_LIST_CMD = re.compile(
-    r"(^|\s|;|&|\|)(ls|tree|Get-ChildItem|Select-String)\b", re.IGNORECASE
-)
+_LIST_CMD = re.compile(r"(^|\s|;|&|\|)(ls|tree|Get-ChildItem|Select-String)\b", re.IGNORECASE)
 
 
 def _classify_terminal_command(command: str) -> str:
@@ -165,7 +166,7 @@ def _classify_terminal_command(command: str) -> str:
 
 CLAUDE_RULES: tuple[EventRule, ...] = (
     EventRule(field_in("kind", {"user_prompt"}), (ATOM_PROMPT_AI,)),
-    EventRule(field_in("kind", {*_EDIT_TOOLS, "file_snapshot"}), (ATOM_EDIT,)),
+    EventRule(field_in("kind", {*_EDIT_EVENT_KINDS, "file_snapshot"}), (ATOM_EDIT,)),
     EventRule(field_in("kind", _READ_TOOLS), (ATOM_READ_FILE,)),
     EventRule(field_in("kind", _SEARCH_TOOLS), (ATOM_SEARCH_REPO,)),
     EventRule(field_in("kind", _WEB_TOOLS), (ATOM_SEARCH_REPO,)),
@@ -312,7 +313,9 @@ def summarize_transcript(record: Mapping[str, Any]) -> dict[str, Any]:
                     continue
                 btype = block.get("type")
                 if btype in ("text", "thinking"):
-                    words, chars = _words_chars(str(block.get("text") or block.get("thinking") or ""))
+                    words, chars = _words_chars(
+                        str(block.get("text") or block.get("thinking") or "")
+                    )
                     out["reasoning_words"] += words
                     out["reasoning_chars"] += chars
                 elif btype == "tool_use":
@@ -361,7 +364,6 @@ def _clock(ts: object) -> str:
     """``HH:MM`` from an ISO timestamp, or ``''``."""
     if not isinstance(ts, str):
         return ""
-    from datetime import datetime
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%H:%M")
     except ValueError:
@@ -372,18 +374,16 @@ def _day(ts: object) -> str:
     """``Mon DD`` from an ISO timestamp, or ``''``."""
     if not isinstance(ts, str):
         return ""
-    from datetime import datetime
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%b %d")
     except ValueError:
         return ""
 
 
-def _iso_dt(ts: object):
+def _iso_dt(ts: object) -> datetime | None:
     """Parse an ISO timestamp to a ``datetime``, or ``None``."""
     if not isinstance(ts, str):
         return None
-    from datetime import datetime
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00"))
     except ValueError:
@@ -406,8 +406,15 @@ def _prompt_text(content: Any) -> str:
 # Tool names whose input carries an edited file path, for the per-cascade module
 # rollup (where a goal landed). Lower-cased for matching.
 _EDIT_TOOLS = frozenset(
-    {"edit", "write", "multiedit", "notebookedit", "str_replace_editor",
-     "str_replace_based_edit_tool", "create_file"}
+    {
+        "edit",
+        "write",
+        "multiedit",
+        "notebookedit",
+        "str_replace_editor",
+        "str_replace_based_edit_tool",
+        "create_file",
+    }
 )
 
 
@@ -483,8 +490,14 @@ def build_panel_session(
                 turns.append(cur)
             text = _prompt_text(content)
             prompt = paraphrase(text) if (paraphrase is not None and text) else text
-            cur = {"t": _clock(line.get("timestamp")), "model": "", "prompt": prompt,
-                   "plan": "", "seq": [], "edits": {}}
+            cur = {
+                "t": _clock(line.get("timestamp")),
+                "model": "",
+                "prompt": prompt,
+                "plan": "",
+                "seq": [],
+                "edits": {},
+            }
         elif kind == "assistant" and isinstance(content, list):
             if cur is None:
                 continue
@@ -499,7 +512,9 @@ def build_panel_session(
                 name = str(block.get("name") or "")
                 if name.lower() == "bash":
                     tool_input = block.get("input")
-                    command = tool_input.get("command", "") if isinstance(tool_input, Mapping) else ""
+                    command = (
+                        tool_input.get("command", "") if isinstance(tool_input, Mapping) else ""
+                    )
                     cur["seq"].append(_BASH_ATOM[_classify_bash(str(command))])
                 else:
                     cur["seq"].append(_tool_atom(name))
@@ -542,6 +557,7 @@ def build_panel_session(
 def _anon_id(value: str, length: int = 8) -> str:
     """Stable truncated SHA-256 of *value*. Not reversible."""
     import hashlib
+
     return hashlib.sha256(value.encode()).hexdigest()[:length]
 
 
@@ -566,7 +582,9 @@ def load_claude_transcript(path: str | Path, *, anonymize: bool = True) -> dict[
                 continue
             if isinstance(parsed, dict):
                 lines.append(parsed)
-    raw_id = next((str(line["sessionId"]) for line in lines if line.get("sessionId")), Path(path).stem)
+    raw_id = next(
+        (str(line["sessionId"]) for line in lines if line.get("sessionId")), Path(path).stem
+    )
     cwd = next((str(line["cwd"]) for line in lines if line.get("cwd")), "")
     if anonymize:
         trace_id = _anon_id(raw_id)

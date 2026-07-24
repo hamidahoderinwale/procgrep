@@ -43,12 +43,17 @@ _SYNTHETIC = {
     "agent": "demo",
     "events": [
         {"type": "user", "message": {"content": "add a flag and test it"}},
-        {"type": "assistant", "message": {"content": [
-            {"type": "tool_use", "name": "Grep", "input": {}},
-            {"type": "tool_use", "name": "Read", "input": {}},
-            {"type": "tool_use", "name": "Edit", "input": {}},
-            {"type": "tool_use", "name": "Bash", "input": {"command": "pytest -q"}},
-        ]}},
+        {
+            "type": "assistant",
+            "message": {
+                "content": [
+                    {"type": "tool_use", "name": "Grep", "input": {}},
+                    {"type": "tool_use", "name": "Read", "input": {}},
+                    {"type": "tool_use", "name": "Edit", "input": {}},
+                    {"type": "tool_use", "name": "Bash", "input": {"command": "pytest -q"}},
+                ]
+            },
+        },
         {"type": "file-history-snapshot"},
     ],
 }
@@ -95,11 +100,19 @@ def _load_traces(path: str | None) -> list[Trace]:
         atoms = claude_code_adapter(record)
         if len(atoms) >= 10:
             traces.append(
-                Trace(trace_id=record["trace_id"], agent=record["agent"], atoms=atoms, group="claude_code", metadata={})
+                Trace(
+                    trace_id=record["trace_id"],
+                    agent=record["agent"],
+                    atoms=atoms,
+                    group="claude_code",
+                    metadata={},
+                )
             )
     if not traces:
         atoms = claude_code_adapter(_SYNTHETIC)
-        traces.append(Trace(trace_id="synthetic", agent="demo", atoms=atoms, group="claude_code", metadata={}))
+        traces.append(
+            Trace(trace_id="synthetic", agent="demo", atoms=atoms, group="claude_code", metadata={})
+        )
     return traces
 
 
@@ -131,8 +144,14 @@ def _report(label: str, traces: list[Trace]) -> None:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--path", default=None, help="dir of your own Claude Code transcripts (default: bundled atoms-only exemplar)")
-    parser.add_argument("--cursor", default=None, help="optional cursor-companion export.jsonl to contrast")
+    parser.add_argument(
+        "--path",
+        default=None,
+        help="dir of your own Claude Code transcripts (default: bundled atoms-only exemplar)",
+    )
+    parser.add_argument(
+        "--cursor", default=None, help="optional cursor-companion export.jsonl to contrast"
+    )
     args = parser.parse_args()
 
     _report("Claude Code", _load_traces(args.path))
@@ -141,7 +160,11 @@ def main() -> None:
         from procgrep.canonicalize import canonicalize
         from procgrep.io import read_jsonl
 
-        cursor = [t for t in canonicalize(list(read_jsonl(args.cursor)), adapter="cursor-companion") if len(t.atoms) >= 10]
+        cursor = [
+            t
+            for t in canonicalize(list(read_jsonl(args.cursor)), adapter="cursor-companion")
+            if len(t.atoms) >= 10
+        ]
         if cursor:
             _report("Cursor companion", cursor)
         print("\nContrast: a higher autonomy run-length means the human lets the agent")

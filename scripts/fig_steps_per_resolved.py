@@ -27,48 +27,54 @@ BIDIRECT = Path(__file__).resolve().parents[2] / "bidirect-align-dev-traces"
 OUT = Path(__file__).resolve().parents[1] / "docs" / "figures" / "fig_steps_per_resolved.png"
 
 SUBMISSION_LABEL = {
-    "20240402_sweagent_claude3opus":                          "Claude-3",
-    "20240402_sweagent_gpt4":                                 "GPT-4",
-    "20240620_sweagent_claude3.5sonnet":                      "Claude-3.5",
-    "20240728_sweagent_gpt4o":                                "GPT-4o",
-    "20250226_sweagent_claude-3-7-sonnet-20250219":           "Claude-3.7-thinking",
-    "20250526_sweagent_claude-4-sonnet-20250514":             "Claude-4",
-    "20250205_dars_agent_claude_3.5_sonnet_deepseek_r1":      "DARS+R1",
-    "20241202_agentless-1.5_claude-3.5-sonnet-20241022":      "Agentless+Claude-3.5",
-    "20250111_moatless_deepseek_v3":                          "Moatless+V3",
+    "20240402_sweagent_claude3opus": "Claude-3",
+    "20240402_sweagent_gpt4": "GPT-4",
+    "20240620_sweagent_claude3.5sonnet": "Claude-3.5",
+    "20240728_sweagent_gpt4o": "GPT-4o",
+    "20250226_sweagent_claude-3-7-sonnet-20250219": "Claude-3.7-thinking",
+    "20250526_sweagent_claude-4-sonnet-20250514": "Claude-4",
+    "20250205_dars_agent_claude_3.5_sonnet_deepseek_r1": "DARS+R1",
+    "20241202_agentless-1.5_claude-3.5-sonnet-20241022": "Agentless+Claude-3.5",
+    "20250111_moatless_deepseek_v3": "Moatless+V3",
 }
 
 AGENT_COLORS = {
-    "Claude-3":              COPPER,
-    "Claude-3.5":            GREEN,
-    "Claude-3.7-thinking":   "#20856A",
-    "Claude-4":              "#187860",
-    "GPT-4":                 BLUE,
-    "GPT-4o":                MAGENTA,
-    "DARS+R1":               "#7A1240",
-    "Agentless+Claude-3.5":  "#3A6DB5",
-    "Moatless+V3":           OLIVE,
+    "Claude-3": COPPER,
+    "Claude-3.5": GREEN,
+    "Claude-3.7-thinking": "#20856A",
+    "Claude-4": "#187860",
+    "GPT-4": BLUE,
+    "GPT-4o": MAGENTA,
+    "DARS+R1": "#7A1240",
+    "Agentless+Claude-3.5": "#3A6DB5",
+    "Moatless+V3": OLIVE,
 }
 
 LITE_TOTAL = 300
 
 
 def main() -> None:
-    agg = json.loads((BIDIRECT / "output" / "paper2_pilot" / "aggregate_metrics_extended.json").read_text())
-    pf  = json.loads((BIDIRECT / "output" / "paper2_pilot" / "extended_pass_fail.json").read_text())
+    agg = json.loads(
+        (BIDIRECT / "output" / "paper2_pilot" / "aggregate_metrics_extended.json").read_text()
+    )
+    pf = json.loads((BIDIRECT / "output" / "paper2_pilot" / "extended_pass_fail.json").read_text())
 
     rows = []
     for sub_id, agent in SUBMISSION_LABEL.items():
         info = pf.get(sub_id, {})
         n_resolved = len(set(info.get("resolved", [])))
         m = agg["metrics"].get(agent, {})
-        mean_len = m.get("canonical_length_mean") or m.get("mean_canonical_length") or m.get("mean_atoms")
+        mean_len = (
+            m.get("canonical_length_mean") or m.get("mean_canonical_length") or m.get("mean_atoms")
+        )
         if mean_len is None or n_resolved == 0:
             continue
-        rows.append({
-            "agent": agent,
-            "steps_per_resolved": mean_len * LITE_TOTAL / n_resolved,
-        })
+        rows.append(
+            {
+                "agent": agent,
+                "steps_per_resolved": mean_len * LITE_TOTAL / n_resolved,
+            }
+        )
 
     rows.sort(key=lambda r: r["steps_per_resolved"])
     agents = [r["agent"] for r in rows]

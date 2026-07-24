@@ -25,3 +25,15 @@ keywords:
   - jensen-shannon-divergence
   - trace-analysis
   - controlled-evaluation
+preferred-citation:
+  type: article
+  title: "Agent trajectories as programs: fingerprinting and programming coding-agent behavior"
+  authors:
+    - family-names: Oderinwale
+      given-names: Hamidah
+  year: 2026
+  url: "https://arxiv.org/abs/2606.16988"
+  identifiers:
+    - type: other
+      value: "arXiv:2606.16988"
+      description: "arXiv preprint"

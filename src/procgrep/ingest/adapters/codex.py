@@ -107,8 +107,12 @@ def _classify_mcp(name: str) -> str:
     if "write_file" in n or "replace" in n or "insert" in n or "create_file" in n:
         return "mcp_edit"
     if (
-        "search" in n or "find" in n or "list" in n or "symbol" in n
-        or "diagnostic" in n or "grep" in n
+        "search" in n
+        or "find" in n
+        or "list" in n
+        or "symbol" in n
+        or "diagnostic" in n
+        or "grep" in n
     ):
         return "mcp_search"
     if "thinking" in n or "memory_read" in n or "state_" in n:

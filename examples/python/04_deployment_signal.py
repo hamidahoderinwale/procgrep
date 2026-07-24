@@ -22,7 +22,7 @@ from procgrep import Trace, canonicalize, load_patterns, match_patterns
 from procgrep.io import read_jsonl
 
 ROOT = Path(__file__).resolve().parents[2]
-TRACES = ROOT / "examples" / "synthetic_traces.jsonl"
+TRACES = ROOT / "examples" / "data" / "synthetic_traces.jsonl"
 RULES = ROOT / "examples" / "rules" / "stuck_edit_loop.yaml"
 
 # Which rules to alert on at the prefix level. Some rules (such as

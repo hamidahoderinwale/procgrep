@@ -30,22 +30,27 @@ from figtheme import BLUE, COPPER, GREEN, INK, init, style_axes
 
 init()
 
-CG = Path(__file__).resolve().parents[2] / "bidirect-align-dev-traces" / "output" / "compositional_generalization"
+CG = (
+    Path(__file__).resolve().parents[2]
+    / "bidirect-align-dev-traces"
+    / "output"
+    / "compositional_generalization"
+)
 OUT = Path(__file__).resolve().parents[1] / "docs" / "figures" / "failure_by_family.png"
 
 CLAUDE_TOKENS = ("claude", "sonnet", "opus", "haiku")
-GPT_TOKENS    = ("gpt", "openai", "o3", "o1")
+GPT_TOKENS = ("gpt", "openai", "o3", "o1")
 
 FAMILY_COLOR = {
-    "Claude":      COPPER,
-    "GPT-4":       BLUE,
+    "Claude": COPPER,
+    "GPT-4": BLUE,
     "Open-weight": GREEN,
 }
 
 PANEL_LABEL = {
     "novel_composition": "Novel composition",
-    "novel_primitive":   "Novel primitive",
-    "familiar":          "Familiar pattern",
+    "novel_primitive": "Novel primitive",
+    "familiar": "Familiar pattern",
 }
 
 
@@ -83,8 +88,7 @@ def main() -> None:
     # Per-agent: within-failure fractions per category
     cat_order = ["novel_composition", "novel_primitive", "familiar"]
     family_rates: dict[str, dict[str, list[float]]] = {
-        fam: {cat: [] for cat in cat_order}
-        for fam in FAMILY_COLOR
+        fam: {cat: [] for cat in cat_order} for fam in FAMILY_COLOR
     }
 
     for agent in agents:
@@ -127,9 +131,14 @@ def main() -> None:
         plt.Line2D([0], [0], color=color, linewidth=2, label=fam)
         for fam, color in FAMILY_COLOR.items()
     ]
-    fig.legend(handles=handles, loc="lower center", ncol=3,
-               frameon=False, fontsize=9,
-               bbox_to_anchor=(0.5, -0.08))
+    fig.legend(
+        handles=handles,
+        loc="lower center",
+        ncol=3,
+        frameon=False,
+        fontsize=9,
+        bbox_to_anchor=(0.5, -0.08),
+    )
 
     fig.tight_layout(rect=[0, 0.0, 1, 1])
     OUT.parent.mkdir(parents=True, exist_ok=True)

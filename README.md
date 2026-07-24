@@ -6,8 +6,6 @@
 
 ![Replaying one agent trajectory step by step; a structural query fires the instant it matches](docs/figures/replay.gif)
 
-No model is in the loop: procgrep returns exact, reproducible measurements.
-
 ---
 
 ## What it does
@@ -246,16 +244,12 @@ pip install procgrep[dev]      # development dependencies
 
 ## Notes
 
-- Python 3.10+. No LLM SDK required.
-- Built-in adapters cover autonomous scaffolds (SWE-agent, OpenHands, Agentless, and more) and interactive human+AI sessions: `claude-code`, plus Cursor via `cursor-vscdb` (reads Cursor's local `state.vscdb` directly) or the `cursor-companion` exporter.
-- **Run it on your own sessions.** `python examples/procgrep_view.py` auto-detects your local Claude Code and Cursor sessions, opens the panel on a combined `overview` of run length (agent actions per human prompt), and lets you drill into any session. Reads the live Cursor `state.vscdb` directly with indexed range scans, so it stays fast even on a multi-GB store. Local-first.
-- **Share for a study.** `python examples/procgrep_export.py --out sessions.json` writes those same sessions as `to_shareable` payloads (atoms + counts + hashed ids, never prompts, code, or paths), so a collaborator can pool many developers' traces safely.
-- **Privacy model for interactive adapters.** The canonical ingest keeps only atoms and hashed identifiers (session ids, workspace paths) by default (`anonymize=True`); `to_shareable()` exports atoms and counts, never prompt text. The local panel can show your own prompts on your machine, but only the shareable export crosses the boundary.
-- **Procedural library.** `ProcedureLibrary("dir/")` saves derived or authored specs as YAML: reusable, git-versioned procedural memory. `spec.to_yaml()` round-trips with `from_yaml`, and library entries plug into `enforce` / `verify` / `score` unchanged (no new object model).
-- **Task clustering uses a pluggable embedder.** `cluster_tasks(texts, embedder)` takes any `Callable[[list[str]], ndarray]`, with a local `hf_embedder("<model>")` default that keeps text on-machine.
-- **procgrep sees only logged actions.** Some scaffolds run steps that never surface as tool calls: one Moatless trace hid 71 internal `RunTests`, so procgrep would report "no tests run", accurate about the log, not the behavior. Audit each new adapter once for what it surfaces.
-- **Procedural layer, not NL layer.** procgrep characterizes the tool-call trajectory an agent produces, complementary to prompt/demonstration optimizers like DSPy that shape what it's told; it depends on neither and calls no model.
-- **Coding-agent alphabet today.** The atom set targets coding tool-call traces; the canonicalization and fingerprinting machinery is domain-general, but GUI/browser traces would want a different alphabet, an open research question rather than a config.
-- **Add a scaffold** by registering a `TraceAdapter` (a callable from one raw record to an `AtomSequence`); see `examples/python/05_custom_adapter.py`.
+- Python 3.10+. No LLM SDK required; procgrep never calls a model.
+- Adapters cover autonomous scaffolds (SWE-agent, OpenHands, Agentless, and more) and interactive sessions: `claude-code`, plus Cursor via `cursor-vscdb` or the `cursor-companion` exporter.
+- **Try it on your own sessions.** `python examples/procgrep_view.py` auto-detects local Claude Code and Cursor sessions and opens the panel on them; `python examples/procgrep_export.py --out sessions.json` exports them for pooled studies.
+- **Privacy.** Ingest keeps only atoms and hashed identifiers (`anonymize=True`); `to_shareable()` exports atoms and counts, never prompts, code, or paths. Only the shareable export crosses the machine boundary.
+- **procgrep sees only logged actions.** Some scaffolds run steps that never surface as tool calls (one Moatless trace hid 71 internal `RunTests`), so procgrep is accurate about the log, not the behavior. Audit each new adapter once for what it surfaces.
+- **Scope.** The atom alphabet targets coding tool-call traces; the machinery is domain-general, but GUI/browser traces would want a different alphabet. procgrep characterizes the trajectory an agent produces, complementary to prompt optimizers like DSPy.
+- `ProcedureLibrary("dir/")` versions specs as YAML for `enforce` / `verify` / `score`; `cluster_tasks(texts, embedder)` accepts any local embedder. To add a scaffold, register a `TraceAdapter`; see `examples/python/05_custom_adapter.py`.
 
 See [METRICS.md](METRICS.md) for the full list of measurements and [STUDIES.md](STUDIES.md) for worked case studies. Cite via the repository's `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation. Runnable demos are in [`examples/`](examples/); the live-explorer backend in [`space/`](space/); the essay, figures, and reference pages in [`docs/`](docs/).

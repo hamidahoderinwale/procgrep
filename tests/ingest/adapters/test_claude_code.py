@@ -28,8 +28,7 @@ def _assistant(*tools: tuple[str, str]) -> dict:  # type: ignore[type-arg]
         "type": "assistant",
         "message": {
             "content": [
-                {"type": "tool_use", "name": name, "input": {"command": cmd}}
-                for name, cmd in tools
+                {"type": "tool_use", "name": name, "input": {"command": cmd}} for name, cmd in tools
             ]
         },
     }
@@ -65,7 +64,9 @@ def test_multi_tool_line_explodes_into_several_atoms() -> None:
 
 
 def test_bash_test_command_is_run_test_other_bash_is_other() -> None:
-    record = {"events": [_assistant(("Bash", "pytest -q"), ("Bash", "git status"), ("Bash", "ls -la"))]}
+    record = {
+        "events": [_assistant(("Bash", "pytest -q"), ("Bash", "git status"), ("Bash", "ls -la"))]
+    }
     # test -> run_test, git -> version_control, unrecognized -> other
     assert claude_code_adapter(record) == [ATOM_RUN_TEST, "version_control", "other"]
 
@@ -108,7 +109,10 @@ def test_summarize_counts_turns_words_tools_without_storing_text() -> None:
         "events": [
             _user_prompt("fix the bug now"),  # 4 words
             _assistant(("Read", ""), ("Edit", "")),
-            {"type": "assistant", "message": {"content": [{"type": "text", "text": "I will look"}]}},
+            {
+                "type": "assistant",
+                "message": {"content": [{"type": "text", "text": "I will look"}]},
+            },
             {"type": "file-history-snapshot"},
             _tool_result(),  # not a human turn
         ]
@@ -137,12 +141,21 @@ def test_bash_subclassified_into_safe_categories() -> None:
     assert _classify_bash("python app.py") == "bash_run"
     assert _classify_bash("ls -la") == "bash"  # unknown stays generic -> other
 
-    record = {"trace_id": "t", "agent": "a", "events": [
-        {"type": "assistant", "message": {"content": [
-            {"type": "tool_use", "name": "Bash", "input": {"command": "git status"}},
-            {"type": "tool_use", "name": "Bash", "input": {"command": "echo hi"}},
-        ]}},
-    ]}
+    record = {
+        "trace_id": "t",
+        "agent": "a",
+        "events": [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {"type": "tool_use", "name": "Bash", "input": {"command": "git status"}},
+                        {"type": "tool_use", "name": "Bash", "input": {"command": "echo hi"}},
+                    ]
+                },
+            },
+        ],
+    }
     assert claude_code_adapter(record) == ["version_control", "other"]
     # privacy: the raw command never reaches the flattened event
     flat = _flatten(record)
@@ -152,12 +165,21 @@ def test_bash_subclassified_into_safe_categories() -> None:
 def test_to_shareable_emits_atoms_only_no_transcript() -> None:
     from procgrep.ingest.adapters.claude_code import to_shareable
 
-    record = {"trace_id": "h", "agent": "w", "events": [
-        {"type": "assistant", "message": {"content": [
-            {"type": "tool_use", "name": "Edit", "input": {}},
-            {"type": "tool_use", "name": "Bash", "input": {"command": "git status"}},
-        ]}},
-    ]}
+    record = {
+        "trace_id": "h",
+        "agent": "w",
+        "events": [
+            {
+                "type": "assistant",
+                "message": {
+                    "content": [
+                        {"type": "tool_use", "name": "Edit", "input": {}},
+                        {"type": "tool_use", "name": "Bash", "input": {"command": "git status"}},
+                    ]
+                },
+            },
+        ],
+    }
     sh = to_shareable(record)
     assert sh["atoms"] == ["edit", "version_control"]
     assert "events" not in sh  # the raw transcript never rides along
@@ -171,16 +193,35 @@ def test_build_panel_session_is_prompt_anchored_and_local() -> None:
         return {"type": "user", "timestamp": ts, "message": {"content": text}, **kw}
 
     def _a(blocks: list, ts: str) -> dict:  # type: ignore[type-arg]
-        return {"type": "assistant", "timestamp": ts, "message": {"model": "claude-opus-4-8", "content": blocks}}
+        return {
+            "type": "assistant",
+            "timestamp": ts,
+            "message": {"model": "claude-opus-4-8", "content": blocks},
+        }
 
-    record = {"events": [
-        _u("scaffold it", "2026-06-17T14:08:00Z", sessionId="sess-1", cwd="/home/u/learning-from-dev"),
-        _a([{"type": "text", "text": "read then edit"},
-            {"type": "tool_use", "name": "Read", "input": {}},
-            {"type": "tool_use", "name": "Edit", "input": {}}], "2026-06-17T14:08:30Z"),
-        _u("run the tests", "2026-06-17T14:10:00Z"),
-        _a([{"type": "tool_use", "name": "Bash", "input": {"command": "pytest -q"}}], "2026-06-17T14:10:20Z"),
-    ]}
+    record = {
+        "events": [
+            _u(
+                "scaffold it",
+                "2026-06-17T14:08:00Z",
+                sessionId="sess-1",
+                cwd="/home/u/learning-from-dev",
+            ),
+            _a(
+                [
+                    {"type": "text", "text": "read then edit"},
+                    {"type": "tool_use", "name": "Read", "input": {}},
+                    {"type": "tool_use", "name": "Edit", "input": {}},
+                ],
+                "2026-06-17T14:08:30Z",
+            ),
+            _u("run the tests", "2026-06-17T14:10:00Z"),
+            _a(
+                [{"type": "tool_use", "name": "Bash", "input": {"command": "pytest -q"}}],
+                "2026-06-17T14:10:20Z",
+            ),
+        ]
+    }
     ps = build_panel_session(record)  # no paraphraser -> conversation sampled raw (local)
     assert ps["meta"]["project"] == "learning-from-dev"
     assert ps["meta"]["client"] == "Claude Code"
@@ -197,10 +238,12 @@ def test_build_panel_session_is_prompt_anchored_and_local() -> None:
 def test_harness_injected_user_turns_are_not_human_prompts() -> None:
     # Task-notifications, system reminders, and command echoes arrive as role=user
     # text but are not the human typing -- they must not become prompt boundaries.
-    for wrapper in ("<task-notification>\nAgent came to rest",
-                    "<system-reminder>be careful</system-reminder>",
-                    "<command-name>/loop</command-name>",
-                    "<local-command-stdout>done</local-command-stdout>"):
+    for wrapper in (
+        "<task-notification>\nAgent came to rest",
+        "<system-reminder>be careful</system-reminder>",
+        "<command-name>/loop</command-name>",
+        "<local-command-stdout>done</local-command-stdout>",
+    ):
         assert claude_code_adapter({"events": [_user_prompt(wrapper)]}) == []
     # a genuine prompt that merely mentions the word is still human
     assert claude_code_adapter({"events": [_user_prompt("the task-notification never fired")]}) == [
@@ -211,14 +254,34 @@ def test_harness_injected_user_turns_are_not_human_prompts() -> None:
 def test_build_panel_session_rolls_up_edited_paths_module_relative() -> None:
     from procgrep.ingest.adapters.claude_code import build_panel_session
 
-    record = {"events": [
-        {"type": "user", "message": {"content": "fix the license graph"}, "cwd": "/repo"},
-        {"type": "assistant", "message": {"model": "claude-opus-4-8", "content": [
-            {"type": "tool_use", "name": "Edit", "input": {"file_path": "/repo/src/license/spdx.py"}},
-            {"type": "tool_use", "name": "Write", "input": {"file_path": "/repo/src/license/eval.py"}},
-            {"type": "tool_use", "name": "Read", "input": {"file_path": "/repo/src/license/spdx.py"}},
-        ]}},
-    ]}
+    record = {
+        "events": [
+            {"type": "user", "message": {"content": "fix the license graph"}, "cwd": "/repo"},
+            {
+                "type": "assistant",
+                "message": {
+                    "model": "claude-opus-4-8",
+                    "content": [
+                        {
+                            "type": "tool_use",
+                            "name": "Edit",
+                            "input": {"file_path": "/repo/src/license/spdx.py"},
+                        },
+                        {
+                            "type": "tool_use",
+                            "name": "Write",
+                            "input": {"file_path": "/repo/src/license/eval.py"},
+                        },
+                        {
+                            "type": "tool_use",
+                            "name": "Read",
+                            "input": {"file_path": "/repo/src/license/spdx.py"},
+                        },
+                    ],
+                },
+            },
+        ]
+    }
     turn = build_panel_session(record)["turns"][0]
     # two edits in src/license; the Read does not count; path is repo-relative, not absolute
     assert turn["edits"] == {"src/license": 2}

@@ -41,7 +41,7 @@ from procgrep import (
 from procgrep.io import read_jsonl
 
 ROOT = Path(__file__).resolve().parents[2]
-TRACES = ROOT / "examples" / "synthetic_task_traces.jsonl"
+TRACES = ROOT / "examples" / "data" / "synthetic_task_traces.jsonl"
 
 
 def mean_pairwise_jsd(

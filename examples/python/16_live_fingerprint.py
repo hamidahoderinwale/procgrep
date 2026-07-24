@@ -90,12 +90,16 @@ def _load(transcript: str | None) -> tuple[list[str], str]:
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--transcript", default=None, help="a local Claude Code .jsonl (default: bundled exemplar)")
+    parser.add_argument(
+        "--transcript", default=None, help="a local Claude Code .jsonl (default: bundled exemplar)"
+    )
     parser.add_argument("--window", type=int, default=40, help="atoms in the rolling window")
     parser.add_argument("--stride", type=int, default=5, help="atoms between snapshots")
     parser.add_argument("--history", type=int, default=16, help="snapshots shown per sparkline")
     parser.add_argument("--realtime", action="store_true", help="animate in place")
-    parser.add_argument("--step-delay", type=float, default=0.15, help="seconds/snapshot when --realtime")
+    parser.add_argument(
+        "--step-delay", type=float, default=0.15, help="seconds/snapshot when --realtime"
+    )
     parser.add_argument("--min-share", type=float, default=0.03, help="min mean share for a lane")
     args = parser.parse_args()
 
@@ -119,10 +123,14 @@ def main() -> None:
         total = len(window) or 1
         shares = {a: window.count(a) / total for a in _PHASE_ORDER}
         lines = [f"procgrep · live fingerprint · {label} · window {args.window} · atom {step}"]
-        material = [a for a in _PHASE_ORDER if sum(history[a]) / max(len(history[a]), 1) >= args.min_share]
+        material = [
+            a for a in _PHASE_ORDER if sum(history[a]) / max(len(history[a]), 1) >= args.min_share
+        ]
         top = max(material, key=lambda a: shares[a], default=None)
         if top and shares[top] > 0.9:
-            lines.append(f"  {top} {shares[top] * 100:.0f}% — single-atom source; too sparse to fingerprint")
+            lines.append(
+                f"  {top} {shares[top] * 100:.0f}% — single-atom source; too sparse to fingerprint"
+            )
             return "\n".join(lines)
         for a in material:
             name = "bash/other" if a == "other" else a

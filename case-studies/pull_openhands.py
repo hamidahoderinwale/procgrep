@@ -6,6 +6,8 @@ execute_bash, str_replace, create, finish. We extract the effective bash-string
 action from each tool call and pass it through the existing swe_smith classifier.
 
 Tested on: GPT-5 (openhands), Claude-4.5, Qwen3-Coder.
+
+    python pull_openhands.py --submission <s3_submission_prefix> --limit 50 --out fingerprints.jsonl [--with-resolved]
 """
 
 from __future__ import annotations
@@ -16,6 +18,7 @@ import re
 import ssl
 import sys
 import time
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -123,7 +126,7 @@ def fingerprint_openhands(messages: list) -> tuple[list[str], list[str]]:
         if isinstance(tool_calls, str):
             try:
                 tool_calls = json.loads(tool_calls)
-            except:
+            except (json.JSONDecodeError, TypeError):
                 tool_calls = []
         for tc in tool_calls if isinstance(tool_calls, list) else []:
             action = tool_call_to_action(tc)

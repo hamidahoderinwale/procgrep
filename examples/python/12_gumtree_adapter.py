@@ -12,7 +12,7 @@ which is language-neutral at the operation layer.
 This script:
 
 1. Loads the bundled multi-language fixture
-   ``examples/synthetic_gumtree_traces.jsonl`` (Python, JavaScript,
+   ``examples/data/synthetic_gumtree_traces.jsonl`` (Python, JavaScript,
    Java edits across two agents).
 2. Canonicalizes via the gumtree adapter — node-typed atoms.
 3. Reports the vocabulary that gumtree atoms induce.
@@ -42,7 +42,7 @@ from procgrep import (
 from procgrep.io import read_jsonl
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_TRACES = ROOT / "examples" / "synthetic_gumtree_traces.jsonl"
+DEFAULT_TRACES = ROOT / "examples" / "data" / "synthetic_gumtree_traces.jsonl"
 
 
 def parse_args() -> argparse.Namespace:

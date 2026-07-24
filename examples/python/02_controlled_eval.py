@@ -36,7 +36,7 @@ from procgrep import (
 from procgrep.io import read_jsonl
 
 ROOT = Path(__file__).resolve().parents[2]
-TRACES = ROOT / "examples" / "synthetic_traces.jsonl"
+TRACES = ROOT / "examples" / "data" / "synthetic_traces.jsonl"
 
 
 def main() -> None:

@@ -9,9 +9,10 @@ repository root after `pip install -e ".[dev]"`.
 ```
 examples/
 ├── README.md                          (this file)
-├── synthetic_traces.jsonl             (6 trajectories, 2 agents, 2 groups)
-├── synthetic_task_traces.jsonl        (12 trajectories with instance_id + outcome metadata)
-├── synthetic_gumtree_traces.jsonl     (21 gumtree-flavored AST edit-script traces, 2 agents x 3 languages)
+├── data/
+│   ├── synthetic_traces.jsonl         (6 trajectories, 2 agents, 2 groups)
+│   ├── synthetic_task_traces.jsonl    (12 trajectories with instance_id + outcome metadata)
+│   └── synthetic_gumtree_traces.jsonl (21 gumtree-flavored AST edit-script traces, 2 agents x 3 languages)
 ├── rules/
 │   └── stuck_edit_loop.yaml           (4 pattern-matcher rules)
 └── python/
@@ -74,7 +75,7 @@ file paths and writes outputs to file paths so commands compose.
 
 ```bash
 procgrep canonicalize \
-    --input examples/synthetic_traces.jsonl \
+    --input examples/data/synthetic_traces.jsonl \
     --adapter swe-agent \
     --output /tmp/canonical.jsonl
 

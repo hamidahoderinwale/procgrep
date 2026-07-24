@@ -4,12 +4,12 @@ For each pair of agents with labeled matched instances, find:
   - SODP (Same Outcome, Different Procedure): both pass or both fail,
     but procedural JSD is in the top quartile for that pair.
   - SODP examples are the empirical core of procgrep's thesis: outcome
-    alone is insufficient — two agents can arrive at the same result
+    alone is insufficient; two agents can arrive at the same result
     via structurally distinct procedures.
 
 Also finds:
   - DOSP (Different Outcome, Similar Procedure): one passes, one fails,
-    but JSD is in the bottom quartile — procedure similarity didn't predict
+    but JSD is in the bottom quartile; procedure similarity didn't predict
     outcome alignment.
 
 Outputs a JSON of top examples and prints a summary table.
@@ -127,9 +127,8 @@ def analyse_pair(name_a: str, data_a: dict, name_b: str, data_b: dict):
     sodp = [r for r in records if r["same_outcome"] and r["jsd"] >= q75]
     dosp = [r for r in records if not r["same_outcome"] and r["jsd"] <= q25]
 
-    # Sort SODP: highest JSD first (most procedurally divergent same-outcome)
     sodp.sort(key=lambda x: -x["jsd"])
-    dosp.sort(key=lambda x: x["jsd"])  # lowest JSD first
+    dosp.sort(key=lambda x: x["jsd"])
 
     return {
         "pair": f"{name_a} vs {name_b}",
@@ -183,7 +182,6 @@ def print_results(results: list[dict]):
 
 def run():
     corpora = {n: load(p) for n, p in AGENTS.items() if p.exists()}
-    names = list(corpora.keys())
 
     FOCUS = [
         ("Claude-3.5 Sonnet", "SWE-agent-LM-32B"),
@@ -202,7 +200,6 @@ def run():
 
     print_results(all_results)
 
-    # Save
     out = [r for r in all_results if r is not None]
     # Remove atoms from saved output to keep file small
     for r in out:

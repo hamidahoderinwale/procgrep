@@ -1,10 +1,10 @@
-"""Stratified k-fold identification probe — answers the *within-corpus* question:
+"""Stratified k-fold identification probe: answers the *within-corpus* question:
 "Given a held-out trace from one of N agents we've already seen, can a probe
 identify which agent produced it?"
 
 Distinct from procgrep's built-in ``leave_one_group_out`` (which holds out an
-entire agent and is structurally 0% by construction — can't predict a label
-that doesn't appear in training).
+entire agent and is structurally 0% by construction; a probe can't predict a
+label that doesn't appear in training).
 
 Outputs:
 - Per-agent precision/recall/F1 + macro-F1 + overall accuracy
@@ -56,7 +56,6 @@ AGENT_REGISTRY = [
 
 
 def load_all(layer: str = "canonical") -> tuple[list[Trace], list[str]]:
-    """Load all fingerprint files into Trace objects + agent label list."""
     traces: list[Trace] = []
     labels: list[str] = []
     for name, fname in AGENT_REGISTRY:
@@ -95,17 +94,14 @@ def run_probe(layer: str, vocab_size: int) -> dict:
         traces, labels = kept_traces, kept_labels
         print(f"[{layer}] after balancing: {len(traces)} traces, " f"{dict(Counter(labels))}")
 
-    # Fit BPE on the (balanced) corpus
     sequences = [t.atoms for t in traces]
     vocab = fit_bpe(sequences, vocab_size=vocab_size, seed=0)
     fps = encode(traces, vocab=vocab)
-    # Each fingerprint's `.distribution()` returns a numpy array (L1-normalized
-    # over the vocab). Stack into a (n_fps x vocab_size) feature matrix.
+    # fp.distribution() is L1-normalized over the BPE vocab
     X = np.stack([fp.distribution() for fp in fps])
     y = np.array(labels)
     classes = sorted(set(labels))
 
-    # Stratified 5-fold logistic regression
     skf = StratifiedKFold(n_splits=5, shuffle=True, random_state=0)
     all_y_true, all_y_pred = [], []
     for fold_idx, (tr, te) in enumerate(skf.split(X, y), 1):
@@ -127,7 +123,6 @@ def run_probe(layer: str, vocab_size: int) -> dict:
         f1 = report.get(c, {}).get("f1-score", 0)
         print(f"  {c:28s}  F1={f1:.3f}")
 
-    # Plot confusion matrix
     fig, ax = plt.subplots(figsize=(1 + 0.7 * len(classes), 1 + 0.7 * len(classes)))
     im = ax.imshow(cm, aspect="auto", cmap="Blues")
     ax.set_xticks(range(len(classes)))

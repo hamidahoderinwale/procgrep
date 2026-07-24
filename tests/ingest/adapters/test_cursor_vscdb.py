@@ -8,7 +8,9 @@ from procgrep.ingest.adapters.cursor_vscdb import session_rework
 
 
 def _atoms(events):
-    [trace] = canonicalize([{"trace_id": "t", "agent": "cursor", "events": events}], adapter="cursor-vscdb")
+    [trace] = canonicalize(
+        [{"trace_id": "t", "agent": "cursor", "events": events}], adapter="cursor-vscdb"
+    )
     return list(trace.atoms)
 
 
@@ -24,8 +26,14 @@ def test_tool_names_map_to_canonical_atoms():
         {"kind": "think"},
     ]
     assert _atoms(events) == [
-        "prompt_ai", "read_file", "search_repo", "edit",
-        "run_code", "lint", "delete_file", "think",
+        "prompt_ai",
+        "read_file",
+        "search_repo",
+        "edit",
+        "run_code",
+        "lint",
+        "delete_file",
+        "think",
     ]
 
 
@@ -72,19 +80,30 @@ def _make_db(tmp_path):
     cid = "abc"
     con.execute(
         "INSERT INTO cursorDiskKV VALUES(?,?)",
-        (f"composerData:{cid}", json.dumps({
-            "name": "Demo session", "createdAt": 1765051555277, "lastUpdatedAt": 1765051621393,
-            "fullConversationHeadersOnly": [
-                {"bubbleId": "b1", "type": 1}, {"bubbleId": "b2", "type": 2}, {"bubbleId": "b3", "type": 2},
-            ],
-        })),
+        (
+            f"composerData:{cid}",
+            json.dumps(
+                {
+                    "name": "Demo session",
+                    "createdAt": 1765051555277,
+                    "lastUpdatedAt": 1765051621393,
+                    "fullConversationHeadersOnly": [
+                        {"bubbleId": "b1", "type": 1},
+                        {"bubbleId": "b2", "type": 2},
+                        {"bubbleId": "b3", "type": 2},
+                    ],
+                }
+            ),
+        ),
     )
     for bid, b in [
         ("b1", {"type": 1, "text": "do the thing", "createdAt": 1765051555277}),
         ("b2", {"type": 2, "toolFormerData": {"name": "read_file"}}),
         ("b3", {"type": 2, "toolFormerData": {"name": "search_replace"}}),
     ]:
-        con.execute("INSERT INTO cursorDiskKV VALUES(?,?)", (f"bubbleId:{cid}:{bid}", json.dumps(b)))
+        con.execute(
+            "INSERT INTO cursorDiskKV VALUES(?,?)", (f"bubbleId:{cid}:{bid}", json.dumps(b))
+        )
     con.commit()
     con.close()
     return db

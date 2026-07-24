@@ -71,7 +71,9 @@ def _read_lines(path: str) -> list[dict[str, Any]]:
 
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--path", default="~/.claude/projects", help="directory of Claude Code transcripts")
+    parser.add_argument(
+        "--path", default="~/.claude/projects", help="directory of Claude Code transcripts"
+    )
     parser.add_argument(
         "--cursor",
         default="~/Library/Application Support/Cursor/User/globalStorage/state.vscdb",
@@ -86,7 +88,9 @@ def main() -> None:
     args = parser.parse_args()
 
     base = Path(args.path).expanduser()
-    files = sorted(glob.glob(str(base / "*" / "*.jsonl"))) + sorted(glob.glob(str(base / "*.jsonl")))
+    files = sorted(glob.glob(str(base / "*" / "*.jsonl"))) + sorted(
+        glob.glob(str(base / "*.jsonl"))
+    )
     paraphrase = _make_paraphraser(args.paraphrase)
 
     sessions = []
@@ -104,7 +108,9 @@ def main() -> None:
     n_cursor = len(sessions) - n_cc
 
     if not sessions:
-        print(f"No usable Claude Code transcripts under {base} or Cursor sessions. Opening the demo.")
+        print(
+            f"No usable Claude Code transcripts under {base} or Cursor sessions. Opening the demo."
+        )
         webbrowser.open(PANEL.as_uri())
         return
 
@@ -122,7 +128,11 @@ def main() -> None:
     out.write_text(html)
     webbrowser.open(out.as_uri())
 
-    note = "paraphrased prompts" if paraphrase else "raw local prompts (pass --paraphrase to normalize for sharing)"
+    note = (
+        "paraphrased prompts"
+        if paraphrase
+        else "raw local prompts (pass --paraphrase to normalize for sharing)"
+    )
     print(f"opened {len(sessions)} session(s): {n_cc} Claude Code, {n_cursor} Cursor, with {note}")
     print(f"  {out}")
     print("  (local file containing your own data — do not share it; use to_shareable() to export)")

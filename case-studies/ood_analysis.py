@@ -71,7 +71,7 @@ def atom_freq(atoms: list[str]) -> Counter:
 
 
 def jsd(p: np.ndarray, q: np.ndarray) -> float:
-    """Jensen-Shannon divergence between two probability vectors."""
+    """Jensen-Shannon divergence in bits (log2), bounded [0, 1]."""
     m = 0.5 * (p + q)
     with np.errstate(divide="ignore", invalid="ignore"):
         kl = lambda x, y: np.sum(np.where(x > 0, x * np.log2(x / np.where(y > 0, y, 1e-300)), 0))
@@ -95,14 +95,12 @@ def main() -> None:
             print("  no data loaded")
             continue
 
-        # Build global vocabulary across all agents
         all_atoms: set[str] = set()
         for rows in data.values():
             for r in rows:
                 all_atoms.update(a for a in r[f"atoms_{layer}"] if a != "think")
         vocab = sorted(all_atoms)
 
-        # Per-agent mean frequency vector
         agent_mean: dict[str, np.ndarray] = {}
         for agent, rows in data.items():
             combined: Counter = Counter()
@@ -110,7 +108,7 @@ def main() -> None:
                 combined.update(atom_freq(r[f"atoms_{layer}"]))
             agent_mean[agent] = to_vec(combined, vocab)
 
-        # --- A. Intra-agent OOD scores ---
+        ## A. Intra-agent OOD scores
         print("  A. Intra-agent OOD (JSD to own mean), resolve-stratified:")
         intra_results: list[dict] = []
         for agent, rows in data.items():
@@ -137,7 +135,7 @@ def main() -> None:
                 item["layer"] = layer
             intra_results.extend(ood_scores)
 
-        # --- B. Cross-agent OOD: nearest neighbor in procedure-space ---
+        ## B. Cross-agent OOD: nearest neighbor in procedure-space
         print("  B. Cross-agent nearest neighbor (% assigned to each agent):")
         nn_table: dict[str, Counter] = {a: Counter() for a in agents}
         for agent, rows in data.items():
@@ -158,7 +156,7 @@ def main() -> None:
             )
             print(f"    {agent:24s}  top nearest neighbors → {nn_str}")
 
-        # --- Plot: intra-agent OOD score distribution by pass/fail ---
+        ## Plot: intra-agent OOD score distribution by pass/fail
         fig, axes = plt.subplots(1, len(agents), figsize=(3 * len(agents), 4), sharey=False)
         for ax, agent in zip(axes, agents, strict=False):
             pass_scores = [
@@ -180,7 +178,6 @@ def main() -> None:
         plt.close()
         print(f"  Saved: ood_distribution_{layer}.png")
 
-        # Save intra-agent results
         out_path = OUT_DIR / f"ood_scores_{layer}.jsonl"
         with out_path.open("w") as f:
             for item in intra_results:

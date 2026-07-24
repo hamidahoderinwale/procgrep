@@ -2,7 +2,7 @@
 
 Reads patch_analysis_*.jsonl files and produces:
   1. Printed summary table (fix type breakdown + pass rates per agent)
-  2. fig_patch_types.png — Cleveland dot plot: pass rate by fix type × agent
+  2. fig_patch_types.png, a Cleveland dot plot: pass rate by fix type and agent
 """
 
 from __future__ import annotations
@@ -131,7 +131,6 @@ def dot_plot(stats: dict[str, dict]):
     agent_order = list(stats.keys())
     color_map = {a: AGENT_COLORS.get(a, GRAY) for a in agent_order}
 
-    # One dot per (agent, fix_type); facet by fix_type; y = agent; x = pass rate
     dots = (
         alt.Chart(df)
         .mark_point(filled=True, size=100)
@@ -157,7 +156,7 @@ def dot_plot(stats: dict[str, dict]):
         )
     )
 
-    # Connect same-agent dots with a horizontal line segment
+    # detail="agent" draws one connecting segment per agent
     lines = (
         alt.Chart(df)
         .mark_line(strokeWidth=1, color=GRAY)
@@ -168,7 +167,6 @@ def dot_plot(stats: dict[str, dict]):
         )
     )
 
-    # Label each dot with fix_type abbreviation
     labels = (
         alt.Chart(df)
         .mark_text(dy=-10, fontSize=8, color=NEAR_BLACK)

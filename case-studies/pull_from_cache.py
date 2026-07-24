@@ -5,8 +5,8 @@ their full trajectories are cached locally in the bidirect project.
 This script reads those and produces standard fingerprint JSONL files.
 
 Handles two formats currently present in the cache:
-  sweagent_traj_subdir — standard SWE-agent .traj JSON (history + info)
-  dars_traj_list       — DARS list of {role, content, thought, action} steps
+  sweagent_traj_subdir: standard SWE-agent .traj JSON (history + info)
+  dars_traj_list:       DARS list of {role, content, thought, action} steps
 
 Usage:
     python pull_from_cache.py --agent dars
@@ -50,7 +50,7 @@ AGENTS = {
 }
 
 
-# ── Atom extractors ───────────────────────────────────────────────────────────
+## Atom extractors
 
 
 def atoms_from_sweagent(content: dict) -> tuple[list[str], list[str]]:
@@ -85,7 +85,7 @@ def atoms_from_dars(steps: list[dict]) -> tuple[list[str], list[str]]:
     return atoms_c, atoms_n
 
 
-def get_resolved_from_cache(content: dict | list, fmt: str) -> bool | None:
+def get_resolved_from_cache(content: dict | list) -> bool | None:
     """Extract resolved label from trajectory info if present."""
     if not isinstance(content, dict):
         return None
@@ -96,7 +96,7 @@ def get_resolved_from_cache(content: dict | list, fmt: str) -> bool | None:
     return None
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+## Main
 
 
 def fingerprint_agent(cfg: dict) -> None:
@@ -108,7 +108,7 @@ def fingerprint_agent(cfg: dict) -> None:
     traj_files = sorted(sub_dir.glob("*.json"))
     out_path = RES / cfg["out"]
 
-    # Resume
+    # resume: skip instance_ids already present in the output file
     done: set[str] = set()
     if out_path.exists():
         for line in out_path.read_text().splitlines():
@@ -129,7 +129,7 @@ def fingerprint_agent(cfg: dict) -> None:
                 d = json.loads(tf.read_text())
                 fmt = d.get("format", "")
                 content = d["content"]
-                resolved = get_resolved_from_cache(content, fmt)
+                resolved = get_resolved_from_cache(content)
 
                 if fmt == "sweagent_traj_subdir":
                     atoms_c, atoms_n = atoms_from_sweagent(content)

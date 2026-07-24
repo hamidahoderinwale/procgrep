@@ -16,12 +16,12 @@ phases never blocks.
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Any, Literal
 
 from procgrep.program import enforce
 from procgrep.reward import ProcedureSpec
 from procgrep.types import CANONICAL_ATOMS, Atom
-from dataclasses import dataclass
 
 OnViolation = Literal["block", "steer", "warn"]
 Directive = Literal["allow", "block", "steer", "warn"]
@@ -150,7 +150,9 @@ def _reason(atom: Atom, allowed_set: set[Atom], violated: Sequence[str]) -> str:
     """Explain why an atom was blocked."""
     parts: list[str] = []
     if atom not in allowed_set:
-        parts.append(f"{atom!r} would commit a forbidden step (edit-streak cap or forbidden sequence)")
+        parts.append(
+            f"{atom!r} would commit a forbidden step (edit-streak cap or forbidden sequence)"
+        )
     if violated:
         parts.append(f"would trigger guard(s): {', '.join(violated)}")
     return "; ".join(parts) or f"{atom!r} not permitted after the current prefix"

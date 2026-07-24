@@ -449,7 +449,6 @@ def _phase_satisfied(atoms: list[str], phase: Phase) -> bool:
 
 
 def _max_contiguous_run(atoms: list[str], atom: str) -> int:
-    """Longest contiguous run of ``atom`` in ``atoms``."""
     best = 0
     run = 0
     for a in atoms:

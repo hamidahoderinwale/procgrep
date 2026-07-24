@@ -25,17 +25,22 @@ from figtheme import BLUE, COPPER, GREEN, init, style_axes
 
 init()
 
-CG = Path(__file__).resolve().parents[2] / "bidirect-align-dev-traces" / "output" / "compositional_generalization"
+CG = (
+    Path(__file__).resolve().parents[2]
+    / "bidirect-align-dev-traces"
+    / "output"
+    / "compositional_generalization"
+)
 OUT = Path(__file__).resolve().parents[1] / "docs" / "figures" / "failure_mix_by_agent_84.png"
 
 TOTAL = 300
 
 CLAUDE_TOKENS = ("claude", "sonnet", "opus", "haiku")
-GPT_TOKENS    = ("gpt", "openai", "o3", "o1")
+GPT_TOKENS = ("gpt", "openai", "o3", "o1")
 
 FAMILY_COLOR = {
-    "Claude":      COPPER,
-    "GPT":         BLUE,
+    "Claude": COPPER,
+    "GPT": BLUE,
     "Open-weight": GREEN,
 }
 
@@ -69,15 +74,18 @@ def main() -> None:
         fc = agent_counts[agent]
         total_fails = sum(fc.values())
         comp_rate = fc["novel_composition"] / total_fails if total_fails > 0 else 0.0
-        rows.append({
-            "agent":     agent,
-            "family":    agent_family(agent),
-            "pass_rate": pass_rate,
-            "comp_rate": comp_rate,
-        })
+        rows.append(
+            {
+                "agent": agent,
+                "family": agent_family(agent),
+                "pass_rate": pass_rate,
+                "comp_rate": comp_rate,
+            }
+        )
 
     # Sort within each family by pass_rate for the line
     from collections import defaultdict
+
     by_family: dict[str, list[dict]] = defaultdict(list)
     for r in rows:
         by_family[r["family"]].append(r)

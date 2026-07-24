@@ -5,7 +5,7 @@ Query-first: the structural-query playground is the landing/hero; the ecosystem
 catalog is demoted to a dataset picker + a "browse all" view. Four tabs:
 Query · Curate · Per-model · Why structural. Zero JS dependencies.
 
-    python case-studies/build_interface.py --catalog catalog.json \
+    python interface/build_interface.py --catalog catalog.json \
         --profiles profile_nebius.json --experiment query_vs_llm_full.json \
         --logos logos.json --out interface/index.html
 """
@@ -529,7 +529,9 @@ def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--catalog", required=True)
     ap.add_argument("--profiles", nargs="*", default=[])
-    ap.add_argument("--experiment", default=None, help="query_vs_llm_full.json for the 'why structural' page")
+    ap.add_argument(
+        "--experiment", default=None, help="query_vs_llm_full.json for the 'why structural' page"
+    )
     ap.add_argument("--logos", default=None, help="benchmark->dataURI logo map JSON")
     ap.add_argument("--out", default="interface/index.html")
     args = ap.parse_args()
@@ -544,10 +546,14 @@ def main() -> None:
     experiment = json.loads(Path(args.experiment).read_text()) if args.experiment else None
     logos = json.loads(Path(args.logos).read_text()) if args.logos else {}
 
-    data = json.dumps({"catalog": catalog, "profiles": profiles, "experiment": experiment, "logos": logos})
+    data = json.dumps(
+        {"catalog": catalog, "profiles": profiles, "experiment": experiment, "logos": logos}
+    )
     # Inline the shared D3 chart module so the explorer stays openable from
     # file:// with only D3 itself loaded from the CDN.
-    d3charts = (Path(__file__).resolve().parents[1] / "docs" / "explorer" / "d3charts.js").read_text()
+    d3charts = (
+        Path(__file__).resolve().parents[1] / "docs" / "explorer" / "d3charts.js"
+    ).read_text()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)
     out.write_text(HTML.replace("__DATA__", data).replace("__D3CHARTS__", d3charts))

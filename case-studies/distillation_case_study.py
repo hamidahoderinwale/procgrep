@@ -1,34 +1,33 @@
 """End-to-end case study: SFT distillation (Claude-3.7 Sonnet → SWE-agent-LM-32B).
 
-This script is the most complete demonstration of procgrep's capabilities on real
-data. It answers one question: when you take a model's successful trajectories and
+Answers one question: when you take a model's successful trajectories and
 use them to train a smaller model, does the smaller model actually work the same way?
 
 Background. SWE-agent-LM-32B (the child) was produced by the SWE-smith pipeline:
 Claude-3.7 Sonnet (the parent) generated trajectories on SWE-bench tasks, passing
 ones were kept as training demonstrations, and Qwen2.5-32B was fine-tuned on the
-result. The training only supervised on outputs — the child learned to reproduce the
+result. The training only supervised on outputs: the child learned to reproduce the
 parent's actions, but the parent's reasoning was not in the training signal.
 
 What this script does, in order:
   1. Loads parent and child fingerprints (pre-computed atom sequences + labels).
-  2. Places both on the JSD matrix — showing the child is the closest agent to its
+  2. Places both on the JSD matrix, showing the child is the closest agent to its
      parent, closer than any other pair in the corpus.
   3. Runs lineage_diff across four axes: vocabulary, entropy, outcome-stratified
      overlap, and conditional structure. This is where the story lives.
   4. Scores matched pairs (same task, parent passed, child failed) with the
-     reward spec — showing the scorer finds the specific procedural failure.
-  5. Mines discriminative procedures between parent and child by outcome —
+     reward spec, showing the scorer finds the specific procedural failure.
+  5. Mines discriminative procedures between parent and child by outcome,
      showing what the child does when it fails that the parent doesn't.
 
 Key findings (verified on 284 parent + 498 child trajectories, SWE-bench Verified):
   - Vocabulary preserved: child uses every atom the parent uses (canonical Jaccard 1.0).
-  - Distribution concentrated: child entropy is 0.23 bits lower — it narrows onto
+  - Distribution concentrated: child entropy is 0.23 bits lower; it narrows onto
     read_file loops where the parent spreads across action types.
   - Failures drift further: passing child trajectories are 12pp closer to parent
     signatures than failing ones (native Jaccard 0.64 vs 0.52).
   - Decision logic didn't transfer: conditional JSD at 'think' steps = 0.052 across
-    8,453 parent occurrences — after every thinking step, the child makes a different
+    8,453 parent occurrences; after every thinking step, the child makes a different
     next-action choice than the parent.
   - Circuit-breaker pattern: stuck_reading (read_file→think×2) fires in the first
     12 steps on 80% of matched parent-pass/child-fail instances.
@@ -83,14 +82,14 @@ if not SPEC.exists():
         SPEC = _AUDITS_SPEC
 
 
-# ── Loading ───────────────────────────────────────────────────────────────────
+## Loading
 
 def load_fingerprints(path: Path, label: str,
                        layer: str = "canonical") -> list[Trace]:
     """Load traces from a fingerprint JSONL.
 
     Args:
-        layer: "canonical" or "native" — which atom sequence to load.
+        layer: "canonical" or "native", which atom sequence to load.
     """
     key = f"atoms_{layer}"
     rows = [json.loads(l) for l in path.read_text().splitlines() if l.strip()]
@@ -105,7 +104,7 @@ def load_fingerprints(path: Path, label: str,
     ]
 
 
-# ── Analysis steps ────────────────────────────────────────────────────────────
+## Analysis steps
 
 def step1_jsd_position(parent_traces, child_traces) -> None:
     """How close is the child to its parent compared to other agents?"""
@@ -255,14 +254,12 @@ def step3_reward_matched_pairs(parent_traces, child_traces, spec) -> None:
     print(f"  → The scorer finds the specific failure: the child gets stuck in read loops")
     print(f"    and never reaches the implementation phase.")
 
-    # Find the worst-delta instance and show it
     deltas = [(iid, p_scores[i], c_scores[i]) for i, iid in enumerate(matched)]
     worst_iid, worst_p, worst_c = min(deltas, key=lambda x: x[2] - x[1])
     print(f"\n  Worst-delta instance: {worst_iid}")
     print(f"  Parent atoms: {parent_by_id[worst_iid].atoms[:12]}...")
     print(f"  Child atoms:  {child_by_id[worst_iid].atoms[:12]}...")
 
-    # Show how early the stuck pattern fires
     PATTERN = ["read_file", "think", "read_file", "think"]
     p = len(PATTERN)
     child_atoms = child_by_id[worst_iid].atoms
@@ -278,7 +275,7 @@ def step4_discriminative_procedures(parent_traces, child_traces) -> None:
     print("STEP 4: Discriminative procedures — child fail vs child pass")
     print("="*60)
 
-    # Trace is frozen — rebuild with new agent label for discriminative_procedures
+    # Trace is frozen: rebuild with new agent label for discriminative_procedures
     pass_traces = [
         Trace(trace_id=t.trace_id, agent="pass", atoms=t.atoms, metadata=t.metadata)
         for t in child_traces if t.metadata.get("resolved") is True
@@ -313,7 +310,7 @@ def step4_discriminative_procedures(parent_traces, child_traces) -> None:
     print(f"    failing ones cycle without acting.")
 
 
-# ── Entry point ───────────────────────────────────────────────────────────────
+## Entry point
 
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__,

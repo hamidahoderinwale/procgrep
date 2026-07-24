@@ -22,10 +22,12 @@ prompts).
 from __future__ import annotations
 
 from collections.abc import Callable, Sequence
+from typing import Any
 
 import numpy as np
+import numpy.typing as npt
 
-Embedder = Callable[[Sequence[str]], np.ndarray]
+Embedder = Callable[[Sequence[str]], npt.NDArray[np.floating[Any]]]
 """Maps texts to a ``(n, d)`` array, one row per text. Local by default."""
 
 
@@ -89,7 +91,7 @@ def hf_embedder(
 
     model = SentenceTransformer(model_name)
 
-    def embed(texts: Sequence[str]) -> np.ndarray:
+    def embed(texts: Sequence[str]) -> npt.NDArray[np.floating[Any]]:
         return np.asarray(
             model.encode(list(texts), normalize_embeddings=normalize, show_progress_bar=False)
         )

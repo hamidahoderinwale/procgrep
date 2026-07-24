@@ -29,9 +29,15 @@ STAGES = ["Explore", "Browse", "Edit", "Test", "Shell", "Finish"]
 THRESHOLD = 0.010
 
 FAMILY_ORDER = [
-    "Claude-3", "Claude-3.5", "Claude-3.7-thinking",
-    "Claude-4", "GPT-4", "GPT-4o",
-    "DARS+R1", "Agentless+Claude-3.5", "Moatless+V3",
+    "Claude-3",
+    "Claude-3.5",
+    "Claude-3.7-thinking",
+    "Claude-4",
+    "GPT-4",
+    "GPT-4o",
+    "DARS+R1",
+    "Agentless+Claude-3.5",
+    "Moatless+V3",
 ]
 
 
@@ -51,9 +57,7 @@ def classify(atom: str) -> str:
     return "Other"
 
 
-atoms_data = json.loads(
-    (ROOT / "output/paper2_pilot/step_resources.json").read_text()
-)["atoms"]
+atoms_data = json.loads((ROOT / "output/paper2_pilot/step_resources.json").read_text())["atoms"]
 
 agent_stage_tok: dict[str, dict[str, float]] = defaultdict(lambda: defaultdict(float))
 agent_total_tok: dict[str, float] = defaultdict(float)
@@ -120,7 +124,7 @@ for i, agent in enumerate(agents_in_data):
     ax.set_yticks(y_positions)
     ax.set_yticklabels(stage_labels, fontsize=8)
     ax.set_xlim(0, 0.68)
-    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x*100)}%"))
+    ax.xaxis.set_major_formatter(plt.FuncFormatter(lambda x, _: f"{int(x * 100)}%"))
     ax.set_xticks([0, 0.2, 0.4, 0.6])
     ax.set_title(agent, fontsize=8, pad=3)
 

@@ -45,7 +45,7 @@ CANON = [
 EPS = 1e-9  # Laplace smoothing constant
 
 
-# ── Encodings ────────────────────────────────────────────────────────────────
+## Encodings
 
 
 def to_unigram(atoms: list[str], vocab: list[str]) -> np.ndarray:
@@ -74,7 +74,7 @@ def pool_distributions(rows, encoder, vocab):
     return np.mean(vecs, axis=0)
 
 
-# ── Metrics ──────────────────────────────────────────────────────────────────
+## Metrics
 
 
 def jsd(p: np.ndarray, q: np.ndarray) -> float:
@@ -112,7 +112,7 @@ METRICS = {
 }
 
 
-# ── Main ─────────────────────────────────────────────────────────────────────
+## Main
 
 
 def run():
@@ -148,13 +148,11 @@ def run():
 
         dists = {n: pool_distributions(corpora[n], encoder, vocab) for n in agent_names}
 
-        # Pairwise distances under each metric
         dist_vecs = {m: [] for m in METRICS}
         for a, b in pairs:
             for mname, mfn in METRICS.items():
                 dist_vecs[mname].append(mfn(dists[a], dists[b]))
 
-        # Spearman rank correlations between metrics
         print("\nSpearman r between metric-induced pair orderings:")
         mnames = list(METRICS.keys())
         print(f"  {'':18s}" + "".join(f"  {m:>14s}" for m in mnames))
@@ -168,7 +166,6 @@ def run():
                     row += f"  {r:>14.3f}"
             print(row)
 
-        # Raw distances under JSD and Hellinger — where do they disagree?
         print("\nPair distances  (JSD vs Hellinger vs TotalVariation):")
         jsd_vals = dist_vecs["JSD"]
         hell_vals = dist_vecs["Hellinger"]
@@ -182,7 +179,6 @@ def run():
         for _, (a, b), j, h, tv in disagree:
             print(f"  {a} vs {b:<28s}  {j:.3f}   {h:.3f}   {tv:.3f}")
 
-    # Save distance matrices for each metric + encoding to JSON
     out = {}
     for encoding_name, encoder, vocab in [
         ("unigram", to_unigram, CANON),

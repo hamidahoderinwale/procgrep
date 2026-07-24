@@ -36,7 +36,7 @@ What the script reports:
 
 The script needs traces whose metadata carries `instance_id` and
 `outcome`. It runs on the bundled
-``examples/synthetic_task_traces.jsonl`` fixture as a smoke test;
+``examples/data/synthetic_task_traces.jsonl`` fixture as a smoke test;
 pass ``--traces`` to point at a real corpus (e.g. a procgrep-
 canonicalized export of an 84-agent SWE-bench leaderboard).
 
@@ -65,7 +65,7 @@ from procgrep import (
 from procgrep.io import read_jsonl
 
 ROOT = Path(__file__).resolve().parents[2]
-DEFAULT_TRACES = ROOT / "examples" / "synthetic_task_traces.jsonl"
+DEFAULT_TRACES = ROOT / "examples" / "data" / "synthetic_task_traces.jsonl"
 
 
 def parse_args() -> argparse.Namespace:

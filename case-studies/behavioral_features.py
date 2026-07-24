@@ -4,9 +4,9 @@ Extracts per-trajectory features beyond simple atom fractions:
   - search_first: does the agent search before its first edit? (exploration-first)
   - edit_run_max: longest consecutive edit streak (batch-style vs interleaved)
   - think_early_frac: fraction of think atoms in first 25% of trajectory (upfront planning)
-  - error_recovery_rate: fraction of errors followed by a successful test within 3 steps
-  - file_revisit_rate: requires atoms_native to infer (approximated via read_file runs)
+  - error_recovery_rate: fraction of errors followed by a test run within 3 steps
   - read_before_first_edit: how many reads before the first edit (scoping breadth)
+  - interleave_score: fraction of edits immediately followed by a test
 
 Aggregates per-agent and prints a comparison table showing behavioral
 zeitgeist shifts across model generations.
@@ -45,10 +45,8 @@ def extract(atoms: list[str]) -> dict:
 
     cnt = Counter(non_think)
 
-    # search_first: first substantive action is search_repo
     search_first = int(non_think[0] == "search_repo") if non_think else 0
 
-    # read_before_first_edit: count reads before the first edit
     reads_before_edit = 0
     for a in non_think:
         if a == "edit":
@@ -56,7 +54,6 @@ def extract(atoms: list[str]) -> dict:
         if a == "read_file":
             reads_before_edit += 1
 
-    # edit_run_max: longest consecutive edit streak (captures batch editing)
     max_run = cur_run = 0
     for a in non_think:
         if a == "edit":
@@ -65,12 +62,11 @@ def extract(atoms: list[str]) -> dict:
         else:
             cur_run = 0
 
-    # think_early_frac: fraction of think atoms in first 25% of full sequence
+    # think_early_frac uses the FULL sequence (think included), not non_think
     cutoff = max(1, len(atoms) // 4)
     early = atoms[:cutoff]
     think_early = early.count("think") / max(1, len(early))
 
-    # error_recovery_rate: fraction of errors followed by run_test within 3 steps
     errors_followed = 0
     total_errors = 0
     for i, a in enumerate(non_think):
@@ -81,8 +77,7 @@ def extract(atoms: list[str]) -> dict:
                 errors_followed += 1
     error_recovery = errors_followed / max(1, total_errors)
 
-    # interleave_score: how often the agent alternates edit→test vs batches
-    # = number of (edit, run_test) adjacent pairs / total edits
+    # interleave_score = (edit, run_test) adjacent pairs / total edits
     edit_test_pairs = sum(
         1
         for i in range(len(non_think) - 1)
@@ -133,7 +128,6 @@ def run():
             vals = [f[k] for f in all_feats if f.get(k) is not None]
             agg[f"{k}_mean"] = float(np.mean(vals)) if vals else 0.0
 
-        # Pass/fail breakdown for search_first
         pass_sf = np.mean([f["search_first"] for f in all_feats if f.get("resolved") is True])
         fail_sf = np.mean([f["search_first"] for f in all_feats if f.get("resolved") is False])
         agg["search_first_pass"] = float(pass_sf) if not np.isnan(pass_sf) else 0.0
@@ -141,7 +135,6 @@ def run():
 
         agent_stats[name] = agg
 
-    # Print comparison table
     FEATURES = [
         ("search_first_mean", "search-first %", "% trajectories starting with search"),
         ("reads_before_edit_mean", "reads before 1st edit", "scoping breadth before touching code"),
@@ -193,7 +186,6 @@ def run():
         f = s.get("search_first_fail", 0)
         print(f"    {name:25s}  pass={p:.1%}  fail={f:.1%}  (Δ={p-f:+.1%})")
 
-    # Save
     out_path = RES / "behavioral_features_v1.json"
     out_path.write_text(json.dumps(agent_stats, indent=2))
     print(f"\nSaved: {out_path.name}")

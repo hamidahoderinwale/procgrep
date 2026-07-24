@@ -11,7 +11,7 @@ from procgrep.cli import app
 
 runner = CliRunner()
 ROOT = Path(__file__).resolve().parents[1]
-SYNTH = ROOT / "examples" / "synthetic_traces.jsonl"
+SYNTH = ROOT / "examples" / "data" / "synthetic_traces.jsonl"
 
 
 def test_help_lists_commands() -> None:

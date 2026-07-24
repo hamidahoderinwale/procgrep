@@ -2,7 +2,7 @@
 
 For each pair of agents, find the bigrams (consecutive atom pairs) that
 have the highest probability in one agent and lowest in the other.
-These are the behavioral fault lines — the specific transitions that
+These are the behavioral fault lines: the specific transitions that
 fingerprint each model.
 
 Also computes per-pair positional divergence curves so you can see
@@ -63,7 +63,6 @@ def run():
     corpora = {n: load_seqs(p) for n, p in AGENTS.items() if p.exists()}
     agent_names = list(corpora.keys())
 
-    # Build observed bigram vocabulary
     vocab_set: set[str] = set()
     for seqs in corpora.values():
         for seq in seqs:
@@ -73,7 +72,7 @@ def run():
 
     dists = {n: bigram_dist(corpora[n], vocab) for n in agent_names}
 
-    # ── Discriminative bigrams per pair ───────────────────────────────────────
+    ## Discriminative bigrams per pair
     print("=" * 80)
     print("DISCRIMINATIVE BIGRAMS PER AGENT PAIR")
     print("  (transitions that most distinguish agent A from agent B)")
@@ -115,8 +114,7 @@ def run():
             f"{b}_signature": [{"bigram": bg, "delta_p": round(d, 5)} for d, bg in top_b],
         }
 
-    # ── Per-pair positional divergence curves ─────────────────────────────────
-    # Build per-agent, per-position atom distribution
+    ## Per-pair positional divergence curves
     CANON = [
         "edit",
         "read_file",
@@ -175,7 +173,6 @@ def run():
             "peak_jsd": round(peak_jsd, 5),
         }
 
-    # Save
     out = {"discriminative_bigrams": pair_bigrams, "positional_curves": pair_pos_curves}
     out_path = RES / "discriminative_bigrams_v1.json"
     out_path.write_text(json.dumps(out, indent=2))

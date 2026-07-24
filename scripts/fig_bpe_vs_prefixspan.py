@@ -20,8 +20,8 @@ init()
 
 # Hardcoded V-measure values from paper evaluation
 methods = ["PrefixSpan K=64", "BPE K=64", "BPE K=128"]
-values  = [0.505,              0.606,       0.626      ]
-colors  = [COPPER,             BLUE,        BLUE       ]
+values = [0.505, 0.606, 0.626]
+colors = [COPPER, BLUE, BLUE]
 
 fig, ax = plt.subplots(figsize=(6.2, 3.0))
 
@@ -39,14 +39,23 @@ ax.set_title("Vocabulary induction: BPE vs PrefixSpan", fontsize=11)
 
 # Value labels on bars
 for bar, val in zip(bars, values, strict=False):
-    ax.text(val + 0.012, bar.get_y() + bar.get_height() / 2,
-            f"{val:.3f}", va="center", ha="left", fontsize=9,
-            color=INK, fontfamily="monospace")
+    ax.text(
+        val + 0.012,
+        bar.get_y() + bar.get_height() / 2,
+        f"{val:.3f}",
+        va="center",
+        ha="left",
+        fontsize=9,
+        color=INK,
+        fontfamily="monospace",
+    )
 
 style_axes(ax)
 
 fig.savefig(
     "/Users/hamidaho/learning-from-dev/procgrep/docs/figures/fig_bpe_vs_prefixspan.png",
-    dpi=200, facecolor="white", bbox_inches="tight"
+    dpi=200,
+    facecolor="white",
+    bbox_inches="tight",
 )
 print("wrote fig_bpe_vs_prefixspan.png")

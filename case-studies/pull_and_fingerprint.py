@@ -16,6 +16,7 @@ import re
 import ssl
 import sys
 import time
+import urllib.parse
 import urllib.request
 import xml.etree.ElementTree as ET
 from pathlib import Path
@@ -94,8 +95,8 @@ def fingerprint(traj_record: dict) -> tuple[list[str], list[str], dict]:
 def fetch_resolve_label(submission: str, instance_id: str) -> bool | None:
     """Fetch resolved label, trying two formats:
 
-    Format A (2025): logs/<iid>/report.json  — flat or nested JSON
-    Format B (2024): logs/<iid>.<slug>.eval.log — raw pytest output
+    Format A (2025): logs/<iid>/report.json, flat or nested JSON
+    Format B (2024): logs/<iid>.<slug>.eval.log, raw pytest output
     """
     # Format A
     key = f"{submission}/logs/{instance_id}/report.json"
@@ -111,7 +112,7 @@ def fetch_resolve_label(submission: str, instance_id: str) -> bool | None:
     except Exception:
         pass
 
-    # Format B — slug is the part after the first "/" (strips "verified/" or "lite/")
+    # Format B: slug is the part after the first "/" (strips "verified/" or "lite/")
     slug = submission.split("/", 1)[-1]
     log_key = f"{submission}/logs/{instance_id}.{slug}.eval.log"
     try:

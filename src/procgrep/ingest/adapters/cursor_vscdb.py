@@ -60,6 +60,7 @@ import hashlib
 import json
 import sqlite3
 from collections.abc import Callable, Iterator, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -82,7 +83,15 @@ from procgrep.types import (
 )
 
 _READ_TOOLS = {"read_file"}
-_SEARCH_TOOLS = {"grep", "codebase_search", "glob_file_search", "list_dir", "rg", "web_search", "ripgrep_raw_search"}
+_SEARCH_TOOLS = {
+    "grep",
+    "codebase_search",
+    "glob_file_search",
+    "list_dir",
+    "rg",
+    "web_search",
+    "ripgrep_raw_search",
+}
 _EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook", "edit_file", "_codeblock"}
 _TERMINAL_TOOLS = {"run_terminal_cmd", "run_terminal_command"}
 
@@ -95,6 +104,7 @@ def _normalize_tool(tool: str) -> str:
     if sep and head and tail.isdigit():
         return head
     return tool
+
 
 # Evaluated in order; each event matches exactly one rule (user turn, reasoning
 # turn, or a single tool call), with the generic "other" fallback for the rest.
@@ -261,10 +271,8 @@ def _atom_for_bubble(bubble: dict[str, Any]) -> str:
     return ATOM_OTHER
 
 
-def _dt_ms(ms: object):
+def _dt_ms(ms: object) -> datetime | None:
     """A local ``datetime`` from epoch milliseconds, or ``None``."""
-    from datetime import datetime
-
     if not isinstance(ms, (int, float)):
         return None
     try:
@@ -345,24 +353,26 @@ def build_panel_sessions(
                 continue
             created, updated = _dt_ms(cd.get("createdAt")), _dt_ms(cd.get("lastUpdatedAt"))
             sid = hashlib.sha1(cid.encode("utf-8")).hexdigest()[:8]
-            sessions.append({
-                "meta": {
-                    "name": (cd.get("name") or "").strip() or sid,
-                    "client": "Cursor",
-                    "project": "Cursor",
-                    "id": sid,
-                    "date": updated.strftime("%b %d") if updated else "",
-                    "ended": updated.isoformat() if updated else "",
-                    "durationMin": round((updated - created).total_seconds() / 60)
-                    if (created and updated and updated >= created)
-                    else None,
-                    "intent": "",
-                    "illustrative": False,
-                    "promptsParaphrased": paraphrase is not None,
-                    "models": [],
-                },
-                "turns": turns,
-            })
+            sessions.append(
+                {
+                    "meta": {
+                        "name": (cd.get("name") or "").strip() or sid,
+                        "client": "Cursor",
+                        "project": "Cursor",
+                        "id": sid,
+                        "date": updated.strftime("%b %d") if updated else "",
+                        "ended": updated.isoformat() if updated else "",
+                        "durationMin": round((updated - created).total_seconds() / 60)
+                        if (created and updated and updated >= created)
+                        else None,
+                        "intent": "",
+                        "illustrative": False,
+                        "promptsParaphrased": paraphrase is not None,
+                        "models": [],
+                    },
+                    "turns": turns,
+                }
+            )
     finally:
         con.close()
     return sessions
