@@ -2,31 +2,31 @@
 
 import altair as alt
 
-# Family colours — semantic mapping
-ANTHROPIC = "#2471A3"  # steel blue  — Claude models
-OPENAI = "#B03A2E"  # terracotta  — GPT models
-SFT = "#1E8449"  # teal-green  — SFT-distilled
+## Family colours (semantic mapping)
+ANTHROPIC = "#2471A3"  # steel blue: Claude models
+OPENAI = "#B03A2E"  # terracotta: GPT models
+SFT = "#1E8449"  # teal-green: SFT-distilled
 
-# Gradient within Anthropic family (older → newer → latest)
+## Gradient within Anthropic family (older to newer to latest)
 ANTHROPIC_D = "#1A5276"  # Claude-3 Opus (darkest)
 ANTHROPIC = "#2471A3"  # Claude-3.5 Sonnet
 ANTHROPIC_M = "#5DADE2"  # Claude-4 Sonnet (medium)
 ANTHROPIC_L = "#AED6F1"  # Claude-4.5 Sonnet (lightest)
 
-# Gradient within OpenAI family
+## Gradient within OpenAI family
 OPENAI_D = "#7B241C"  # GPT-4 (darker)
 OPENAI = "#B03A2E"  # GPT-4o
 OPENAI_L = "#E59866"  # GPT-5 (lighter)
 
-# SFT-distilled (single agent)
+## SFT-distilled (single agent)
 SFT = "#1A7A4A"
 
-# Generic
+## Generic
 NEAR_BLACK = "#212121"
 GRAY = "#9E9E9E"
 GRAY_LIGHT = "#E0E0E0"
 
-# Aliases expected by skill boilerplate
+## Aliases expected by skill boilerplate
 BLUE = ANTHROPIC
 GREEN = SFT
 MAGENTA = OPENAI
