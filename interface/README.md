@@ -1,4 +1,4 @@
-# procgrep — interface design
+# procgrep: interface design
 
 A browsable map of the agent-trace ecosystem, on top of the dynamic
 discover → sniff → curate pipeline. Three zoom levels: **Ecosystem → Dataset →
@@ -11,52 +11,52 @@ Light **editorial-brutalist**: off-white paper (`#F7F5F2`), near-black ink
 single headline, hairline rules, one copper accent, generous whitespace, motion
 only where it explains.
 
-- **Poolside** — calm, huge whitespace, one confident statement.
-- **Cursor** — a command bar is the primary verb; keyboard-first.
-- **Martian** — a manifesto line; serif; science-forward framing.
-- **hassaanraza** — brutalist/vintage, monospace, visible structure, numbers on show.
-- **glenncatteeuw** — purposeful motion; interaction as storytelling.
-- **Adaption** — (URL TBD; fold in once confirmed).
+- **Poolside**: calm, huge whitespace, one confident statement.
+- **Cursor**: a command bar is the primary verb; keyboard-first.
+- **Martian**: a manifesto line; serif; science-forward framing.
+- **hassaanraza**: brutalist/vintage, monospace, visible structure, numbers on show.
+- **glenncatteeuw**: purposeful motion; interaction as storytelling.
+- **Adaption**: (URL TBD; fold in once confirmed).
 
 ## L1 · Ecosystem (the map)
 
 Leads with **findings**, then the live index.
 
-- **Coverage donut** — N discovered / M parseable, by adapter. *Decision: is the
+- **Coverage donut**: N discovered / M parseable, by adapter. *Decision: is the
   ecosystem mostly parseable, and which format to build an adapter for next.*
-- **Redundancy bars** — per dataset, shortest-keeps → diverse-keeps gap, sorted.
+- **Redundancy bars**: per dataset, shortest-keeps → diverse-keeps gap, sorted.
   *Decision: which datasets need curation before training (SWE-Gym's 5% bar screams).*
-- **Format mix** — openhands / react-text / swe-agent stacked. *Decision: where the
+- **Format mix**: openhands / react-text / swe-agent stacked. *Decision: where the
   fragmentation is.*
-- **Release timeline** — datasets by `last_modified` (HF). *Decision: what's current.*
-- **The index** — sortable table: dataset · downloads · likes · adapter · #models ·
+- **Release timeline**: datasets by `last_modified` (HF). *Decision: what's current.*
+- **The index**: sortable table: dataset · downloads · likes · adapter · #models ·
   median length · exact-dup% · shortest→diverse · last-modified. Row → L2.
 
 ## L2 · Dataset (the profile)
 
-- **Header** — id, downloads/likes, adapter+confidence, last-modified, n traces.
-- **By model** *(agent_field)* — group traces by the producing model; per model:
+- **Header**: id, downloads/likes, adapter+confidence, last-modified, n traces.
+- **By model** *(agent_field)*: group traces by the producing model; per model:
   n, median length, exact-dup%, action-mix fingerprint. Small multiples / table.
   *Decision: which model's traces to keep / which are redundant.*
-- **Length** — trajectory-length distribution (histogram or ridgeline), split by
+- **Length**: trajectory-length distribution (histogram or ridgeline), split by
   model. *Decision: spot trivially-short or runaway traces.*
-- **Redundancy / curate panel** — exact + near dup, shortest vs diverse vs random
+- **Redundancy / curate panel**: exact + near dup, shortest vs diverse vs random
   coverage, **export a diverse subset**. *Decision: dedup go/no-go + method.*
-- **Procedural fingerprint** — the dataset's action-mix and phase arc (atom share
+- **Procedural fingerprint**: the dataset's action-mix and phase arc (atom share
   by step position). *Decision: characterize "how" this corpus solves tasks.*
-- **Temporal** — be honest: per-step wall-clock is rarely in the data. Show the
+- **Temporal**: per-step wall-clock is rarely in the data. Show the
   **step-position arc** (atom share vs step index) + dataset recency + model era;
   surface token/cost timing only when a dataset carries it. Row → L3.
 
 ## L3 · Trace (the conversation)
 
-Drill into one trajectory — *the conversations themselves*, not just stats.
+Drill into one trajectory: *the conversations themselves*, not just stats.
 
-- **Aligned transcript** — the canonical atom sequence (the procedural spine) laid
+- **Aligned transcript**: the canonical atom sequence (the procedural spine) laid
   beside the underlying turns: each turn shows its atom + the raw command/text the
   agent emitted. *Decision: see exactly how the agent worked, step by step.*
-- **Spine sparkline** — the atom timeline; click an atom → jump to that turn.
-- **Metadata** — model, repo, resolved?, length, fingerprint, nearest neighbours
+- **Spine sparkline**: the atom timeline; click an atom → jump to that turn.
+- **Metadata**: model, repo, resolved?, length, fingerprint, nearest neighbours
   (by JSD) so you can see near-duplicate siblings.
 
 ## Data sources (honest)
@@ -71,7 +71,7 @@ Drill into one trajectory — *the conversations themselves*, not just stats.
 
 ## Build
 
-Static pages over precomputed, cacheable JSON — re-running discover → sniff →
+Static pages over precomputed, cacheable JSON: re-running discover → sniff →
 curate refreshes them (dynamic, not frozen):
 
 - `catalog.json` → L1 (have a v1 already).
