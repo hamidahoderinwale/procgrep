@@ -6,13 +6,13 @@ How to use `procgrep` to answer real questions about agent behavior, with worked
 
 ## How an experiment works
 
-You have two versions of an agent — maybe different temperatures, different scaffolds, different training. You want to know: do they actually behave differently, and if so, how?
+You have two versions of an agent, maybe different temperatures, different scaffolds, different training. You want to know: do they actually behave differently, and if so, how?
 
 **The idea.** Run both versions on the same set of tasks. Convert their action logs to procedure distributions. Compare those distributions. The comparison tells you whether there's a real structural difference, and the discriminative procedure analysis tells you what that difference looks like concretely.
 
-**Arms.** Each version of the agent you're testing is called an arm. If you're testing temperature=0.2 vs temperature=0.8, those are two arms. Everything else — the model, the scaffold, the tasks — stays the same. That's how you know the temperature is what caused any difference you find.
+**Arms.** Each version of the agent you're testing is called an arm. If you're testing temperature=0.2 vs temperature=0.8, those are two arms. Everything else (the model, the scaffold, the tasks) stays the same. That's how you know the temperature is what caused any difference you find.
 
-**The noise floor.** Before comparing two arms to each other, check how consistent each arm is with itself. If arm A varies a lot internally (its trajectories look different from each other), a small difference between arm A and arm B might just be noise. The within-arm divergence score is your baseline — across-arm differences only mean something if they're larger than this.
+**The noise floor.** Before comparing two arms to each other, check how consistent each arm is with itself. If arm A varies a lot internally (its trajectories look different from each other), a small difference between arm A and arm B might just be noise. The within-arm divergence score is your baseline: across-arm differences only mean something if they're larger than this.
 
 ---
 
@@ -80,9 +80,9 @@ across = jsd(mean_before, mean_after)
 print(f"Across-arm JSD: {across:.3f}")
 
 if across > 2 * max(noise_before, noise_after):
-    print("Real procedural difference — worth investigating further")
+    print("Real procedural difference, worth investigating further")
 else:
-    print("Difference is within noise — the procedure didn't change much")
+    print("Difference is within noise: the procedure didn't change much")
 ```
 
 ### Step 6: Find what changed
@@ -134,7 +134,7 @@ for m in outcome_top:
 
 If the procedures that increased after your change are the same ones that predict passing, your hypothesis holds: the prompt change caused a procedural change, and that procedural change drives outcomes.
 
-If they don't overlap, the pass-rate improvement is likely from task-selection luck or some other mechanism — not the procedure you intended to change.
+If they don't overlap, the pass-rate improvement is likely from task-selection luck or some other mechanism, not the procedure you intended to change.
 
 ---
 
