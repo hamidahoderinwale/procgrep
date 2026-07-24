@@ -108,9 +108,9 @@ class _Bus:
     """Fan-out of atom events to the single connected SSE client."""
 
     def __init__(self) -> None:
-        self.q: queue.Queue[dict] = queue.Queue()
+        self.q: queue.Queue[dict[str, object]] = queue.Queue()
 
-    def emit(self, event: dict) -> None:
+    def emit(self, event: dict[str, object]) -> None:
         self.q.put(event)
 
 
@@ -136,7 +136,7 @@ def _producer(bus: _Bus, args: argparse.Namespace) -> None:
         bus.emit({"done": True})
 
 
-def _make_handler(bus: _Bus, args: argparse.Namespace):
+def _make_handler(bus: _Bus, args: argparse.Namespace) -> type[BaseHTTPRequestHandler]:
     started = threading.Event()  # start the stream on first connect, so the page sees it paced
 
     class Handler(BaseHTTPRequestHandler):
@@ -167,27 +167,23 @@ def _make_handler(bus: _Bus, args: argparse.Namespace):
     return Handler
 
 
-def main(argv: list[str] | None = None) -> int:
-    p = argparse.ArgumentParser(description="Stream a trajectory into a live web view.")
-    p.add_argument("--tail", help="follow a file; each appended line is one action atom")
-    p.add_argument(
-        "--demo", action="store_true", help="replay a built-in rollout (no agent needed)"
-    )
-    p.add_argument("--port", type=int, default=7870)
-    p.add_argument("--interval", type=float, default=0.6, help="seconds between --demo steps")
-    args = p.parse_args(argv)
-    if not args.tail and not args.demo:
-        args.demo = True
+def serve(
+    *,
+    tail: str | None = None,
+    demo: bool = False,
+    port: int = 7870,
+    interval: float = 0.6,
+) -> int:
+    """Serve the live watch page and stream atoms into it until interrupted.
 
+    Exactly one source: ``tail`` follows a file where each appended line is
+    one action atom; ``demo`` (or neither flag) replays the built-in rollout.
+    """
+    args = argparse.Namespace(tail=tail, demo=demo or not tail, port=port, interval=interval)
     bus = _Bus()
-    server = ThreadingHTTPServer(("127.0.0.1", args.port), _make_handler(bus, args))
-    print(
-        f"procgrep watch on http://127.0.0.1:{args.port}  (source: {'tail ' + args.tail if args.tail else 'demo'})"
-    )
+    server = ThreadingHTTPServer(("127.0.0.1", port), _make_handler(bus, args))
+    source = f"tail {tail}" if tail else "demo"
+    print(f"procgrep watch on http://127.0.0.1:{port}  (source: {source})")
     with contextlib.suppress(KeyboardInterrupt):
         server.serve_forever()
     return 0
-
-
-if __name__ == "__main__":
-    raise SystemExit(main())

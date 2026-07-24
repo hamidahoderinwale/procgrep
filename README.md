@@ -223,6 +223,9 @@ Traces that fail to parse are counted, not averaged in: an unmatched corpus
 reports `parse yield 0/60 non-empty (adapter mismatch? try --dry-run)`.
 
 ```bash
+# Watch a rollout live: tail a file of atoms (or --demo) in a local web view
+procgrep watch --demo
+
 # Convert raw traces to canonical atom sequences
 procgrep canonicalize --input traces/raw.jsonl --adapter swe-agent --output traces/canonical.jsonl
 
