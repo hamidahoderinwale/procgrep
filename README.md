@@ -6,8 +6,6 @@
 
 ![Replaying one agent trajectory step by step; a structural query fires the instant it matches](docs/figures/replay.gif)
 
-No model is in the loop: procgrep returns exact, reproducible measurements.
-
 ---
 
 ## What it does
