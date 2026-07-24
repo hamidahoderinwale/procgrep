@@ -86,7 +86,7 @@ class CorpusReport:
             f"corpus            {self.n_traces:,} traces from {self.source}",
         ]
         if self.n_empty:
-            note = " — adapter mismatch? try --dry-run" if self.n_empty == self.n_traces else ""
+            note = " (adapter mismatch? try --dry-run)" if self.n_empty == self.n_traces else ""
             lines.append(
                 f"parse yield       {self.n_traces - self.n_empty:,}/{self.n_traces:,} "
                 f"non-empty{note}"
