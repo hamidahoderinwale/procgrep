@@ -79,7 +79,6 @@ def run_comparison(
     vocab,
     label_a: str,
     label_b: str,
-    traces: list[Trace],
     k: int = 8,
     ranking: str = "log_odds",
 ) -> dict:
@@ -157,17 +156,17 @@ def main() -> None:
 
         print("\n--- 1. Claude-4 Sonnet vs 2024-era models ---")
         layer_results["claude4_vs_old"] = run_comparison(
-            fps_merged, vocab, "Claude-4 Sonnet", "old-cluster", merged_traces
+            fps_merged, vocab, "Claude-4 Sonnet", "old-cluster"
         )
 
         print("\n--- 2. SWE-agent-LM-32B vs 2024-era models ---")
         layer_results["swe_lm_vs_old"] = run_comparison(
-            fps_merged, vocab, "SWE-agent-LM-32B", "old-cluster", merged_traces
+            fps_merged, vocab, "SWE-agent-LM-32B", "old-cluster"
         )
 
         print("\n--- 3. SWE-agent-LM-32B vs Claude-4 Sonnet ---")
         layer_results["swe_lm_vs_claude4"] = run_comparison(
-            fps, vocab, "SWE-agent-LM-32B", "Claude-4 Sonnet", traces
+            fps, vocab, "SWE-agent-LM-32B", "Claude-4 Sonnet"
         )
 
         # 4. Pass vs fail (labeled trajectories only)
@@ -187,7 +186,7 @@ def main() -> None:
                 Trace(trace_id=t.trace_id, agent="pass", atoms=t.atoms) for t in pass_traces
             ] + [Trace(trace_id=t.trace_id, agent="fail", atoms=t.atoms) for t in fail_traces]
             fps_pf = encode(pf_traces, vocab=vocab)
-            layer_results["pass_vs_fail"] = run_comparison(fps_pf, vocab, "pass", "fail", pf_traces)
+            layer_results["pass_vs_fail"] = run_comparison(fps_pf, vocab, "pass", "fail")
 
         all_results[layer] = layer_results
 

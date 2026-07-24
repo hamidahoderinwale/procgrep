@@ -85,7 +85,7 @@ def atoms_from_dars(steps: list[dict]) -> tuple[list[str], list[str]]:
     return atoms_c, atoms_n
 
 
-def get_resolved_from_cache(content: dict | list, fmt: str) -> bool | None:
+def get_resolved_from_cache(content: dict | list) -> bool | None:
     """Extract resolved label from trajectory info if present."""
     if not isinstance(content, dict):
         return None
@@ -129,7 +129,7 @@ def fingerprint_agent(cfg: dict) -> None:
                 d = json.loads(tf.read_text())
                 fmt = d.get("format", "")
                 content = d["content"]
-                resolved = get_resolved_from_cache(content, fmt)
+                resolved = get_resolved_from_cache(content)
 
                 if fmt == "sweagent_traj_subdir":
                     atoms_c, atoms_n = atoms_from_sweagent(content)

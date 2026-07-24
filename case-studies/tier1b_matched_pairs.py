@@ -182,7 +182,6 @@ def print_results(results: list[dict]):
 
 def run():
     corpora = {n: load(p) for n, p in AGENTS.items() if p.exists()}
-    names = list(corpora.keys())
 
     FOCUS = [
         ("Claude-3.5 Sonnet", "SWE-agent-LM-32B"),
