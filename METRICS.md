@@ -69,7 +69,6 @@ evs = effective_vocab_size_per_group(fingerprints, group_by="agent")
 High concentration = specialist (this agent mostly does one thing, e.g. edit-heavy). Low concentration = generalist. Use this when you want to understand whether an agent's procedure is narrow or varied, without computing the full vocabulary.
 
 ```python
-# 3 lines: group mean fingerprint, then sum of squares
 import numpy as np
 mean_dist = np.mean([fp.distribution() for fp in group_fps], axis=0)
 hhi = float(np.sum(mean_dist ** 2))
@@ -123,7 +122,7 @@ These two metrics need patch diffs or task labels beyond what `procgrep` reads f
 
 How structurally similar are two agents' patches on the same task? (0 = nothing in common, 1 = identical edit shape.) Operates on the *output*, not the procedure, complementary to JSD.
 
-Computed in the `bidirect-align-dev-traces` companion repository; not yet in the `procgrep` API.
+Computed in the [bidirect-align-dev-traces](https://github.com/hamidahoderinwale/bidirect-align-dev-traces) companion repository; not yet in the `procgrep` API.
 
 ---
 
@@ -131,7 +130,7 @@ Computed in the `bidirect-align-dev-traces` companion repository; not yet in the
 
 What fraction of failures happened on tasks where the agent had previously solved all the sub-tasks individually? Separates "agent can't compose" from "agent never learned this skill."
 
-Computed in `bidirect-align-dev-traces/scripts/compositional_generalization.py`.
+Computed in the companion repository's `scripts/compositional_generalization.py`.
 
 ---
 
