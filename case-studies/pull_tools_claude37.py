@@ -40,12 +40,10 @@ EDIT_CMDS = {"str_replace", "insert", "undo_edit"}
 VIEW_CMDS = {"view", ""}
 CREATE_CMDS = {"create"}
 
-# Bash commands that are clearly test runners
 TEST_RE = re.compile(
     r"\b(pytest|python -m pytest|python -m unittest|tox|nose2|" r"make test|./test|bash.*test)\b",
     re.IGNORECASE,
 )
-# Bash commands that are search operations
 SEARCH_RE = re.compile(r"\b(grep|find|ag|rg|git log|git diff)\b", re.IGNORECASE)
 
 
@@ -107,17 +105,14 @@ def parse_txt_trajectory(text: str) -> tuple[list[str], list[str]]:
     canon: list[str] = []
     native: list[str] = []
 
-    # Split on function_call blocks; text between blocks is assistant reasoning → think
+    # split on function_call blocks; non-empty text between blocks counts as think
     last_end = 0
     for fc_match in FC_BLOCK_RE.finditer(text):
-        # Any non-empty text before this block = thinking
         gap = text[last_end : fc_match.start()].strip()
         if gap:
-            # Only count as think if it's substantive (not just whitespace)
             canon.append("think")
             native.append("think")
 
-        # Parse all invokes inside this block
         for inv_match in INVOKE_RE.finditer(fc_match.group(1)):
             inv_name = inv_match.group(1)
             params = {m.group(1): m.group(2) for m in PARAM_RE.finditer(inv_match.group(2))}
@@ -183,7 +178,7 @@ def main():
     txt_keys = [k for k in all_keys if k.endswith(".txt")]
     print(f"Found {len(txt_keys)} .txt traj files in {SUB}")
 
-    # Resume
+    # resume: skip instance_ids already present in the output file
     done: set[str] = set()
     if OUT.exists():
         for line in OUT.read_text().splitlines():

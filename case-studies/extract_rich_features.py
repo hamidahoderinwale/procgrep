@@ -13,6 +13,8 @@ FILE CONSUMPTION (from action strings per step):
 
 Writes a SEPARATE JSONL with the same instance_id key so it joins
 on top of the existing fingerprints_*.jsonl for combined analysis.
+
+    python extract_rich_features.py --submission <s3_submission_prefix> --limit 50 --out rich_features.jsonl
 """
 
 from __future__ import annotations

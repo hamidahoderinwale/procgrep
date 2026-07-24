@@ -9,6 +9,8 @@ without fixing the underlying bug).
 
 Writes a JSONL with per-trajectory: resolved, n_test_files_edited,
 n_source_files_edited, patch_lines_added, test_only (bool).
+
+    python extract_patches.py --submission verified/20240402_sweagent_claude3opus --out patch_analysis.jsonl
 """
 
 from __future__ import annotations
@@ -90,7 +92,7 @@ def parse_patch(patch: str):
 
 
 def get_resolved(instance_id, sub=SUB):
-    # Format A (2025 submissions): logs/<iid>/report.json — flat or nested JSON
+    # Format A (2025 submissions): logs/<iid>/report.json, flat or nested JSON
     key = f"{sub}/logs/{instance_id}/report.json"
     try:
         with urllib.request.urlopen(
@@ -105,7 +107,7 @@ def get_resolved(instance_id, sub=SUB):
     except Exception:
         pass
 
-    # Format B (2024 submissions): logs/<iid>.<sub_slug>.eval.log — raw pytest output
+    # Format B (2024 submissions): logs/<iid>.<sub_slug>.eval.log, raw pytest output
     # The log filename uses only the path after the bucket prefix (e.g. "20240402_sweagent_claude3opus",
     # not "verified_20240402_sweagent_claude3opus").
     slug = sub.split("/", 1)[-1]
