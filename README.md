@@ -29,6 +29,8 @@ Beyond reading traces, procgrep lets you *program* a target procedure: specify i
 pip install procgrep
 ```
 
+Three ways in: the `procgrep` CLI (`procgrep report <traces.jsonl | HF dataset id>` prints a one-shot corpus overview), the Python API below, or the hosted [live explorer](https://midah-procgrep-explorer.hf.space) with nothing installed.
+
 ```python
 from procgrep import fit_bpe, encode, jsd_matrix
 from procgrep.io import read_jsonl
@@ -195,6 +197,10 @@ The runner exists as [`runner/`](runner/) (`procgrep-runner`, a separate package
 ## CLI
 
 ```bash
+# One-shot overview of any corpus: what agents, lengths, action mix, top procedures
+procgrep report traces/canonical.jsonl
+procgrep report nebius/SWE-rebench-openhands-trajectories --limit 500
+
 # Convert raw traces to canonical atom sequences
 procgrep canonicalize --input traces/raw.jsonl --adapter swe-agent --output traces/canonical.jsonl
 
