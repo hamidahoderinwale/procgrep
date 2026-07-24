@@ -547,6 +547,43 @@ def grep(
     typer.echo(f"\n{len(hits)}/{len(traces)} traces matched ({rate:.1%})")
 
 
+@app.command()
+def report(
+    dataset: Annotated[str, typer.Argument(help="HF dataset id, or a local canonical JSONL path.")],
+    limit: Annotated[int, typer.Option(help="Max rows to stream from the Hub.")] = 3000,
+    config: Annotated[
+        str | None, typer.Option(help="HF config name for multi-config datasets.")
+    ] = None,
+    vocab_size: Annotated[int, typer.Option("--vocab-size", "-V")] = 64,
+    top: Annotated[int, typer.Option(help="Top procedures to list.")] = 8,
+    json_out: Annotated[
+        Path | None, typer.Option("--json", help="Also write the full report as JSON.")
+    ] = None,
+) -> None:
+    """One-shot corpus overview: ingest, learn procedures, and print what is observed.
+
+    DATASET may be a Hub id (dynamically sniffed + streamed) or a local
+    canonical-trace JSONL produced by `procgrep canonicalize`.
+    """
+    import json as json_lib
+
+    from procgrep.ingest import ingest as ingest_fn
+    from procgrep.report import build_report
+
+    if Path(dataset).exists():
+        traces = list(records_to_traces(read_jsonl(Path(dataset))))
+    else:
+        traces, plan = ingest_fn(dataset, limit=limit, config=config)
+        typer.echo(plan.summary())
+        typer.echo("")
+
+    rep = build_report(traces, source=dataset, vocab_size=vocab_size, top=top)
+    typer.echo(rep.summary())
+    if json_out is not None:
+        json_out.write_text(json_lib.dumps(rep.to_dict(), indent=2) + "\n")
+        typer.echo(f"\nwrote {json_out}")
+
+
 @app.command(name="list-adapters")
 def list_adapters_cmd() -> None:
     """List registered trace adapters."""
