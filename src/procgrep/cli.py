@@ -584,6 +584,23 @@ def report(
         typer.echo(f"\nwrote {json_out}")
 
 
+@app.command()
+def watch(
+    tail: Annotated[
+        str | None, typer.Option(help="Follow a file; each appended line is one action atom.")
+    ] = None,
+    demo: Annotated[
+        bool, typer.Option("--demo", help="Replay a built-in rollout (no agent needed).")
+    ] = False,
+    port: Annotated[int, typer.Option(help="Local port for the live page.")] = 7870,
+    interval: Annotated[float, typer.Option(help="Seconds between --demo steps.")] = 0.6,
+) -> None:
+    """Stream a rollout into a live local web view as it happens."""
+    from procgrep.watch import serve
+
+    raise SystemExit(serve(tail=tail, demo=demo, port=port, interval=interval))
+
+
 @app.command(name="list-adapters")
 def list_adapters_cmd() -> None:
     """List registered trace adapters."""
