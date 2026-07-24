@@ -149,10 +149,12 @@ def fig_jsd_heatmaps():
     # Use n=500 data if available, fall back to n=50 summary
     canon_path = RES / "jsd_canonical_n500.json"
     native_path = RES / "jsd_native_n500.json"
-    if canon_path.exists() and native_path.exists():
-        canon_data = json.loads(canon_path.read_text())
-        native_data = json.loads(native_path.read_text())
-        data_src = {"jsd_canonical": canon_data, "jsd_native": native_data}
+    use_n500 = canon_path.exists() and native_path.exists()
+    if use_n500:
+        data_src = {
+            "jsd_canonical": json.loads(canon_path.read_text()),
+            "jsd_native": json.loads(native_path.read_text()),
+        }
     else:
         data_src = json.loads((RES / "multi_agent_analysis/summary.json").read_text())
 
@@ -189,7 +191,7 @@ def fig_jsd_heatmaps():
         )
         return (hm + txt).properties(title=title, width=240, height=240)
 
-    n_canon = canon_data.get("n_per_agent", "?") if canon_path.exists() else "50"
+    n_canon = data_src["jsd_canonical"].get("n_per_agent", "?") if use_n500 else "50"
     chart = alt.hconcat(
         make_hm(data_src["jsd_canonical"], f"Canonical JSD (n≥{n_canon}/agent)", 0.60),
         make_hm(data_src["jsd_native"], f"Native JSD (n≥{n_canon}/agent)", 0.95),
@@ -569,7 +571,7 @@ def fig_shell_taxonomy():
             return "create (editor)"
         if tag in ("pipe:find", "find", "pipe:grep", "grep", "search_dir", "search_file"):
             return "search/find"
-        if tag in ("python:script", "python:pytest", "python:pytest"):
+        if tag in ("python:script", "python:pytest"):
             return "run (python)"
         if tag == "submit":
             return "submit"
@@ -753,8 +755,8 @@ def _is_repetition_of(longer: list[str], shorter: list[str]) -> bool:
 def _deduplicate_primitives(procs: list[dict]) -> tuple[list[dict], dict[str, int]]:
     """Keep only non-repetitive primitive procedures.
 
-    Returns (deduplicated list, dict mapping kept procedure → number of
-    redundant repetition-variants collapsed into it).
+    Returns (deduplicated list, dict mapping kept procedure → family size:
+    the primitive itself plus its collapsed repetition-variants).
     """
     sorted_procs = sorted(procs, key=lambda p: len(p["procedure"].split("→")))
     kept: list[dict] = []
@@ -825,7 +827,7 @@ def fig_discriminative_agents():
             ],
             key=lambda p: -p["p_a"],
         )
-        primitives, vcounts = _deduplicate_primitives(excl)
+        primitives, _ = _deduplicate_primitives(excl)
         # Count how many longer variants (all lengths) exist for each primitive
         all_excl = [p for p in procs if p["p_b"] == 0.0]
         for p in primitives[:3]:
@@ -1024,8 +1026,6 @@ def fig_tier1b():
         print("    tier1b_matched_pairs_v1.json missing — skipping fig12")
         return None
 
-    data = json.loads(src.read_text())
-
     # the JSON stores only aggregates; re-derive per-instance JSD from fingerprint files
     fp_files = {
         "Claude-3.5 Sonnet": RES / "fingerprints_claude3.5sonnet_n500.jsonl",
@@ -1223,43 +1223,6 @@ def fig_discriminative_bigrams():
 
 ## Run all
 
-if __name__ == "__main__":
-    print("Generating figures → results/paper_figures/")
-    print()
-
-    fns = [
-        ("fig01 JSD heatmaps", fig_jsd_heatmaps),
-        ("fig02 canonical atoms", fig_canonical_atoms),
-        ("fig03 native heatstrip", fig_native_heatstrip),
-        ("fig04 procgrep metrics", fig_procgrep_metrics),
-        ("fig05 identification probe F1", fig_probe_f1),
-        ("fig06 tokens and cost", fig_tokens_cost),
-        ("fig07 file consumption", fig_files),
-        ("fig08 shell taxonomy", fig_shell_taxonomy),
-        ("fig09 OOD scores", fig_ood),
-        ("fig10 within-trajectory drift", fig_drift),
-        ("fig11a discriminative agents", fig_discriminative_agents),
-        ("fig11b discriminative outcomes", fig_discriminative_outcomes),
-        ("fig12 Tier 1B SODP scatter", fig_tier1b),
-        ("fig13 discriminative bigrams", fig_discriminative_bigrams),
-    ]
-
-    paths = []
-    for label, fn in fns:
-        print(f"  {label}...")
-        try:
-            p = fn()
-            if p:
-                paths.append(p)
-        except Exception as e:
-            print(f"    ERROR: {e}")
-
-    print()
-    print(f"Done — {len(paths)}/{len(fns)} figures saved to results/paper_figures/")
-    for p in paths:
-        print(f"  {p.name}")
-
-
 ## Figure 14: Positional divergence line chart
 
 
@@ -1321,3 +1284,41 @@ def fig_positional_divergence():
         ),
         "fig14_positional_divergence",
     )
+
+
+if __name__ == "__main__":
+    print("Generating figures → results/paper_figures/")
+    print()
+
+    fns = [
+        ("fig01 JSD heatmaps", fig_jsd_heatmaps),
+        ("fig02 canonical atoms", fig_canonical_atoms),
+        ("fig03 native heatstrip", fig_native_heatstrip),
+        ("fig04 procgrep metrics", fig_procgrep_metrics),
+        ("fig05 identification probe F1", fig_probe_f1),
+        ("fig06 tokens and cost", fig_tokens_cost),
+        ("fig07 file consumption", fig_files),
+        ("fig08 shell taxonomy", fig_shell_taxonomy),
+        ("fig09 OOD scores", fig_ood),
+        ("fig10 within-trajectory drift", fig_drift),
+        ("fig11a discriminative agents", fig_discriminative_agents),
+        ("fig11b discriminative outcomes", fig_discriminative_outcomes),
+        ("fig12 Tier 1B SODP scatter", fig_tier1b),
+        ("fig13 discriminative bigrams", fig_discriminative_bigrams),
+        ("fig14 positional divergence", fig_positional_divergence),
+    ]
+
+    paths = []
+    for label, fn in fns:
+        print(f"  {label}...")
+        try:
+            p = fn()
+            if p:
+                paths.append(p)
+        except Exception as e:
+            print(f"    ERROR: {e}")
+
+    print()
+    print(f"Done — {len(paths)}/{len(fns)} figures saved to results/paper_figures/")
+    for p in paths:
+        print(f"  {p.name}")
