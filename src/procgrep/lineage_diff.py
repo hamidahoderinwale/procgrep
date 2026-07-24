@@ -661,8 +661,13 @@ def noise_floor(
     pairs: list[tuple[str, str, str, float]] = []
     for a, b in combinations(keys, 2):
         diff = lineage_diff(
-            groups[a], groups[b], parent_label=a, child_label=b, along=along, **lineage_kwargs
-        )  # type: ignore[arg-type]
+            groups[a],
+            groups[b],
+            parent_label=a,
+            child_label=b,
+            along=along,
+            **lineage_kwargs,  # type: ignore[arg-type]
+        )
         for axis in diff.axes:
             magnitude = abs(axis.summary_value)
             per_axis_vals[axis.axis].append(magnitude)

@@ -60,6 +60,7 @@ import hashlib
 import json
 import sqlite3
 from collections.abc import Callable, Iterator, Sequence
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -270,10 +271,8 @@ def _atom_for_bubble(bubble: dict[str, Any]) -> str:
     return ATOM_OTHER
 
 
-def _dt_ms(ms: object):
+def _dt_ms(ms: object) -> datetime | None:
     """A local ``datetime`` from epoch milliseconds, or ``None``."""
-    from datetime import datetime
-
     if not isinstance(ms, (int, float)):
         return None
     try:

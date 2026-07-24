@@ -28,7 +28,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 from dataclasses import dataclass, replace
-from typing import Any, Literal
+from typing import Any, Literal, overload
 
 import numpy as np
 
@@ -139,6 +139,22 @@ class OptimizeReport:
     train_trace: tuple[float, ...]
 
 
+@overload
+def enforce(
+    spec: ProcedureSpec, mode: Literal["prompt"] = ..., scaffold: Scaffold | None = ...
+) -> str: ...
+@overload
+def enforce(
+    spec: ProcedureSpec, mode: Literal["guard"], scaffold: Scaffold | None = ...
+) -> GuardArtifact: ...
+@overload
+def enforce(
+    spec: ProcedureSpec, mode: Literal["decode"], scaffold: Scaffold | None = ...
+) -> DecodeArtifact: ...
+@overload
+def enforce(
+    spec: ProcedureSpec, mode: Literal["reward"], scaffold: Scaffold | None = ...
+) -> RewardArtifact: ...
 def enforce(
     spec: ProcedureSpec,
     mode: EnforceMode = "prompt",

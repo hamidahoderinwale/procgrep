@@ -58,6 +58,7 @@ import collections
 import json
 import re
 from collections.abc import Callable, Mapping
+from datetime import datetime
 from pathlib import Path
 from typing import Any
 
@@ -78,7 +79,7 @@ from procgrep.types import (
     AtomSequence,
 )
 
-_EDIT_TOOLS = {"edit", "write", "notebookedit", "multiedit"}
+_EDIT_EVENT_KINDS = {"edit", "write", "notebookedit", "multiedit"}
 _READ_TOOLS = {"read", "notebookread"}
 _SEARCH_TOOLS = {"grep", "glob"}
 _WEB_TOOLS = {"websearch", "webfetch"}
@@ -165,7 +166,7 @@ def _classify_terminal_command(command: str) -> str:
 
 CLAUDE_RULES: tuple[EventRule, ...] = (
     EventRule(field_in("kind", {"user_prompt"}), (ATOM_PROMPT_AI,)),
-    EventRule(field_in("kind", {*_EDIT_TOOLS, "file_snapshot"}), (ATOM_EDIT,)),
+    EventRule(field_in("kind", {*_EDIT_EVENT_KINDS, "file_snapshot"}), (ATOM_EDIT,)),
     EventRule(field_in("kind", _READ_TOOLS), (ATOM_READ_FILE,)),
     EventRule(field_in("kind", _SEARCH_TOOLS), (ATOM_SEARCH_REPO,)),
     EventRule(field_in("kind", _WEB_TOOLS), (ATOM_SEARCH_REPO,)),
@@ -363,8 +364,6 @@ def _clock(ts: object) -> str:
     """``HH:MM`` from an ISO timestamp, or ``''``."""
     if not isinstance(ts, str):
         return ""
-    from datetime import datetime
-
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%H:%M")
     except ValueError:
@@ -375,20 +374,16 @@ def _day(ts: object) -> str:
     """``Mon DD`` from an ISO timestamp, or ``''``."""
     if not isinstance(ts, str):
         return ""
-    from datetime import datetime
-
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00")).strftime("%b %d")
     except ValueError:
         return ""
 
 
-def _iso_dt(ts: object):
+def _iso_dt(ts: object) -> datetime | None:
     """Parse an ISO timestamp to a ``datetime``, or ``None``."""
     if not isinstance(ts, str):
         return None
-    from datetime import datetime
-
     try:
         return datetime.fromisoformat(ts.replace("Z", "+00:00"))
     except ValueError:

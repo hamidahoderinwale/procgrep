@@ -16,6 +16,7 @@ from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
+import numpy.typing as npt
 
 from procgrep.bpe import ProcedureVocabulary
 from procgrep.encode import encode
@@ -56,7 +57,9 @@ def _numeric_means(traces: Sequence[Trace]) -> tuple[dict[str, float], set[str]]
     return {key: sums[key] / counts[key] for key in sums}, set(counts)
 
 
-def _categorical_dist(traces: Sequence[Trace], key: str, support: list[str]) -> np.ndarray:
+def _categorical_dist(
+    traces: Sequence[Trace], key: str, support: list[str]
+) -> npt.NDArray[np.float64]:
     """Summed counts for a dict-valued metadata field, aligned to ``support``."""
     counter: dict[str, float] = collections.defaultdict(float)
     for trace in traces:

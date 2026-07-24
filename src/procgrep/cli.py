@@ -294,7 +294,7 @@ def compare(
 
     def _dist(
         rows: list[dict[str, Any]], key: str = "atoms_canonical"
-    ) -> tuple[_np.ndarray, list[str]]:
+    ) -> tuple[_np.ndarray[Any, _np.dtype[Any]], list[str]]:
         cnt: _Counter[str] = _Counter()
         for r in rows:
             for a in r.get(key, []):
@@ -303,10 +303,10 @@ def compare(
         v = _np.array([cnt.get(a, 0) + eps for a in vocab], dtype=float)
         return v / v.sum(), vocab
 
-    def _jsd_val(p: _np.ndarray, q: _np.ndarray) -> float:
+    def _jsd_val(p: _np.ndarray[Any, _np.dtype[Any]], q: _np.ndarray[Any, _np.dtype[Any]]) -> float:
         m = (p + q) / 2
 
-        def kl(a: _np.ndarray, b: _np.ndarray) -> float:
+        def kl(a: _np.ndarray[Any, _np.dtype[Any]], b: _np.ndarray[Any, _np.dtype[Any]]) -> float:
             return float(_np.sum(a * _np.log(a / b)))
 
         return (kl(p, m) + kl(q, m)) / 2
@@ -354,7 +354,9 @@ def compare(
     typer.echo(f"  Median steps  {label_b}: {_median_len(rows_b):.0f}")
 
     # 4. Discriminative bigrams.
-    def _bigram_dist(rows: list[dict[str, Any]]) -> tuple[_np.ndarray, list[str]]:
+    def _bigram_dist(
+        rows: list[dict[str, Any]],
+    ) -> tuple[_np.ndarray[Any, _np.dtype[Any]], list[str]]:
         cnt: _Counter[str] = _Counter()
         for r in rows:
             seq = r.get("atoms_canonical", [])
@@ -407,7 +409,7 @@ def compare(
     pos_jsds = []
     for k in range(40):
 
-        def _pos_dist(seqs: list[list[str]], k: int) -> _np.ndarray | None:
+        def _pos_dist(seqs: list[list[str]], k: int) -> _np.ndarray[Any, _np.dtype[Any]] | None:
             cnt: _Counter[str] = _Counter()
             n = 0
             for seq in seqs:
@@ -417,7 +419,7 @@ def compare(
             if n < 10:
                 return None
             v = _np.array([cnt.get(a, 0) + eps for a in canon_atoms], dtype=float)
-            result: _np.ndarray = v / v.sum()
+            result: _np.ndarray[Any, _np.dtype[Any]] = v / v.sum()
             return result
 
         pa_k = _pos_dist(seqs_a, k)
