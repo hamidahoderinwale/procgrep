@@ -1,0 +1,43 @@
+# Keep the live explorer (midah/procgrep-explorer) in sync with this repo.
+# The Space installs procgrep from git@main, so drift accumulates silently
+# unless something rebuilds it; this does, on space/ changes and weekly.
+name: deploy-space
+on:
+  push:
+    branches: [main]
+    paths: ["space/**"]
+  schedule:
+    - cron: "0 6 * * 1" # weekly rebuild against latest main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: install huggingface_hub
+        run: pip install "huggingface_hub>=0.23"
+      - name: sync space/ and factory-rebuild
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          if [ -z "$HF_TOKEN" ]; then
+            echo "HF_TOKEN secret is not set; skipping deploy." >&2
+            exit 1
+          fi
+          python - <<'PY'
+          import os
+          from huggingface_hub import HfApi
+
+          api = HfApi(token=os.environ["HF_TOKEN"])
+          api.upload_folder(
+              folder_path="space",
+              repo_id="midah/procgrep-explorer",
+              repo_type="space",
+              commit_message="deploy space from main",
+          )
+          api.restart_space("midah/procgrep-explorer", factory_reboot=True)
+          PY
