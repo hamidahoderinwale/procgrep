@@ -77,17 +77,40 @@ from procgrep.types import (
     ATOM_VERSION_CONTROL,
 )
 
-_READ_TOOLS = {"read_file", "mcp__filesystem__read_text_file", "read_memory", "mcp_serena_read_memory"}
+_READ_TOOLS = {
+    "read_file",
+    "mcp__filesystem__read_text_file",
+    "read_memory",
+    "mcp_serena_read_memory",
+}
 _SEARCH_TOOLS = {
-    "grep_search", "glob", "list_directory", "list_dir", "find_file", "google_web_search",
-    "web_fetch", "search_for_pattern", "find_symbol", "get_symbols_overview",
-    "find_referencing_symbols", "mcp_serena_find_symbol", "mcp_serena_get_symbols_overview",
-    "mcp_serena_find_referencing_symbols", "mcp_serena_find_file",
+    "grep_search",
+    "glob",
+    "list_directory",
+    "list_dir",
+    "find_file",
+    "google_web_search",
+    "web_fetch",
+    "search_for_pattern",
+    "find_symbol",
+    "get_symbols_overview",
+    "find_referencing_symbols",
+    "mcp_serena_find_symbol",
+    "mcp_serena_get_symbols_overview",
+    "mcp_serena_find_referencing_symbols",
+    "mcp_serena_find_file",
 }
 _EDIT_TOOLS = {
-    "replace", "write_file", "insert_after_symbol", "insert_before_symbol", "rename_symbol",
-    "replace_symbol_body", "mcp_serena_replace_symbol_body", "mcp_serena_insert_after_symbol",
-    "mcp_serena_insert_before_symbol", "write_memory",
+    "replace",
+    "write_file",
+    "insert_after_symbol",
+    "insert_before_symbol",
+    "rename_symbol",
+    "replace_symbol_body",
+    "mcp_serena_replace_symbol_body",
+    "mcp_serena_insert_after_symbol",
+    "mcp_serena_insert_before_symbol",
+    "write_memory",
 }
 _THINK_TOOLS = {"write_todos", "enter_plan_mode", "exit_plan_mode"}
 _SHELL_TOOLS = {"run_shell_command", "shell"}
@@ -113,9 +136,7 @@ _MAP = make_event_adapter(rules=GEMINI_RULES)
 # The harness-injected onboarding preamble that opens an auto-init Gemini session.
 # It arrives as a user message but is not the human typing, so it must not become
 # a prompt boundary (the Gemini analogue of claude-code's injected-turn guard).
-_INJECTED_PREFIXES = (
-    "You are an AI agent that brings the power of Gemini",
-)
+_INJECTED_PREFIXES = ("You are an AI agent that brings the power of Gemini",)
 
 
 def _user_text(content: Any) -> str:
@@ -123,9 +144,7 @@ def _user_text(content: Any) -> str:
     if isinstance(content, str):
         return content
     if isinstance(content, list):
-        return " ".join(
-            str(b.get("text", "")) for b in content if isinstance(b, Mapping)
-        )
+        return " ".join(str(b.get("text", "")) for b in content if isinstance(b, Mapping))
     return ""
 
 

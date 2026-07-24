@@ -92,7 +92,9 @@ def main() -> int:
     ax.tick_params(colors=OLIVE, labelsize=9, length=0)
     for sp in ax.spines.values():
         sp.set_visible(False)
-    ax.set_title("Pairwise procedural divergence by interface", color=INK, size=11, loc="left", pad=12)
+    ax.set_title(
+        "Pairwise procedural divergence by interface", color=INK, size=11, loc="left", pad=12
+    )
 
     cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
     cbar.outline.set_visible(False)

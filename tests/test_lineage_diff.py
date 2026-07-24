@@ -593,7 +593,9 @@ def test_conditional_in_default_dispatch_error_message() -> None:
 
 def _tagged(trace_id: str, atoms: list[str], scaffold: str) -> Trace:
     """A Trace tagged with a provenance/partition key for the new features."""
-    return Trace(trace_id=trace_id, agent="agent", atoms=atoms, group=None, metadata={"scaffold": scaffold})
+    return Trace(
+        trace_id=trace_id, agent="agent", atoms=atoms, group=None, metadata={"scaffold": scaffold}
+    )
 
 
 # exclude_atoms.
@@ -604,9 +606,11 @@ def test_exclude_atoms_removes_them_from_vocabulary() -> None:
     parent = [_trace("p", [ATOM_EDIT, ATOM_THINK, ATOM_EDIT])]
     child = [_trace("c", [ATOM_EDIT, ATOM_OTHER, ATOM_EDIT])]
     before = lineage_diff(parent, child, along=["vocabulary"]).axes[0].summary_value
-    after = lineage_diff(
-        parent, child, along=["vocabulary"], exclude_atoms=[ATOM_THINK, ATOM_OTHER]
-    ).axes[0].summary_value
+    after = (
+        lineage_diff(parent, child, along=["vocabulary"], exclude_atoms=[ATOM_THINK, ATOM_OTHER])
+        .axes[0]
+        .summary_value
+    )
     assert before == pytest.approx(1 / 3)  # {edit} shared of {edit, think, other}
     assert after == pytest.approx(1.0)  # only edit remains on both sides
 

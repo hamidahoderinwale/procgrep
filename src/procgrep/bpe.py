@@ -197,7 +197,9 @@ def render_vocab_tree(vocab: ProcedureVocabulary) -> str:
         children[_join(left, right)] = (left, right)
         used.add(left)
         used.add(right)
-    roots = [token for token in (_join(left, right) for left, right in vocab.merges) if token not in used]
+    roots = [
+        token for token in (_join(left, right) for left, right in vocab.merges) if token not in used
+    ]
 
     lines: list[str] = [
         f"{len(vocab.atoms)} atoms: {', '.join(sorted(vocab.atoms))}",

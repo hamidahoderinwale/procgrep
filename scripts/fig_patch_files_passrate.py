@@ -34,34 +34,38 @@ from figtheme import init, style_axes
 
 init()
 
-CACHE = Path("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/trajectories/.cache")
-with open("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json") as fh:
+CACHE = Path(
+    "/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/trajectories/.cache"
+)
+with open(
+    "/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json"
+) as fh:
     pf = json.load(fh)
 
 NAME = {
-    "20240402_sweagent_claude3opus":                          "Claude-3",
-    "20240620_sweagent_claude3.5sonnet":                      "Claude-3.5",
-    "20250226_sweagent_claude-3-7-sonnet-20250219":           "Claude-3.7-thinking",
-    "20250526_sweagent_claude-4-sonnet-20250514":             "Claude-4",
-    "20240402_sweagent_gpt4":                                 "GPT-4",
-    "20240728_sweagent_gpt4o":                                "GPT-4o",
-    "20250205_dars_agent_claude_3.5_sonnet_deepseek_r1":      "DARS+R1",
-    "20241202_agentless-1.5_claude-3.5-sonnet-20241022":      "Agentless+Claude-3.5",
-    "20250111_moatless_deepseek_v3":                          "Moatless+V3",
+    "20240402_sweagent_claude3opus": "Claude-3",
+    "20240620_sweagent_claude3.5sonnet": "Claude-3.5",
+    "20250226_sweagent_claude-3-7-sonnet-20250219": "Claude-3.7-thinking",
+    "20250526_sweagent_claude-4-sonnet-20250514": "Claude-4",
+    "20240402_sweagent_gpt4": "GPT-4",
+    "20240728_sweagent_gpt4o": "GPT-4o",
+    "20250205_dars_agent_claude_3.5_sonnet_deepseek_r1": "DARS+R1",
+    "20241202_agentless-1.5_claude-3.5-sonnet-20241022": "Agentless+Claude-3.5",
+    "20250111_moatless_deepseek_v3": "Moatless+V3",
 }
 
 # figtheme palette assignment: Claude family = COPPER shades, GPT = BLUE shades, DARS = GREEN
 FAM_COLORS = {
-    "Claude-3":           "#CB8050",   # COPPER-light
-    "Claude-3.5":         "#CB4D20",   # COPPER (canonical)
-    "Claude-3.7-thinking":"#8B3010",   # COPPER-dark
-    "Claude-4":           "#5B1808",   # COPPER-darkest
-    "GPT-4":              "#7BB4F0",   # BLUE-light
-    "GPT-4o":             "#5692E5",   # BLUE (canonical)
-    "DARS+R1":            "#20A380",   # GREEN
+    "Claude-3": "#CB8050",  # COPPER-light
+    "Claude-3.5": "#CB4D20",  # COPPER (canonical)
+    "Claude-3.7-thinking": "#8B3010",  # COPPER-dark
+    "Claude-4": "#5B1808",  # COPPER-darkest
+    "GPT-4": "#7BB4F0",  # BLUE-light
+    "GPT-4o": "#5692E5",  # BLUE (canonical)
+    "DARS+R1": "#20A380",  # GREEN
 }
 
-GIT  = re.compile(r"^diff --git a/(\S+) b/(\S+)", re.M)
+GIT = re.compile(r"^diff --git a/(\S+) b/(\S+)", re.M)
 PLUS = re.compile(r"^\+\+\+ b/(\S+)", re.M)
 
 
@@ -107,7 +111,7 @@ for key, agent in NAME.items():
         if not sub.strip():
             sub = o.get("submission", "") or ""
         nf = patch_files(sub)
-        b  = binof(nf)
+        b = binof(nf)
         if b is None:
             continue
         ok = iid in resolved
@@ -137,11 +141,18 @@ for agent, color in FAM_COLORS.items():
     mask = ~np.isnan(y_vals.astype(float))
     xp = [i for i, m in enumerate(mask) if m]
     yp = [y_vals[i] for i in xp]
-    ax.plot(xp, yp, color=color, linewidth=1.8, marker="o", markersize=5,
-            markerfacecolor=color, markeredgewidth=0)
+    ax.plot(
+        xp,
+        yp,
+        color=color,
+        linewidth=1.8,
+        marker="o",
+        markersize=5,
+        markerfacecolor=color,
+        markeredgewidth=0,
+    )
     legend_handles.append(
-        mlines.Line2D([], [], color=color, linewidth=1.8, marker="o",
-                      markersize=5, label=agent)
+        mlines.Line2D([], [], color=color, linewidth=1.8, marker="o", markersize=5, label=agent)
     )
 
 ax.set_xticks(range(len(order)))
@@ -151,13 +162,14 @@ ax.set_ylabel("Pass rate", fontsize=10)
 ax.set_ylim(0, 70)
 ax.set_title("Pass rate by number of files changed", fontsize=11)
 
-legend = ax.legend(handles=legend_handles, fontsize=8, frameon=False,
-                   loc="upper right", ncol=1)
+legend = ax.legend(handles=legend_handles, fontsize=8, frameon=False, loc="upper right", ncol=1)
 
 style_axes(ax)
 
 fig.savefig(
     "/Users/hamidaho/learning-from-dev/procgrep/docs/figures/fig_patch_files_passrate.png",
-    dpi=200, facecolor="white", bbox_inches="tight"
+    dpi=200,
+    facecolor="white",
+    bbox_inches="tight",
 )
 print("wrote fig_patch_files_passrate.png")

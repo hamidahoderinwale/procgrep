@@ -180,9 +180,7 @@ def enforce(
             return to_swe_agent_config(spec)
         if scaffold == "openhands":
             return to_openhands_skill(spec)
-        raise ValueError(
-            f"unknown scaffold {scaffold!r}; expected swe-agent, openhands, or None"
-        )
+        raise ValueError(f"unknown scaffold {scaffold!r}; expected swe-agent, openhands, or None")
     if mode == "guard":
         patterns = tuple(spec.to_patterns())
 

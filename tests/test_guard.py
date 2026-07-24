@@ -17,13 +17,19 @@ from procgrep.types import ATOM_EDIT, ATOM_READ_FILE, ATOM_RUN_TEST
 def _no_read_loop() -> ProcedureSpec:
     """Forbid two reads in a row (read_file, read_file)."""
     return ProcedureSpec(
-        penalties=(Penalty(name="read_loop", reward=-1.0, forbid_sequence=(ATOM_READ_FILE, ATOM_READ_FILE)),),
+        penalties=(
+            Penalty(
+                name="read_loop", reward=-1.0, forbid_sequence=(ATOM_READ_FILE, ATOM_READ_FILE)
+            ),
+        ),
         name="no_read_loop",
     )
 
 
 def _edit_cap(cap: int) -> ProcedureSpec:
-    return ProcedureSpec(penalties=(Penalty(name="edit_streak", reward=-1.0, max_run=cap),), name="edit_cap")
+    return ProcedureSpec(
+        penalties=(Penalty(name="edit_streak", reward=-1.0, max_run=cap),), name="edit_cap"
+    )
 
 
 def test_legal_action_allowed() -> None:
@@ -86,7 +92,9 @@ def test_step_block_does_not_commit() -> None:
 
 
 def test_step_steer_commits_and_carries_message() -> None:
-    guard = ProcedureGuard(_no_read_loop(), on_violation="steer", steer_message="Edit and validate.")
+    guard = ProcedureGuard(
+        _no_read_loop(), on_violation="steer", steer_message="Edit and validate."
+    )
     guard.step(ATOM_READ_FILE)
     d = guard.step(ATOM_READ_FILE)
     assert d.allowed is False

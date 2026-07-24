@@ -12,7 +12,13 @@ def _spec(name: str = "test_after_edit") -> ProcedureSpec:
     return ProcedureSpec(
         name=name,
         phases=(
-            Phase(name="verify", reward=0.5, require_any=("run_test",), before_first="submit", min_count=2),
+            Phase(
+                name="verify",
+                reward=0.5,
+                require_any=("run_test",),
+                before_first="submit",
+                min_count=2,
+            ),
         ),
         penalties=(Penalty(name="streak", reward=0.25, max_run=5),),
     )
@@ -24,9 +30,9 @@ def test_spec_yaml_round_trips(tmp_path):  # type: ignore[no-untyped-def]
     spec.to_yaml(path)
     back = ProcedureSpec.from_yaml(path)
     assert back.name == spec.name
-    assert [(p.name, p.reward, p.require_any, p.before_first, p.min_count) for p in back.phases] == [
-        ("verify", 0.5, ("run_test",), "submit", 2)
-    ]
+    assert [
+        (p.name, p.reward, p.require_any, p.before_first, p.min_count) for p in back.phases
+    ] == [("verify", 0.5, ("run_test",), "submit", 2)]
     assert [(p.name, p.reward, p.max_run, p.forbid_sequence) for p in back.penalties] == [
         ("streak", 0.25, 5, ())
     ]
@@ -38,7 +44,9 @@ def test_library_save_load_names(tmp_path):  # type: ignore[no-untyped-def]
     lib = ProcedureLibrary(tmp_path / "lib")
     assert lib.names() == []
     lib.save("test_after_edit", _spec())
-    lib.save("explore first", ProcedureSpec(name="x", phases=(Phase("explore", 0.1, ("search_repo",)),)))
+    lib.save(
+        "explore first", ProcedureSpec(name="x", phases=(Phase("explore", 0.1, ("search_repo",)),))
+    )
     assert "test_after_edit" in lib
     assert "test_after_edit" in lib.names()
     assert len(lib) == 2
