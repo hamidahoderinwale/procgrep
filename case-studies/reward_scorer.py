@@ -48,10 +48,9 @@ def has_atom(atoms: list[str], atom: str, min_count: int = 1) -> bool:
     return atoms.count(atom) >= min_count
 
 
-def has_any_atom(atoms: list[str], atom_list: list[str],
-                 min_occurrences: int = 1) -> bool:
-    # min_occurrences of ONE listed atom, not the total across the list
-    return any(atoms.count(a) >= min_occurrences for a in atom_list)
+def count_atoms(atoms: list[str], atom_list: list[str]) -> int:
+    """Total occurrences across the listed atoms (search x1 + read x1 counts 2)."""
+    return sum(atoms.count(a) for a in atom_list)
 
 
 def has_contiguous_pattern(atoms: list[str], pattern: list[str]) -> bool:
@@ -59,21 +58,37 @@ def has_contiguous_pattern(atoms: list[str], pattern: list[str]) -> bool:
     return any(atoms[i:i + p] == pattern for i in range(n - p + 1))
 
 
+def iter_sequence_matches(atoms: list[str], seq: list[str], max_gap: int = 999):
+    """Yield (start, end) for each non-overlapping in-order match of seq,
+    every step within max_gap of the previous one. Empty seq never matches."""
+    if not seq:
+        return
+    n = len(atoms)
+    i = 0
+    while i < n:
+        if atoms[i] == seq[0]:
+            pos = i
+            ok = True
+            for step in seq[1:]:
+                # greedy earliest continuation; may undercount when a later
+                # occurrence would leave room for the next step, acceptable
+                # for a reward heuristic
+                nxt = next((j for j in range(pos + 1, min(pos + 1 + max_gap, n))
+                            if atoms[j] == step), None)
+                if nxt is None:
+                    ok = False
+                    break
+                pos = nxt
+            if ok:
+                yield (i, pos)
+                i = pos + 1  # resume past the match so counts don't overlap
+                continue
+        i += 1
+
+
 def has_sequence_within_gap(atoms: list[str], seq: list[str],
                             max_gap: int = 999) -> bool:
-    """True if seq occurs in order, each step within max_gap of the previous."""
-    if len(seq) != 2:
-        # len > 2 checks each consecutive pair independently, so pairs may
-        # anchor at different positions; len < 2 is vacuously True
-        for a, b in zip(seq[:-1], seq[1:]):
-            if not has_sequence_within_gap(atoms, [a, b], max_gap):
-                return False
-        return True
-    a, b = seq
-    for i, atom in enumerate(atoms):
-        if atom == a and b in atoms[i + 1: i + 1 + max_gap]:
-            return True
-    return False
+    return next(iter_sequence_matches(atoms, seq, max_gap), None) is not None
 
 
 def first_occurrence(atoms: list[str], atom: str) -> int:
@@ -97,7 +112,7 @@ def eval_phase(atoms: list[str], phase: dict) -> bool:
     if "require_any" in phase:
         min_occ = phase.get("min_occurrences", 1)
         atom_names = [r["atom"] for r in phase["require_any"] if "atom" in r]
-        if not has_any_atom(scope, atom_names, min_occ):
+        if count_atoms(scope, atom_names) < min_occ:
             return False
 
     if "require_pattern" in phase:
@@ -105,18 +120,11 @@ def eval_phase(atoms: list[str], phase: dict) -> bool:
             return False
 
     if "require_sequence" in phase:
-        # sequences scan the FULL trajectory; before_first scopes only
-        # require_any / require_pattern
         seq = phase["require_sequence"]
         max_gap = phase.get("max_gap", 999)
         min_occ = phase.get("min_occurrences", 1)
-        found = 0
-        for i in range(len(atoms)):
-            if has_sequence_within_gap(atoms[i:], seq, max_gap):
-                found += 1
-                if found >= min_occ:
-                    break
-        if found < min_occ:
+        matches = sum(1 for _ in iter_sequence_matches(scope, seq, max_gap))
+        if matches < min_occ:
             return False
 
     if "require_absent_before" in phase:
