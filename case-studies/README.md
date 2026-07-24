@@ -1,6 +1,6 @@
 # procgrep: empirical case studies
 
-Reproduces the empirical results in *Procedural Grep: Structural Variation for Agent Rollouts*. Each script reads fingerprint JSONLs (one row per trajectory: `instance_id`, `atoms_canonical`, `atoms_native`, `resolved`) and writes a JSON or PNG.
+Reproduces the empirical results in *Agent trajectories as programs: fingerprinting and programming coding-agent behavior*. Each script reads fingerprint JSONLs (one row per trajectory: `instance_id`, `atoms_canonical`, `atoms_native`, `resolved`) and writes a JSON or PNG.
 
 ## Setup
 
