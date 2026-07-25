@@ -13,7 +13,7 @@ pinned: false
 **Intent.** A Hugging Face Docker Space that runs ProcGrep server-side: it ingests a
 trajectory dataset, canonicalizes it into an action vocabulary, and answers structural
 queries over the **whole** dataset, not a fixed sample. Read this when changing the live
-explorer or its hosting. The static, embedded-data version lives in the paper repo at
+explorer or its hosting. The static, embedded-data version lives in this repo at
 `docs/explorer/`; this Space is the version that scales past the embed's size limit.
 
 ## Why a Space and not just the static page
@@ -35,6 +35,15 @@ times out elsewhere is not a problem here.
    free CPU tier. Price: a very large dataset is sampled to the cap; the response says so.
 4. **Queries are regexes over the canonical atom spine.** One query language shared with the
    static essay's query box. Price: the spine drops argument-level detail, by design.
+
+## Deploying
+
+`.github/workflows/deploy-space.yml` syncs this folder to the Space and
+factory-rebuilds it on every `space/` change on `main`, weekly (to pick up
+library changes, since the image installs procgrep from `git@main`), and on
+manual dispatch. It needs the `HF_TOKEN` repository secret. The manual
+fallback is `HfApi().upload_folder(folder_path="space", repo_id="midah/procgrep-explorer", repo_type="space")`
+plus `restart_space(..., factory_reboot=True)`.
 
 ## Endpoints
 

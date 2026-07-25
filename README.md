@@ -199,7 +199,32 @@ The runner exists as [`runner/`](runner/) (`procgrep-runner`, a separate package
 ```bash
 # One-shot overview of any corpus: what agents, lengths, action mix, top procedures
 procgrep report traces/canonical.jsonl
-procgrep report nebius/SWE-rebench-openhands-trajectories --limit 500
+procgrep report nebius/SWE-rebench-openhands-trajectories --limit 300
+```
+
+which streams the dataset, auto-picks an adapter, and prints:
+
+```
+adapter    openhands  (confidence 0.95)
+
+corpus            300 traces from nebius/SWE-rebench-openhands-trajectories
+length            median 105 atoms, mean 111
+exact duplicates    0.0%
+
+action mix        think 44%  read_file 15%  run_code 11%  search_repo 9%  run_test 6%  edit 5%
+
+procedures        64 learned; top by share:
+   4.9%  read_file▁think
+   4.5%  read_file▁think▁read_file▁think
+   4.2%  run_test▁think
+```
+
+Traces that fail to parse are counted, not averaged in: an unmatched corpus
+reports `parse yield 0/60 non-empty (adapter mismatch? try --dry-run)`.
+
+```bash
+# Watch a rollout live: tail a file of atoms (or --demo) in a local web view
+procgrep watch --demo
 
 # Convert raw traces to canonical atom sequences
 procgrep canonicalize --input traces/raw.jsonl --adapter swe-agent --output traces/canonical.jsonl
