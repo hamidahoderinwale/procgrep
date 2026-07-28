@@ -15,6 +15,7 @@ examples/
 ├── rules/
 │   └── stuck_edit_loop.yaml           (4 pattern-matcher rules)
 ├── python/                            (numbered walkthroughs, table below)
+├── paper/                             (reproduces the paper's empirical results)
 ├── procgrep_view.py                   (panel over your local Claude Code + Cursor sessions)
 ├── procgrep_export.py                 (privacy-preserving shareable export of those sessions)
 ├── claude_code_fingerprint.py         (fingerprint Claude Code transcripts, contrast styles)
@@ -24,6 +25,12 @@ examples/
 The synthetic corpus has two agents (`editor`, `searcher`) across two groups
 (`control`, `treatment`); trajectory `syn-004` deliberately violates
 `no_long_edit_loops` so the pattern matcher has something to report.
+
+Everything in `paper/` corresponds to the paper (*Agent trajectories as
+programs: fingerprinting and programming coding-agent behavior*): the `pull_*`
+and `extract_*` scripts build the fingerprint JSONLs, and the analysis scripts
+reproduce the paper's empirical results from them. Run those from inside
+`examples/paper/`.
 
 ## What each walkthrough demonstrates
 

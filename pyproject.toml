@@ -91,7 +91,7 @@ include = [
 line-length = 100
 target-version = "py310"
 src = ["src", "tests"]
-exclude = ["case-studies", "docs"]
+exclude = ["examples/paper", "docs"]
 
 [tool.ruff.lint]
 select = [
