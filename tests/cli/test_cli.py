@@ -10,7 +10,7 @@ from typer.testing import CliRunner
 from procgrep.cli import app
 
 runner = CliRunner()
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SYNTH = ROOT / "examples" / "data" / "synthetic_traces.jsonl"
 
 
