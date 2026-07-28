@@ -29,10 +29,9 @@
 </style>
 </head><body><div class="wrap">
 
-<p class="lead">Two agents have <b>action habits</b> &mdash; how often each reaches for read, search,
-edit, test, think. Drag the bars to reshape either agent. <b>Jensen-Shannon divergence</b> asks one thing:
-how differently are the two mixed? <b>0</b> means identical habits, <b>1</b> means nothing in common.
-It works by building the <b>blend</b> halfway between them and measuring how far each agent sits from that blend.</p>
+<p class="lead">Each agent has <b>action habits</b>: how often it reaches for read, search,
+edit, test, think. Drag the bars to reshape either agent. <b>Jensen-Shannon divergence</b> scores
+how differently the two are mixed, from <b>0</b> (identical habits) to <b>1</b> (nothing in common).</p>
 
 <div class="panels">
   <div class="panel"><div class="ptitle"><span class="dot" style="background:var(--copper)"></span>Agent A</div>
@@ -51,10 +50,9 @@ It works by building the <b>blend</b> halfway between them and measuring how far
 
 <div class="presets" id="presets"></div>
 
-<p class="note">The tick marks show where real agent pairs actually land: two models in the
-<b>same scaffold</b> sit at JSD&nbsp;&asymp;&nbsp;0.001 (nearly identical habits), while two
-<b>different scaffolds</b> sit at &asymp;&nbsp;0.16. Almost the entire 0&ndash;1 range is empty &mdash;
-which is the point: the scaffold moves an agent's procedure far more than the model does.</p>
+<p class="note">The ticks mark real agent pairs: two models in the <b>same scaffold</b> sit at
+&asymp;&nbsp;0.001, two <b>different scaffolds</b> at &asymp;&nbsp;0.16. The scaffold moves
+an agent's procedure far more than the model does.</p>
 
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
 <script>
