@@ -15,7 +15,7 @@ from procgrep.reward import RewardResult, load_spec, score
 
 pytest.importorskip("yaml")
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 EXAMPLE_SPEC = ROOT / "examples" / "rules" / "reward_spec_swe_agent.yaml"
 
 INLINE_SPEC = """

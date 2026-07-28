@@ -32,4 +32,4 @@ jobs:
       - name: build and push spines
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
-        run: python scripts/build_spines.py --push
+        run: python analysis/build_spines.py --push

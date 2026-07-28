@@ -101,6 +101,7 @@
   .badge{display:inline-block;font-size:10px;font-weight:600;padding:1px 7px;border-radius:3px;margin-left:8px;vertical-align:middle;white-space:nowrap}
   .badge.pass{background:#E3EDE6;color:var(--pass)}
   .badge.fail{background:#F6E3DC;color:var(--fail)}
+  .badge.cliff{background:#E8E0F4;color:#6B4C9A}
 
   .tl{max-height:560px;overflow:auto;background:#fff;border-radius:6px;padding:16px 18px}
   .turn{position:relative;display:grid;grid-template-columns:1fr 40%;gap:18px;padding:0 0 16px 24px;transition:opacity .2s}
@@ -205,6 +206,7 @@
   <ul class="tlleg">
     <li>each turn is your prompt, then the agent's tool sequence; the dot is colored by the turn's main action</li>
     <li>the <span class="badge pass">✓ tests pass</span> / <span class="badge fail">✗ tests fail</span> badge is that turn's test result</li>
+    <li><span class="badge cliff">↯ procedure shift</span> = intent cliff detected in that turn's actions (often mid-run, without a new prompt)</li>
     <li><span class="bluedot"></span><span id="winLeg"></span></li>
   </ul>
   <div class="tl" id="tl"></div>
@@ -381,6 +383,12 @@ function renderHeader(){
   const dur=durationMin({meta:META,turns:SESSION});
   if(dur!=null) html+=row("duration",fmtDur(dur));
   html+=row("turns",SESSION.length)+row("tool calls",actions)+row("tool calls / prompt",apx);
+  const cl=META.cliffs;
+  if(cl&&cl.n_cliffs>0){
+    const hid=cl.hidden_fraction!=null?Math.round(cl.hidden_fraction*100)+"% hidden":"";
+    html+=row("procedure shifts",cl.n_cliffs+(hid?` · ${hid} mid-run`:""));
+    html+=row("shifts / 100 actions",String(cl.per_100_actions));
+  }
   document.getElementById("stats").innerHTML=html;
 }
 
@@ -404,6 +412,7 @@ function childrenHtml(tn){
     let badge="";
     if(last&&tn.outcome==="pass")badge=` <span class="badge pass">✓ tests pass</span>`;
     if(last&&tn.outcome==="fail")badge=` <span class="badge fail">✗ tests fail</span>`;
+    if(last&&tn.cliff_count>0)badge+=` <span class="badge cliff">↯ shift${tn.cliff_count>1?" ×"+tn.cliff_count:""}</span>`;
     return `<div class="act"><span class="br">${last?"└─":"├─"}</span><span style="color:${COLOR[a]}">${name}${n>1?" × "+n:""}</span>${badge}</div>`;
   }).join("");
 }
@@ -598,9 +607,13 @@ function renderAutonomy(){
   const svg=`<svg viewBox="0 0 ${SW} ${SH}" width="100%" role="img" aria-label="Actions per human prompt">${bars}${base}${yt}${xt}`
     +`<text x="${ml+pw/2}" y="${SH-6}" text-anchor="middle" font-size="11" fill="var(--mut)">actions after one prompt</text></svg>`;
   const st=(v,l)=>`<div class="stat"><div class="sv">${v}</div><div class="sl">${l}</div></div>`;
+  const cliffSessions=matched.filter(s=>s.meta&&s.meta.cliffs&&s.meta.cliffs.n_cliffs>0);
+  const cliffRates=cliffSessions.map(s=>s.meta.cliffs.per_100_actions);
+  const cliffMed=cliffRates.length?cliffRates.sort((a,b)=>a-b)[Math.floor((cliffRates.length-1)/2)]:null;
   chart.innerHTML=`<p class="cap">Actions per human prompt <span class="hint">· across ${matched.length} session${matched.length>1?"s":""}</span></p>`
     +`<div class="chart">${svg}</div><p class="cap2">histogram of agent run lengths between prompts</p>`
-    +`<div class="astats">${st(matched.length,"sessions")}${st(runs.length,"runs")}${st(median,"median run")}${st(mean.toFixed(1),"mean run")}${st(top,"longest run")}</div>`;
+    +`<div class="astats">${st(matched.length,"sessions")}${st(runs.length,"runs")}${st(median,"median run")}${st(mean.toFixed(1),"mean run")}${st(top,"longest run")}`
+    +(cliffMed!=null?st(cliffMed,"median shifts/100"):"")+`</div>`;
 }
 
 function setView(v){

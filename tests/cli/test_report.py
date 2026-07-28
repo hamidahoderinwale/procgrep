@@ -12,7 +12,7 @@ from procgrep.cli import app
 from procgrep.report import build_report
 from procgrep.types import PROCEDURE_SEPARATOR
 
-ROOT = Path(__file__).resolve().parents[1]
+ROOT = Path(__file__).resolve().parents[2]
 SYNTH = ROOT / "examples" / "data" / "synthetic_traces.jsonl"
 
 

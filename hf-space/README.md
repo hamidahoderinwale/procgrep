@@ -36,15 +36,6 @@ times out elsewhere is not a problem here.
 4. **Queries are regexes over the canonical atom spine.** One query language shared with the
    static essay's query box. Price: the spine drops argument-level detail, by design.
 
-## Deploying
-
-`.github/workflows/deploy-space.yml` syncs this folder to the Space and
-factory-rebuilds it on every `space/` change on `main`, weekly (to pick up
-library changes, since the image installs procgrep from `git@main`), and on
-manual dispatch. It needs the `HF_TOKEN` repository secret. The manual
-fallback is `HfApi().upload_folder(folder_path="space", repo_id="midah/procgrep-explorer", repo_type="space")`
-plus `restart_space(..., factory_reboot=True)`.
-
 ## Endpoints
 
 - `GET /`: the query frontend.
@@ -57,17 +48,3 @@ plus `restart_space(..., factory_reboot=True)`.
     pip install -r requirements.txt
     uvicorn app:app --reload --port 7860
     # open http://localhost:7860
-
-## Deploy to a Space
-
-The Space is a separate git repo on Hugging Face; this directory is its source.
-
-    # one-time, interactive auth (run it yourself):
-    #   huggingface-cli login
-    huggingface-cli repo create procgrep-explorer --type space --space_sdk docker
-    git clone https://huggingface.co/spaces/<user>/procgrep-explorer hf-space
-    cp -r app.py requirements.txt Dockerfile static README.md hf-space/
-    cd hf-space && git add -A && git commit -m "deploy procgrep explorer" && git push
-
-Then embed it in the essay's showcase by pointing the iframe at the Space URL
-(`https://<user>-procgrep-explorer.hf.space`).
