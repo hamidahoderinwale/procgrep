@@ -3,7 +3,8 @@
 Local-first and privacy-first. It reads the transcripts Claude Code already
 writes under ``~/.claude/projects`` on this machine, reduces each to the panel's
 session shape (atoms + prompt-anchored turns) with ``build_panel_session``,
-injects them into a copy of ``docs/live_fingerprint.html``, and opens it. Nothing
+runs the online intent-cliff detector on each session's action stream, injects
+them into a copy of ``docs/live_fingerprint.html``, and opens it. Nothing
 leaves the machine.
 
 The conversation (prompt text) is sampled for this local view by default. Pass
@@ -30,6 +31,7 @@ from collections.abc import Callable
 from pathlib import Path
 from typing import Any
 
+from procgrep.cliff import enrich_panel_session
 from procgrep.ingest.adapters.claude_code import build_panel_session
 from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions as build_cursor_sessions
 
@@ -95,7 +97,9 @@ def main() -> None:
 
     sessions = []
     for file in files[-args.limit :]:
-        panel = build_panel_session({"events": _read_lines(file)}, paraphrase=paraphrase)
+        panel = enrich_panel_session(
+            build_panel_session({"events": _read_lines(file)}, paraphrase=paraphrase)
+        )
         if len(panel["turns"]) >= 3:
             sessions.append(panel)
     n_cc = len(sessions)
@@ -103,6 +107,7 @@ def main() -> None:
     cursor_db = Path(args.cursor).expanduser()
     if cursor_db.exists():
         for panel in build_cursor_sessions(cursor_db, paraphrase=paraphrase, limit=args.limit):
+            panel = enrich_panel_session(panel)
             if len(panel["turns"]) >= 3:
                 sessions.append(panel)
     n_cursor = len(sessions) - n_cc
