@@ -38,7 +38,8 @@ async function loadDatasets() {
   DSETS = d.suggested;
   OUTCOME_DS = d.outcome_datasets || [];
   CMP.ds = DSETS[0];
-  $("ds").innerHTML = d.suggested.map((s) => `<option>${s}</option>`).join("");
+  $("dslist").innerHTML = d.suggested.map((s) => `<option value="${s}">`).join("");
+  $("ds").value = DSETS[0];
   $("trychips").innerHTML = SAMPLES.map((s, i) => `<span class="chip" data-i="${i}">${s.label}</span>`).join("");
   setSource(DSETS[0]);
 }
@@ -114,15 +115,13 @@ async function run(pattern) {
      <div class="eyebrow">action mix · matched vs. all</div>
      <div class="rrow"><span class="rlab">matched</span>${r.n_hits ? mixbar(r.mix_hits, col) : '<span class="dim">no matches</span>'}</div>
      <div class="rrow"><span class="rlab">all traces</span>${mixbar(r.mix_all, col)}</div>
-     <div class="eyebrow">matching traces · click to open · matched span outlined</div>
+     <div class="eyebrow">matching traces</div>
      <div class="qctl">
        <input id="qfilter" class="qfilter" placeholder="filter by author or repo, e.g. Azure" oninput="renderHits()">
        <select id="qsort" class="qsort" onchange="renderHits()">
          <option value="found">order found</option>
          <option value="len-desc">most steps</option>
          <option value="len-asc">fewest steps</option>
-         <option value="prob">author / repo</option>
-         <option value="model">model</option>
          <option value="outcome">outcome</option>
        </select>
      </div>
@@ -149,18 +148,11 @@ $("q").addEventListener("input", () => {
   try { new RegExp(v); } catch { return; }
   QTIMER = setTimeout(() => run(v), 250);
 });
-$("ds").addEventListener("change", () => { setSource($("ds").value); run($("q").value || SAMPLES[0].pat); });
-// Free-text: query any HF dataset id (live-ingested on the server, slower first load).
-$("dsfree").addEventListener("keydown", (e) => {
-  if (e.key !== "Enter") return;
-  const v = e.target.value.trim();
+// One combobox: pick a suggested dataset or paste any HF dataset id (live-ingested, slower first load).
+$("ds").addEventListener("change", () => {
+  const v = $("ds").value.trim();
   if (!v) return;
-  if (![...$("ds").options].some((o) => o.value === v)) {
-    const o = document.createElement("option");
-    o.value = v; o.textContent = v + " · live"; $("ds").appendChild(o);
-  }
-  $("ds").value = v; setSource(v); e.target.value = "";
-  run($("q").value || SAMPLES[0].pat);
+  setSource(v); run($("q").value || SAMPLES[0].pat);
 });
 
 // Comparator.
@@ -287,7 +279,7 @@ function openTraceData(t, ds, color) {
   sheet.innerHTML =
     `<div class="card"><span class="x" onclick="rpClose()">close ✕</span>
      <div style="font-size:15px"><b>${prettyModel(t.model)}</b>${prob ? ` · ${prettyTask(prob)}` : ""}${oc}</div>
-     <div class="dim" style="margin:2px 0 6px">${t.steps ?? t.atoms.length} steps${t.cot_tokens ? ` · ~${fmtTok(t.cot_tokens)} reasoning tokens` : ""} · structural trail, no raw text stored · press play to replay</div>
+     <div class="dim" style="margin:2px 0 6px">${t.steps ?? t.atoms.length} steps${t.cot_tokens ? ` · ~${fmtTok(t.cot_tokens)} reasoning tokens` : ""}</div>
      <div id="rp-mini" style="margin:2px 0 8px"></div>
      <div class="rpbar">
        <span class="rpbtn" id="rp-play" onclick="rpToggle()">▶ play</span>
@@ -320,14 +312,31 @@ function renderHits() {
   const prob = (h) => h.task || h.trace_id || "";
   if (s === "len-desc") rows.sort((a, b) => len(b[0]) - len(a[0]));
   else if (s === "len-asc") rows.sort((a, b) => len(a[0]) - len(b[0]));
-  else if (s === "model") rows.sort((a, b) => prettyModel(a[0].model).localeCompare(prettyModel(b[0].model)));
   else if (s === "outcome") rows.sort((a, b) => (a[0].outcome || "~").localeCompare(b[0].outcome || "~"));
-  else if (s === "prob") rows.sort((a, b) => prob(a[0]).localeCompare(prob(b[0])));
-  $("qhits").innerHTML = rows.map(([h, i]) => {
-    const prob = h.task || h.trace_id || "";
-    const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
-    return `<div class="qhit" onclick="openQHit(${i})"><span class="hit-model">${prettyModel(h.model)}</span><span class="hit-task dim" title="${prob}">${prettyTask(prob)}</span>${oc}<span class="dim">${h.steps ?? h.atoms.length} steps</span>${barcode(h.atoms, QCOLOR, matchSpan(h.atoms, QPAT))}</div>`;
-  }).join("");
+  // Group by model, then by task, in row order: one header per model with a
+  // count, one sub-header per task, and only per-trace facts on the rows.
+  const groups = new Map();
+  for (const [h, i] of rows) {
+    const m = prettyModel(h.model);
+    if (!groups.has(m)) groups.set(m, new Map());
+    const tasks = groups.get(m);
+    const t = prob(h);
+    if (!tasks.has(t)) tasks.set(t, []);
+    tasks.get(t).push([h, i]);
+  }
+  let html = "";
+  for (const [m, tasks] of groups) {
+    const n = [...tasks.values()].reduce((a, v) => a + v.length, 0);
+    html += `<div class="ghead">${m}<span class="gcount">${n}</span></div>`;
+    for (const [t, hits] of tasks) {
+      html += `<div class="gsub" title="${t}">${prettyTask(t)}<span class="gcount">${hits.length}</span></div>`;
+      html += hits.map(([h, i]) => {
+        const oc = h.outcome ? `<span class="oc ${h.outcome}">${h.outcome}</span>` : "";
+        return `<div class="qhit grouped" onclick="openQHit(${i})"><span class="dim">${len(h)} steps</span>${oc}${barcode(h.atoms, QCOLOR, matchSpan(h.atoms, QPAT))}</div>`;
+      }).join("");
+    }
+  }
+  $("qhits").innerHTML = html;
   const left = QNH - QHITS.length;
   let more = "";
   if (f) more += `<div class="note">${rows.length} of ${QHITS.length} loaded match "${f}"</div>`;
@@ -359,10 +368,16 @@ function trailStack(side) {
 function diffStrip() {
   const r = CMP.data, c = r.atom_color, d = r.diff;
   const L = prettyModel(r.left.label), R = prettyModel(r.right.label);
-  const procs = (d.procedures || []).slice(0, 7).map((p) => {
-    const lean = p.log_odds >= 0 ? `<span class="lean l">${L} ◂</span>` : `<span class="lean r">▸ ${R}</span>`;
-    return `<div class="proc">${lean}${barcode(p.atoms, c)}</div>`;
-  }).join("");
+  // A pair can be genuinely identical (e.g. one dataset mirrors the other);
+  // say so rather than rendering direction arrows over zero log-odds.
+  const flat = (d.procedures || []).length > 0 &&
+    (d.procedures || []).every((p) => Math.abs(p.log_odds) < 1e-9) && !d.len_delta && !d.cot_delta;
+  const procs = flat
+    ? `<div class="note">none: the two groups have identical procedure distributions. For two datasets, this usually means one mirrors the other.</div>`
+    : (d.procedures || []).slice(0, 7).map((p) => {
+      const lean = p.log_odds >= 0 ? `<span class="lean l">${L} ◂</span>` : `<span class="lean r">▸ ${R}</span>`;
+      return `<div class="proc">${lean}${barcode(p.atoms, c)}</div>`;
+    }).join("");
   return `<div class="diffstrip">
     <div class="dnums">
       <div class="dnum"><div class="big">${d.jsd == null ? "—" : d.jsd}</div><div class="lab">action-mix JSD, 0 same to 1 disjoint</div></div>
