@@ -289,7 +289,7 @@ Benchmark scores tell you what an agent got right; they do not tell you how it g
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.85\linewidth]{figures/fig_vmeasure_sweep.png}
+      \includegraphics[width=0.85\linewidth]{figures/fig_vmeasure_sweep/fig_vmeasure_sweep.png}
       \caption{V-measure of BPE vocabulary clustering against agent labels as a function of vocabulary
   size.}
       \label{fig:vmeasure}
@@ -308,7 +308,7 @@ Benchmark scores tell you what an agent got right; they do not tell you how it g
 
   \begin{figure}[h]
       \centering
-      \includegraphics[width=\linewidth]{figures/trace_pipeline.png}
+      \includegraphics[width=\linewidth]{figures/trace_pipeline/trace_pipeline.png}
       \caption{Illustrative figure of the process of vocabulary induction given an agent trace.}
       \label{fig:encoding_pipeline}
   \end{figure}
@@ -352,7 +352,7 @@ $$
 
  \begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\linewidth]{figures/fig_step_vs_token_cost.png}
+    \includegraphics[width=0.7\linewidth]{figures/fig_step_vs_token_cost/fig_step_vs_token_cost.png}
     \caption{Cost breakdown of agents by action type and tokens.}
     \label{fig:step_token_cost}
 \end{figure}
@@ -401,7 +401,7 @@ routing calls through the shell and orchestrating them before invoking the more 
 
 \begin{figure}[!t]
     \centering
-    \includegraphics[width=0.7\linewidth]{figures/fig_steps_per_resolved.png}
+    \includegraphics[width=0.7\linewidth]{figures/fig_steps_per_resolved/fig_steps_per_resolved.png}
     \caption{Average number of steps per resolved tasks across agents.}
     \label{fig:steps_resolved}
 \end{figure}
@@ -443,7 +443,7 @@ natural-language accounts barely improve on it.}
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.55\linewidth]{figures/cot_alignment_6agents.png}
+      \includegraphics[width=0.55\linewidth]{figures/cot_alignment_6agents/cot_alignment_6agents.png}
       \caption{Follow-through for behavioral accounts from the Claude and GPT model families.}
       \label{fig:cot_alignment}
   \end{figure}
@@ -518,13 +518,13 @@ natural-language accounts barely improve on it.}
   \begin{figure}[H]
   \centering
   \begin{subfigure}[t]{0.48\linewidth}
-      \includegraphics[width=\linewidth]{figures/failure_mix_by_agent_84.png}
+      \includegraphics[width=\linewidth]{figures/failure_mix_by_agent_84/failure_mix_by_agent_84.png}
       \caption{Pass rate by compositional difficulty.}
       \label{fig:compositional_failure}
   \end{subfigure}
   \hfill
   \begin{subfigure}[t]{0.48\linewidth}
-      \includegraphics[width=\linewidth]{figures/failure_by_family.png}
+      \includegraphics[width=\linewidth]{figures/failure_by_family/failure_by_family.png}
       \caption{Failure types by model family.}
       \label{fig:failure_by_family}
   \end{subfigure}
@@ -571,7 +571,7 @@ natural-language accounts barely improve on it.}
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.62\linewidth]{figures/fig_interface_jsd_matrix.png}
+      \includegraphics[width=0.62\linewidth]{figures/fig_interface_jsd_matrix/fig_interface_jsd_matrix.png}
       \caption{}
       \label{fig:interface_jsd}
   \end{figure}
@@ -587,7 +587,7 @@ natural-language accounts barely improve on it.}
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.6\linewidth]{figures/fig_patch_files_passrate.png}
+      \includegraphics[width=0.6\linewidth]{figures/fig_patch_files_passrate/fig_patch_files_passrate.png}
       \caption{Figure plotting agent pass rate by the number of files changed. We observe that a low file change rate is lightly correlated with
   pass rate, potentially because it means the scope of the solution was more straightforward, compared to complex tasks that are either hard to
   localize or require a breadth of files as context to solve. }
@@ -821,7 +821,7 @@ natural-language accounts barely improve on it.}
   \begin{figure}[H]
   \centering
   \begin{subfigure}[t]{0.46\linewidth}
-      \includegraphics[width=\linewidth]{figures/fig_distillation_A_entropy.png}
+      \includegraphics[width=\linewidth]{figures/fig_distillation_A_entropy/fig_distillation_A_entropy.png}
       \caption{Action entropy student and teacher model pair where the student's action distribution is more
   concentrated  ($-0.41$ bits).}
       \label{fig:dist_entropy}
@@ -832,7 +832,7 @@ natural-language accounts barely improve on it.}
   \end{figure}
 
   % \begin{subfigure}[t]{0.46\linewidth}
-    %  \includegraphics[width=\linewidth]{figures/fig_distillation_B_conditional.png}
+    %  \includegraphics[width=\linewidth]{figures/fig_distillation_B_conditional/fig_distillation_B_conditional.png}
    %   \caption{\textcolor{blue}{Conditional JSD by prefix action (canonical). Divergence is modest and spread, not
   % localized to one control point.}}
   %    \label{fig:dist_conditional}
@@ -1090,7 +1090,7 @@ natural-language accounts barely improve on it.}
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.6\linewidth]{figures/fig_bpe_vs_prefixspan.png}
+      \includegraphics[width=0.6\linewidth]{figures/fig_bpe_vs_prefixspan/fig_bpe_vs_prefixspan.png}
    \caption{BPE separates agents better than PrefixSpan, scored by V-measure
   against agent labels. The golden set, derived from the evaluation dataset,
   treats a clustering as correct when every trajectory from a given agent is
@@ -1101,7 +1101,7 @@ natural-language accounts barely improve on it.}
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.62\linewidth]{figures/fig_jsd_matrix_full_canonical.png}
+      \includegraphics[width=0.62\linewidth]{figures/fig_jsd_matrix_full_canonical/fig_jsd_matrix_full_canonical.png}
    \caption{Ten agents compared by their pairwise divergence. Of all agent pairs, the distilled student (SWE-agent-LM-32B) is closest to its
   teacher (Claude-3.7~Sonnet), at JSD~$=~0.25$.}
       \label{fig:jsd_full}
@@ -1109,7 +1109,7 @@ natural-language accounts barely improve on it.}
 
   \begin{figure}[H]
       \centering
-      \includegraphics[width=0.7\linewidth]{figures/fig_regression_length.png}
+      \includegraphics[width=0.7\linewidth]{figures/fig_regression_length/fig_regression_length.png}
       \caption{Pass rate by trajectory length (canonical-action count). Pass rate declines modestly and
   in a non-linear fashion, from 45\% at 1--10 steps to ${\sim}29\%$ beyond 60.}
       \label{fig:regression_length}
