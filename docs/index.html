@@ -150,16 +150,24 @@ math{font-family:var(--serif)}
 .ftleg{font-family:var(--mono);font-size:12px;color:var(--olive);display:flex;gap:16px;flex-wrap:wrap;margin-top:8px}
 .ftleg i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:4px}
 .ftleg svg{vertical-align:middle}.fc{cursor:crosshair}
-.ptabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:14px}
-.ptab{font-family:var(--mono);font-size:12px;padding:4px 10px;border:1px solid var(--rule);background:var(--paper);cursor:pointer;border-radius:2px;color:var(--olive)}
-.ptab.on{background:var(--ink);color:var(--paper);border-color:var(--ink)}
-.pbody{min-height:160px;display:flex;flex-direction:column;justify-content:center;align-items:center;padding:14px;background:var(--paper);border-radius:3px}
-.prow{font-family:var(--mono);font-size:13px;margin:2px 0}.prow code{background:none;padding:0}
-.pspine{display:flex;flex-wrap:wrap;gap:6px;justify-content:center}
-.pspine.big{gap:14px}.pspine.big .pchip{font-size:18px;padding:8px 18px}
-.pchip{font-family:var(--mono);font-size:12px;color:#fff;padding:3px 9px;border-radius:3px}
-.pwrap{display:inline-block;border:2px solid;border-radius:5px;padding:2px}
-.pvocab{font-family:var(--mono);font-size:14px}.pvrow{margin:7px 0}
+.pscroll{overflow-x:auto}
+.pgrid{display:grid;grid-template-columns:minmax(190px,1.5fr) repeat(3,minmax(120px,1fr)) minmax(130px,1fr);grid-template-rows:auto repeat(7,minmax(30px,auto));gap:6px 18px;align-items:center;min-width:720px;padding:14px;background:var(--paper);border-radius:3px}
+.phead{font-family:var(--mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--olive);align-self:end;padding-bottom:4px;border-bottom:1px solid var(--rule);position:relative;cursor:pointer}
+.phead:not(:nth-child(5))::after{content:"→";position:absolute;right:-15px;bottom:4px;color:var(--rule)}
+.praw{font-family:var(--mono);font-size:12px;background:#efeae2;border-left:3px solid;border-radius:2px;padding:3px 8px;white-space:nowrap}
+.pchip{font-family:var(--mono);font-size:12px;color:#fff;padding:3px 9px;border-radius:3px;justify-self:start}
+.pmerge{font-family:var(--mono);font-size:12px;border:2px solid;border-radius:5px;padding:5px 10px;background:#fff;align-self:center;justify-self:start;white-space:nowrap}
+.pvoc{font-family:var(--mono);font-size:13px;font-weight:600;border:2px solid;border-radius:5px;padding:5px 12px;background:#fff;align-self:center;justify-self:start;white-space:nowrap}
+.penc{grid-row:2/9;align-self:center;justify-self:start}
+.penc .pchip{font-size:16px;padding:7px 15px;margin-right:8px}
+.penc .plegend{font-family:var(--mono);font-size:12px;margin-top:12px;line-height:1.9}
+.pgrid [data-col]{opacity:.22;transition:opacity .45s}
+.pgrid [data-col].lit{opacity:1}
+.preuse{margin-top:14px;padding:12px 14px;background:#efeae2;border-radius:3px;opacity:.22;transition:opacity .45s}
+.preuse.lit{opacity:1}
+.preuse .ptr{font-family:var(--mono);font-size:12px;margin:6px 0;display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.preuse .ptr .lab{color:var(--olive);width:70px}
+.preuse .pchip.shared{outline:2px solid var(--ink);outline-offset:1px}
 .pdim{font-family:var(--mono);font-size:12px;color:var(--olive);text-align:center}
 /* margin citations (Tufte sidenotes) — float into the right whitespace on wide screens */
 .sidenote{float:right;clear:right;width:250px;margin:.2em -288px 1.2em 0;
@@ -306,7 +314,7 @@ details.anatomy .codecard{margin:14px 18px}
     <source src="figures/replay/replay.mp4" type="video/mp4">
   </video>
 </figure>
-<p>Firstly, we demonstrate that these fingerprints do in fact exist, and different models are differentiable by their architectural types. We find that models are distinguishable by their fingerprints alone at 85.7% accuracy compared to a random baseline of 11.1% when selecting a model by chance. We attribute this to problem solving style <span class="citation" data-cites="bisztray2025iknowllmwrote">(<a href="#ref-bisztray2025iknowllmwrote" role="doc-biblioref">Bisztray et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Bisztray, Tamas, Bilel Cherif, Richard A. Dubniczky, et al. 2025. <em>I Know Which LLM Wrote Your Code Last Summer: LLM Generated Code Stylometry for Authorship Attribution</em>. <a href="https://arxiv.org/abs/2506.17323">https://arxiv.org/abs/2506.17323</a>.</span></span>. Furthermore, we extend this to deterministic scaffolds such as Agentless and Moatless to see if they affect procedural behavior and they also imprint unique fingerprints that are identifiable with near perfect accuracy. We performed the comparisons in pairwise settings, to understand distinguishability and we find that Claude-4 and SWE-agent-LM-32B are the most identifiable, whereas GPT-4 and Claude-3 Opus are the most confusable (F1 0.20–0.30).</p>
+<p>Firstly, we demonstrate that these fingerprints do in fact exist, and different models are differentiable by their architectural types. We find that models are distinguishable by their fingerprints alone at 85.7% accuracy compared to a random baseline of 11.1% when selecting a model by chance. We attribute this to problem solving style <span class="citation" data-cites="bisztray2025iknowllmwrote">(<a href="#ref-bisztray2025iknowllmwrote" role="doc-biblioref">Bisztray et al. 2025</a>)</span><span class="sidenote"><span class="sn-ref">Bisztray, Tamas, Bilel Cherif, Richard A. Dubniczky, et al. 2025. <em>I Know Which LLM Wrote Your Code Last Summer: LLM Generated Code Stylometry for Authorship Attribution</em>. <a href="https://arxiv.org/abs/2506.17323">https://arxiv.org/abs/2506.17323</a>.</span></span>. Furthermore, we extend this to deterministic scaffolds such as <a href="https://github.com/OpenAutoCoder/Agentless" target="_blank" rel="noopener">Agentless</a> and Moatless to see if they affect procedural behavior and they also imprint unique fingerprints that are identifiable with near perfect accuracy. We performed the comparisons in pairwise settings, to understand distinguishability and we find that Claude-4 and SWE-agent-LM-32B are the most identifiable, whereas GPT-4 and Claude-3 Opus are the most confusable (F1 0.20–0.30).</p>
 <p>Framing agent coding traces as procedures lets us comparatively study and interact with them in ways that are useful for benchmarking, evaluating the difficulty of evals themselves, differentiating models by their behavioral <span class="term" tabindex="0">fingerprints<span class="tip"><span class="tip-def">“…identifiable by their behavioral habits, which we define as fingerprints: a probe over these procedural signatures attributes an unseen trajectory to the correct agent.”</span><span class="tip-src">— <a href="#abstract">this paper, Abstract</a></span></span></span>, and performing procedural search. We release a library called ProcGrep to support these use cases. For example, ProcGrep supports queries such as the following.</p>
 <div class="tcolorbox">
 <p>“All Claude-4 trajectories from the past two weeks on Python repositories where <code>search_repo</code> was followed by three or more <code>read_file</code> calls within the first 8 steps, the agent then made at least one <code>edit</code>, and no <code>run_test</code> occurred before the final <code>submit</code>—on instances in the hardest difficulty band (over four hours to solve).”</p>
@@ -2024,6 +2032,7 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   const mount=document.getElementById('fig-pipe'); if(!mount)return;
   const VC={localize:'#8C1040',read:'#5692E5',edit:'#CB4D20',test:'#20A380',submit:'#14110E'};
   const SC={A:'#5692E5',B:'#CB4D20',C:'#A98D5A'};
+  const tint={A:'rgba(86,146,229,.10)',B:'rgba(203,77,32,.10)',C:'rgba(169,141,90,.12)'};
   const trace=[
     {op:'localize_file("auth.py")',verb:'localize',sub:'A'},
     {op:'read_file("auth.py")',verb:'read',sub:'A'},
@@ -2032,43 +2041,53 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
     {op:'edit_file("auth.py", p2)',verb:'edit',sub:'B'},
     {op:'run_tests("test_auth")',verb:'test',sub:'C'},
     {op:'submit()',verb:'submit',sub:'C'}];
-  const subs={A:['localize','read'],B:['edit','test','edit'],C:['test','submit']};
+  const subs={A:{verbs:['localize','read'],rows:[2,4],gloss:'localize, read'},
+              B:{verbs:['edit','test','edit'],rows:[4,7],gloss:'edit and test loop'},
+              C:{verbs:['test','submit'],rows:[7,9],gloss:'test, submit'}};
+  const heads=['raw tool calls','canonical verbs','merge co-occurring','induced vocabulary','encoded trace'];
   const stages=[
-    {t:'Raw tool calls',d:'The agent emits a stream of tool invocations — verbose, parameterized, every one different.'},
-    {t:'Canonical verbs',d:'Each call is normalized to a canonical action; surface detail dropped, the verb kept.'},
-    {t:'Merge co-occurring',d:'Frequently-adjacent verbs are merged into recurring subroutines — exactly as BPE merges tokens.'},
-    {t:'Induced vocabulary',d:'The merges define an alphabet of procedures, learned bottom-up from the corpus.'},
-    {t:'Encoded trace',d:'The trajectory is now a short string over that alphabet — a program we can compare and query.'}];
-  let st=0;
-  const chip=(l,c)=>`<span class="pchip" style="background:${c}">${l}</span>`;
-  function render(){
-    let b='';
-    if(st===0) b=trace.map(r=>`<div class="prow"><code>${r.op}</code></div>`).join('');
-    else if(st===1) b='<div class="pspine">'+trace.map(r=>chip(r.verb,VC[r.verb])).join('')+'</div>';
-    else if(st===2) b='<div class="pspine">'+trace.map(r=>`<span class="pwrap" style="border-color:${SC[r.sub]}">`+chip(r.verb,VC[r.verb])+'</span>').join('')+'</div><div class="pdim">brackets = the subroutine each verb merges into</div>';
-    else if(st===3) b='<div class="pvocab">'+Object.entries(subs).map(([k,v])=>`<div class="pvrow">${chip(k,SC[k])} = <span class="pdim" style="margin:0">{ ${v.join(', ')} }</span></div>`).join('')+'</div>';
-    else b='<div class="pspine big">'+['A','B','C'].map(k=>chip(k,SC[k])).join('')+'</div><div class="pdim">localize→read · edit→test→edit · test→submit</div>';
-    mount.querySelector('#pipe-body').innerHTML=b;
-    mount.querySelector('#pipe-desc').textContent=stages[st].d;
-    mount.querySelectorAll('.ptab').forEach((x,i)=>x.classList.toggle('on',i===st));
+    'The agent emits a stream of tool invocations — verbose, parameterized, every one different.',
+    'Each call is normalized to a canonical action; surface detail dropped, the verb kept.',
+    'Frequently-adjacent verbs are merged into recurring subroutines — exactly as BPE merges tokens.',
+    'The merges define an alphabet of procedures, learned bottom-up from the corpus.',
+    'The trajectory is a short string over that alphabet — and its subroutines recur across other traces, like BPE tokens across documents.'];
+  const chip=(l,c,extra)=>`<span class="pchip${extra||''}" style="background:${c}">${l}</span>`;
+  let g=heads.map((h,i)=>`<div class="phead" data-col="${i}" data-i="${i}" style="grid-column:${i+1};grid-row:1">${i+1} · ${h}</div>`).join('');
+  trace.forEach((r,i)=>{
+    g+=`<div class="praw" data-col="0" style="grid-column:1;grid-row:${i+2};border-left-color:${SC[r.sub]}"><code>${r.op}</code></div>`;
+    g+=`<div data-col="1" style="grid-column:2;grid-row:${i+2}">${chip(r.verb,VC[r.verb])}</div>`;
+  });
+  Object.entries(subs).forEach(([k,v])=>{
+    g+=`<div class="pmerge" data-col="2" style="grid-column:3;grid-row:${v.rows[0]}/${v.rows[1]};border-color:${SC[k]};background:${tint[k]}">${v.verbs.join(', ')}</div>`;
+    g+=`<div class="pvoc" data-col="3" style="grid-column:4;grid-row:${v.rows[0]}/${v.rows[1]};border-color:${SC[k]};background:${tint[k]}">Subroutine ${k}</div>`;
+  });
+  g+=`<div class="penc" data-col="4" style="grid-column:5"><div>${['A','B','C'].map(k=>chip(k,SC[k])).join('')}</div>
+      <div class="plegend">${Object.entries(subs).map(([k,v])=>`<div style="color:${SC[k]}">${v.gloss}</div>`).join('')}</div></div>`;
+  const reuse={1:['A','B','C'],2:['B','A','B','C'],3:['A','B','B','A','C']};
+  mount.innerHTML=`<div class="pscroll"><div class="pgrid">${g}</div></div>
+    <div class="preuse">${Object.entries(reuse).map(([n,ks])=>`<div class="ptr"><span class="lab">trace ${n}</span>${ks.map(k=>chip(k,SC[k],k==='B'?' shared':'')).join('')}</div>`).join('')}
+    <div class="pdim" style="text-align:left;margin-top:8px">subroutine B (outlined) recurs across traces — a reusable member of the procedural alphabet</div></div>
+    <div id="pipe-desc" class="pdim" style="margin-top:10px"></div>`;
+  // Sweep: light the columns left to right once when scrolled into view, then
+  // leave everything lit. Clicking a column header replays up to that column.
+  const desc=mount.querySelector('#pipe-desc');
+  function setStage(st){
+    mount.querySelectorAll('[data-col]').forEach(el=>el.classList.toggle('lit',+el.dataset.col<=st));
+    mount.querySelector('.preuse').classList.toggle('lit',st>=4);
+    if(st>=0)desc.textContent=stages[Math.min(st,4)];
   }
-  mount.innerHTML=`<div class="ptabs">${stages.map((s,i)=>`<button class="ptab" data-i="${i}">${i+1}. ${s.t}</button>`).join('')}</div>`+
-    `<div id="pipe-body" class="pbody"></div><div id="pipe-desc" class="pdim" style="margin-top:10px"></div>`;
-  // Auto-play through the stages once when scrolled into view, then rest on the
-  // last stage. The stage tabs are the only control; clicking one stops the run
-  // and jumps there, so no transport buttons are needed.
   let timer=null, hasPlayed=false;
   function stop(){if(timer){clearInterval(timer);timer=null;}}
-  function playOnce(){
-    hasPlayed=true; stop();
-    timer=setInterval(()=>{if(st>=stages.length-1){stop();return;}st++;render();},2000);
+  function sweep(from){
+    stop(); let st=from; setStage(st);
+    timer=setInterval(()=>{if(st>=4){stop();return;}st++;setStage(st);},1400);
   }
-  mount.querySelector('.ptabs').addEventListener('click',e=>{const i=e.target.dataset.i;if(i!=null){stop();st=+i;render();}});
-  render();
+  mount.querySelectorAll('.phead').forEach(h=>h.addEventListener('click',()=>{stop();hasPlayed=true;setStage(+h.dataset.i);}));
+  setStage(-1); desc.textContent='';
   if('IntersectionObserver' in window){
-    const io=new IntersectionObserver((es)=>{es.forEach(e=>{if(e.isIntersecting&&!hasPlayed)playOnce();});},{threshold:0.3});
+    const io=new IntersectionObserver(es=>{es.forEach(e=>{if(e.isIntersecting&&!hasPlayed){hasPlayed=true;sweep(0);}});},{threshold:0.35});
     io.observe(mount);
-  } else playOnce();
+  } else {hasPlayed=true;sweep(0);}
 })();
 </script>
 <script>
