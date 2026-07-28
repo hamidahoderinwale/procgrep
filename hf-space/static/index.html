@@ -79,13 +79,13 @@ body.corpus-sess .cgroup[data-c="eval"]{display:none}
 
 <section id="view-query">
 <h1>Grep agent traces, live.</h1>
-<p class="sub">Ask a structural question about how an agent worked and get an exact answer over the whole
-trajectory dataset, not a sample. ProcGrep runs server-side: it ingests the dataset, canonicalizes it
-into an action vocabulary, and scans every trace. No model call.</p>
+<p class="sub">Ask a structural question about how an agent worked and get an exact answer over every
+trace, not a sample. ProcGrep canonicalizes the dataset into an action vocabulary server-side and
+scans it whole; no model call.</p>
 
 <div class="dsbar">dataset:
-  <select id="ds"></select>
-  <input id="dsfree" class="dsfree" placeholder="or paste any HF dataset id" autocomplete="off">
+  <input id="ds" class="dsfree" list="dslist" placeholder="pick or paste any HF dataset id" autocomplete="off" spellcheck="false">
+  <datalist id="dslist"></datalist>
   <span id="dsmeta" class="dim"></span>
   <a id="dsource" class="dim src" target="_blank" rel="noopener"></a>
 </div>
