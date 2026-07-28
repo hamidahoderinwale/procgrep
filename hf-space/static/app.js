@@ -368,10 +368,16 @@ function trailStack(side) {
 function diffStrip() {
   const r = CMP.data, c = r.atom_color, d = r.diff;
   const L = prettyModel(r.left.label), R = prettyModel(r.right.label);
-  const procs = (d.procedures || []).slice(0, 7).map((p) => {
-    const lean = p.log_odds >= 0 ? `<span class="lean l">${L} ◂</span>` : `<span class="lean r">▸ ${R}</span>`;
-    return `<div class="proc">${lean}${barcode(p.atoms, c)}</div>`;
-  }).join("");
+  // A pair can be genuinely identical (e.g. one dataset mirrors the other);
+  // say so rather than rendering direction arrows over zero log-odds.
+  const flat = (d.procedures || []).length > 0 &&
+    (d.procedures || []).every((p) => Math.abs(p.log_odds) < 1e-9) && !d.len_delta && !d.cot_delta;
+  const procs = flat
+    ? `<div class="note">none: the two groups have identical procedure distributions. For two datasets, this usually means one mirrors the other.</div>`
+    : (d.procedures || []).slice(0, 7).map((p) => {
+      const lean = p.log_odds >= 0 ? `<span class="lean l">${L} ◂</span>` : `<span class="lean r">▸ ${R}</span>`;
+      return `<div class="proc">${lean}${barcode(p.atoms, c)}</div>`;
+    }).join("");
   return `<div class="diffstrip">
     <div class="dnums">
       <div class="dnum"><div class="big">${d.jsd == null ? "—" : d.jsd}</div><div class="lab">action-mix JSD, 0 same to 1 disjoint</div></div>
