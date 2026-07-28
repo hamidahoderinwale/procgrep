@@ -11,4 +11,4 @@ row per trajectory, with columns: `dataset`, `trace_id`, `agent`, `task`,
 All `*.parquet` files are gitignored. The canonical store is published to the
 Hugging Face dataset `midah/procgrep-spines` and refreshed weekly by
 `.github/workflows/refresh-spines.yml`. Regenerate locally with
-`scripts/build_spines.py`.
+`analysis/build_spines.py`.
