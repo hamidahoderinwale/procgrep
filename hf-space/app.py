@@ -1,50 +1,18 @@
 """ProcGrep explorer backend — query full agent-trajectory datasets, live.
 
-Intent: a small FastAPI service that ingests a Hugging Face trajectory dataset
-through procgrep, caches the canonicalized traces, and answers structural
-queries (for example "an edit streak of five or more with no test") over the
-whole dataset rather than a fixed 500-trace sample. Read this when changing the
-explorer's server behavior or its caching.
+A small FastAPI service that ingests a Hugging Face trajectory dataset through
+procgrep, caches the canonicalized traces, and answers structural queries over
+the whole dataset rather than a fixed sample.
 
-Design decisions (benefit / price):
- 1. Import procgrep; do not reimplement canonicalization or queries.
-    Benefit: improvements to the library flow here for free, and the static
-    essay and this live backend share one definition of a "procedure".
-    Price: the Space pins a procgrep revision and must be rebuilt to pick up
-    library changes.
- 2. Cache canonicalized traces per dataset in memory under a small LRU.
-    Benefit: the expensive step (ingest plus canonicalize) runs once, after
-    which a query is a microsecond string scan.
-    Price: the first query on a cold dataset pays the full ingest cost, and
-    memory grows with the number of cached datasets (bounded by MAX_DATASETS).
- 3. Bound each ingest to MAX_TRACES with a timeout.
-    Benefit: predictable latency and memory on the free CPU tier.
-    Price: a very large dataset is sampled to the cap, not scanned in full;
-    the response reports when this happens.
- 4. A query is a regular expression over the canonical atom spine, matching the
-    static essay's query box exactly.
-    Benefit: one query language across the paper and the live demo.
-    Price: the spine drops argument-level detail, by design in procgrep.
- 5. Prefer a precomputed spine store (HF dataset midah/procgrep-spines) over
-    live ingest, falling back to live ingest when the store is missing a dataset
-    or cannot be reached.
-    Benefit: warm datasets answer instantly with no per-query streaming or
-    canonicalization, and coverage can grow on CI rather than at request time.
-    Price: store-backed datasets are only as fresh as the last refresh build;
-    the weekly action keeps them current.
- 6. The comparator (/compare) reuses the library's lineage primitives
-    (fit_bpe, encode, discriminative_procedures, jsd) rather than reinventing
-    them, and bounds each side to CMP_SAMPLE traces for the BPE/diff pass.
-    Benefit: the side-by-side diff means exactly what the paper's lineage_diff
-    means, and the heavy step stays bounded for interactive latency.
-    Price: the discriminative-procedure ranking sees a sample, not all traces,
-    on very large groups; the rendered trail stack is a further CMP_STACK cap.
- 7. Cache /compare results by their key, and pre-warm the default landing pair
-    in a background thread at startup.
-    Benefit: the comparator's landing view answers instantly instead of paying
-    the first BPE pass live; repeat toggles are free.
-    Price: a bounded amount of memory for the cache, and the warm-up does one
-    BPE pass at startup off the request path.
+Design decisions (rationale and trade-offs in the README):
+ 1. Import procgrep; never reimplement canonicalization or queries.
+ 2. Cache canonicalized traces per dataset in a small LRU (MAX_DATASETS).
+ 3. Bound each ingest to MAX_TRACES with a timeout; responses report sampling.
+ 4. Queries are regexes over the atom spine, matching the essay's query box.
+ 5. Prefer the precomputed spine store (midah/procgrep-spines); fall back to
+    live ingest when a dataset is missing from it.
+ 6. /compare reuses the library's lineage primitives, bounded to CMP_SAMPLE.
+ 7. Cache /compare results and pre-warm the default landing pair at startup.
 """
 
 from __future__ import annotations
