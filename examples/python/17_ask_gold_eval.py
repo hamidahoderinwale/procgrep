@@ -28,6 +28,12 @@ def match_set(pattern: str, spines: list[str]) -> frozenset[int]:
 
 
 def main() -> int:
+    import os
+
+    if not os.environ.get("ANTHROPIC_API_KEY"):
+        print("skipped: ANTHROPIC_API_KEY is not set (this eval makes real API calls)")
+        return 0
+
     traces = canonicalize(list(read_jsonl(DATA)), adapter="swe-agent")
     spines = [" ".join(t.atoms) + " " for t in traces]
 
