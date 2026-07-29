@@ -11,7 +11,7 @@ Two analyses on the same fixture, both holding `instance_id` fixed:
     fixed task, does outcome carry a procedural signature?
 
 The data-prep pattern is the load-time preprocessor described in
-STUDIES.md study #3: read the raw records, run `canonicalize` once,
+docs/STUDIES.md study #3: read the raw records, run `canonicalize` once,
 then rebuild the `group` label per analysis from `metadata`. The
 shared BPE vocabulary is fit once over the whole corpus so the
 vocabulary itself is not a partition-specific confound.

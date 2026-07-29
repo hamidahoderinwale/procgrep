@@ -552,7 +552,7 @@ def main() -> None:
     # Inline the shared D3 chart module so the explorer stays openable from
     # file:// with only D3 itself loaded from the CDN.
     d3charts = (
-        Path(__file__).resolve().parents[1] / "docs" / "explorer" / "d3charts.js"
+        Path(__file__).resolve().parents[1] / "explorer" / "d3charts.js"
     ).read_text()
     out = Path(args.out)
     out.parent.mkdir(parents=True, exist_ok=True)

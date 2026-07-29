@@ -21,9 +21,9 @@ dataset recency and the step-position arc instead of pretending otherwise.
 ## Regenerate
 
 ```bash
-python interface/ecosystem_catalog.py --top 60 --out interface/data/catalog.json
-python interface/build_interface.py --catalog interface/data/catalog.json \
-    --profiles interface/data/profile_nebius.json --out interface/index.html
+python docs/build/ecosystem_catalog.py --top 60 --out docs/build/data/catalog.json
+python docs/build/build_interface.py --catalog docs/build/data/catalog.json \
+    --profiles docs/build/data/profile_nebius.json --out docs/build/index.html
 ```
 
 Pages are static over precomputed JSON from the discover → sniff → curate

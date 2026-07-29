@@ -4,8 +4,6 @@
 
 [**Live explorer**](https://midah-procgrep-explorer.hf.space) · [**Interactive essay**](https://hamidah.me/procgrep) · [**Paper (arXiv)**](https://arxiv.org/abs/2606.16988)
 
-![Replaying one agent trajectory step by step; a structural query fires the instant it matches](docs/figures/replay.gif)
-
 ---
 
 ## What it does
@@ -17,7 +15,7 @@ When a coding agent attempts a task, it leaves a sequence of actions: search the
 - **What makes one agent fail where another succeeds?** Find the action-sequence patterns exclusive to failures.
 - **Did fine-tuning change how the model works, not just whether it passes?** Compare parent and child trajectories across four structural axes.
 - **Is this trajectory heading toward failure?** Match against known failure patterns early enough to act on it.
-- **Did my intervention actually change anything?** Identically configured agent populations differ procedurally on their own; procgrep measures that same-condition noise floor, so a claimed effect can be read against it instead of against zero.
+- **Did my intervention actually change anything?** Identically configured agents already differ run to run; procgrep measures that noise floor so a claimed effect is read against it, not against zero.
 
 Beyond reading traces, procgrep lets you *program* a target procedure: specify it, compile it to a reward, decode mask, guard, or scaffold config, and verify the result against the noise floor of same-condition runs.
 
@@ -55,7 +53,7 @@ for row in matrix.to_records():
 
 ## Core concepts
 
-**Atoms.** Each agent action is normalized to a canonical type: `localize`, `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `submit`, `think`, with `error` and `other` as catch-alls. This shared alphabet makes agents on different scaffolds comparable. It is a base, not a ceiling: an adapter can emit finer-grained atoms where they help (e.g. node-typed AST edits for GumTree traces), and the recurring *procedures* layered on top are learned per corpus, not fixed.
+**Atoms.** Each agent action is normalized to a canonical type: `localize`, `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `submit`, `think`, with `error` and `other` as catch-alls. This shared alphabet makes agents on different scaffolds comparable. Adapters can emit finer-grained atoms where they help (node-typed AST edits for GumTree traces); the procedures layered on top are learned per corpus, not fixed.
 
 **Trajectory.** One agent attempting one task, represented as an ordered list of atoms. This is what `procgrep` ingests.
 
@@ -186,11 +184,11 @@ report = verify(before_traces, after_traces, spec, vocab)
 print(report.behavior_moved, report.outcome_delta, report.verdict)
 ```
 
-`verify` separates two things an outcome-only metric cannot: whether the intervention changed the agent's behavior, and whether that change moved the result, so a null result is located, not just observed. Read both axes against replicates: two populations produced by the *same* configuration already differ (in our runs, by more than most published intervention effects), so the reference point for "behavior moved" is that same-condition floor, never zero.
+`verify` answers two questions an outcome metric cannot: did behavior change, and did that change move the result. Both are read against the same-condition floor: identical configurations already differ across runs (in ours, by more than most published intervention effects), so the reference point is never zero.
 
-`enforce` supports four modes: `prompt`, `guard`, `reward` (a deterministic dense process reward whose per-step increments sum to the full-trajectory score), and `decode` (an `allowed(prefix)` mask over the action grammar for constrained decoding). `optimize` searches a spec's penalty caps and phase set offline against a discrimination metric, returning a tuned spec and a report. All are model-free: they emit artifacts or score traces; none runs an agent.
+`enforce` emits four artifact modes: `prompt`, `guard`, `reward` (a dense per-step process reward), and `decode` (an `allowed(prefix)` mask for constrained decoding). `optimize` tunes a spec's caps and phases offline. All are model-free: they emit artifacts or score traces; none runs an agent.
 
-The runner exists as [`runner/`](runner/) (`procgrep-runner`, a separate package): it executes paired baseline/enforced arms under a spec in sandboxes via mini-swe-agent, seals a run manifest, and feeds the traces back to `verify` with paired-bootstrap confidence intervals. It is kept outside the core on purpose, procgrep emits and measures while the scaffold runs the model, which is what keeps the measurements exactly reproducible.
+[`runner/`](runner/) (`procgrep-runner`, a separate package) runs paired baseline/enforced arms via mini-swe-agent, seals a run manifest, and feeds the traces back to `verify` with paired-bootstrap confidence intervals. It lives outside the core so procgrep only emits and measures, which is what keeps the measurements reproducible.
 
 ---
 
@@ -242,24 +240,41 @@ procgrep vocab-tree --vocab vocab.json          # or --input traces/canonical.js
 
 ### The procedure hierarchy
 
-BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged procedure decomposes into the two tokens it was glued from, down to atoms. `vocab-tree` (and `procgrep.render_vocab_tree`) renders it. On real Claude Code sessions, `prompt_ai → edit` shows up as a building block of larger procedures:
+BPE builds procedures bottom-up, so the vocabulary is a hierarchy: every merged procedure decomposes into the two tokens it was glued from, down to atoms. `vocab-tree` (and `procgrep.render_vocab_tree`) renders it. On the bundled sample traces:
+
+```bash
+procgrep canonicalize --input examples/data/synthetic_traces.jsonl --adapter swe-agent --output canonical.jsonl
+procgrep vocab-tree --input canonical.jsonl
+```
 
 ```text
-6 atoms: edit, other, prompt_ai, read_file, run_test, search_repo
-14 merges, 9 maximal procedures:
+5 atoms: edit, read_file, run_test, search_repo, submit
+6 merges, 3 maximal procedures:
 
-prompt_ai -> edit -> prompt_ai -> edit
-  prompt_ai -> edit
-    prompt_ai
+edit -> edit -> edit -> edit
+  edit -> edit
     edit
-  prompt_ai -> edit
-    prompt_ai
+    edit
+  edit -> edit
+    edit
     edit
 
-edit -> edit -> edit -> edit -> edit -> edit -> edit -> edit
-  edit -> edit -> edit -> edit
-    ...
+edit -> run_test -> edit -> run_test -> submit
+  edit -> run_test
+    edit
+    run_test
+  edit -> run_test -> submit
+    edit -> run_test
+      edit
+      run_test
+    submit
+
+search_repo -> read_file
+  search_repo
+  read_file
 ```
+
+Read the trees as the corpus's habits: an edit-streak block, an edit-test loop that ends in submit, and the search-then-read pair.
 
 ---
 
@@ -283,4 +298,4 @@ pip install procgrep[dev]      # development dependencies
 - **Scope.** The atom alphabet targets coding tool-call traces; the machinery is domain-general, but GUI/browser traces would want a different alphabet. procgrep characterizes the trajectory an agent produces, complementary to prompt optimizers like DSPy.
 - `ProcedureLibrary("dir/")` versions specs as YAML for `enforce` / `verify` / `score`; `cluster_tasks(texts, embedder)` accepts any local embedder. To add a scaffold, register a `TraceAdapter`; see `examples/python/05_custom_adapter.py`.
 
-See [METRICS.md](METRICS.md) for the full list of measurements and [STUDIES.md](STUDIES.md) for worked case studies. Cite via the repository's `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation. Runnable demos are in [`examples/`](examples/); the live-explorer backend in [`hf-space/`](hf-space/); the essay, figures, and reference pages in [`docs/`](docs/). The precomputed spine store lives on Hugging Face at [`midah/procgrep-spines`](https://huggingface.co/datasets/midah/procgrep-spines), refreshed weekly; regenerate it locally into `data/` with `analysis/build_spines.py`.
+Measurement reference: [docs/METRICS.md](docs/METRICS.md). Worked case studies: [docs/STUDIES.md](docs/STUDIES.md). Runnable demos: [`examples/`](examples/); the explorer backend: [`hf-space/`](hf-space/); the essay and figures: [`docs/`](docs/). The precomputed spine store is on Hugging Face at [`midah/procgrep-spines`](https://huggingface.co/datasets/midah/procgrep-spines), regenerable via `analysis/build_spines.py`. Cite via `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation.

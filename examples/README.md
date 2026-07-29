@@ -18,8 +18,7 @@ examples/
 ├── paper/                             (reproduces the paper's empirical results)
 ├── procgrep_view.py                   (panel over your local Claude Code + Cursor sessions)
 ├── procgrep_export.py                 (privacy-preserving shareable export of those sessions)
-├── claude_code_fingerprint.py         (fingerprint Claude Code transcripts, contrast styles)
-└── live_fingerprint.html              (standalone page for the live fingerprint demo)
+└── claude_code_fingerprint.py         (fingerprint Claude Code transcripts, contrast styles)
 ```
 
 The synthetic corpus has two agents (`editor`, `searcher`) across two groups
