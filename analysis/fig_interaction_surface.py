@@ -155,7 +155,9 @@ def main() -> None:
     parser.add_argument(
         "--cursor", default="~/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
     )
-    parser.add_argument("--out", default="docs/figures/interaction_surface_runlength.html")
+    parser.add_argument(
+        "--out", default="docs/figures/interaction_surface/interaction_surface_runlength.html"
+    )
     args = parser.parse_args()
     runs = {
         "Claude Code": claude_code_runs(),
