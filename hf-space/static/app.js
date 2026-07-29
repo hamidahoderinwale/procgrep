@@ -138,7 +138,81 @@ document.addEventListener("click", (e) => {
     document.body.classList.toggle("hide-noise", HIDE_NOISE);
   }
 });
-$("q").addEventListener("keydown", (e) => { if (e.key === "Enter") { clearTimeout(QTIMER); run($("q").value); } });
+// ---- English -> regex (bring your own Anthropic key) ----
+// The model compiles the question ONCE; matching stays deterministic grep on
+// the server. The key lives in sessionStorage for this tab only and is sent
+// only to api.anthropic.com. The compiled regex + its literal paraphrase are
+// always shown so the translation can be checked before trusting counts.
+const ATOM_WORDS = new Set(["localize","read_file","edit","run_test","search_repo","create_file",
+  "delete_file","submit","think","error","prompt_ai","version_control","package","lint","run_code","other"]);
+function looksEnglish(v) {
+  const words = (v.match(/[a-z_]+/gi) || []).filter((w) => w.length > 1);
+  return words.length > 0 && words.some((w) => !ATOM_WORDS.has(w.toLowerCase()));
+}
+const ASK_SYSTEM = `You compile English questions about coding-agent behavior into a Python-compatible regex over a trace's space-joined atom sequence.
+Atoms: ${[...ATOM_WORDS].sort().join(", ")}.
+A trace is atoms joined by single spaces plus one trailing space. think/other interleave between actions, so adjacent-action idioms need skips like (?:think |other )?.
+Idioms: streaks (edit (?:think |other )?){5,} · absence before an event ^(?:(?!run_test).)*submit · absence everywhere ^(?:(?!search_repo).)*$
+Examples: "submitted without testing" -> ^(?:(?!run_test).)*submit · "stuck reading" -> (read_file (?:think )?){4,} · "edit streak of 5+" -> (edit (?:think |other )?){5,} · "recovered from an error" -> error (?:think |other )?edit
+The regex layer CANNOT express temporal windows, variable binding, counts across gaps, or probabilistic thresholds: for those set expressible false and suggest the nearest expressible query in reason.
+When expressible, also return a one-line paraphrase of what the regex LITERALLY matches.`;
+async function askCompile(question) {
+  let key = sessionStorage.getItem("anthropic_key");
+  if (!key) {
+    key = window.prompt("Anthropic API key (kept in this tab's sessionStorage only; sent only to api.anthropic.com):");
+    if (!key) return;
+    sessionStorage.setItem("anthropic_key", key.trim());
+    key = key.trim();
+  }
+  $("res").innerHTML = '<span class="dim">compiling the question to a regex (one model call)…</span>';
+  let body;
+  try {
+    const resp = await fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "x-api-key": key,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+        "content-type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "claude-opus-5",
+        max_tokens: 16000,
+        system: ASK_SYSTEM,
+        output_config: { effort: "low", format: { type: "json_schema", schema: {
+          type: "object",
+          properties: { expressible: { type: "boolean" }, regex: { type: ["string", "null"] },
+            paraphrase: { type: ["string", "null"] }, reason: { type: ["string", "null"] } },
+          required: ["expressible", "regex", "paraphrase", "reason"], additionalProperties: false,
+        } } },
+        messages: [{ role: "user", content: question }],
+      }),
+    });
+    if (resp.status === 401) { sessionStorage.removeItem("anthropic_key"); throw new Error("invalid API key (cleared; retry to re-enter)"); }
+    if (!resp.ok) throw new Error(`API returned ${resp.status}`);
+    body = await resp.json();
+  } catch (e) {
+    $("res").innerHTML = `<span class="err">ask failed: ${e.message || e}</span>`;
+    return;
+  }
+  const text = (body.content || []).find((b) => b.type === "text");
+  let parsed;
+  try { parsed = JSON.parse(text.text); } catch { $("res").innerHTML = '<span class="err">ask failed: unparseable model reply</span>'; return; }
+  if (!parsed.expressible) {
+    $("res").innerHTML = `<div><b>not expressible</b> as a spine regex</div><div class="dim" style="margin-top:6px">${parsed.reason || ""}</div>`;
+    return;
+  }
+  try { new RegExp(parsed.regex); } catch { $("res").innerHTML = '<span class="err">ask failed: model returned an invalid regex</span>'; return; }
+  await run(parsed.regex);
+  $("res").insertAdjacentHTML("afterbegin",
+    `<div class="dim" style="margin-bottom:8px">“${question}” compiled to <b>/${parsed.regex}/</b> · matches: ${parsed.paraphrase || "?"} · check the translation before trusting counts</div>`);
+}
+$("q").addEventListener("keydown", (e) => {
+  if (e.key !== "Enter") return;
+  clearTimeout(QTIMER);
+  const v = $("q").value.trim();
+  if (looksEnglish(v)) askCompile(v); else run(v);
+});
 // Live-as-you-type: debounce, and only fire on a valid regex so partial patterns
 // (e.g. an open paren mid-type) never clobber the last results with an error.
 $("q").addEventListener("input", () => {

@@ -209,6 +209,11 @@ Traces that fail to parse are counted, not averaged in: an unmatched corpus
 reports `parse yield 0/60 non-empty (adapter mismatch? try --dry-run)`.
 
 ```bash
+# Ask in English; the model compiles the question to a regex ONCE, matching
+# stays deterministic grep. Prints the regex + what it literally matches, and
+# refuses questions the regex layer can't express. Needs ANTHROPIC_API_KEY.
+procgrep ask "did it submit without ever running a test?" nebius/SWE-rebench-openhands-trajectories
+
 # Watch a rollout live: tail a file of atoms (or --demo) in a local web view
 procgrep watch --demo
 

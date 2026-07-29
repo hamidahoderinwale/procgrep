@@ -548,6 +548,62 @@ def grep(
 
 
 @app.command()
+def ask(
+    question: Annotated[str, typer.Argument(help="An English question about agent behavior.")],
+    dataset: Annotated[
+        str | None,
+        typer.Argument(help="Optional HF dataset id or canonical JSONL path to run the query on."),
+    ] = None,
+    model: Annotated[str, typer.Option(help="Model that compiles the question.")] = "claude-opus-5",
+    limit: Annotated[int, typer.Option(help="Max rows to stream from the Hub.")] = 3000,
+    show: Annotated[int, typer.Option(help="Max matching traces to print.")] = 20,
+) -> None:
+    """Compile an English question to a spine regex, then optionally run it.
+
+    The model writes the query; matching stays deterministic `grep`. The
+    compiled regex and its literal paraphrase are always printed so the
+    translation can be checked before trusting counts. Needs
+    ANTHROPIC_API_KEY. Questions the regex layer cannot express (temporal
+    windows, variable binding, thresholds) are refused with the nearest
+    expressible alternative.
+    """
+    import re
+
+    from procgrep.ask import AskError, compile_query
+
+    try:
+        compiled = compile_query(question, model=model)
+    except AskError as exc:
+        typer.echo(f"ask failed: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+    if not compiled.expressible:
+        typer.echo("not expressible as a spine regex.")
+        typer.echo(f"why: {compiled.reason}")
+        raise typer.Exit(2)
+
+    typer.echo(f"regex      {compiled.regex}")
+    typer.echo(f"matches    {compiled.paraphrase}")
+    if dataset is None:
+        return
+
+    from procgrep.ingest import ingest as ingest_fn
+
+    if Path(dataset).exists():
+        traces = list(records_to_traces(read_jsonl(Path(dataset))))
+    else:
+        traces, _ = ingest_fn(dataset, limit=limit)
+    rx = re.compile(compiled.regex or "")
+    hits = [t for t in traces if rx.search(" ".join(t.atoms) + " ")]
+    typer.echo("")
+    for t in hits[:show]:
+        preview = " ".join(t.atoms[:28]) + (" …" if len(t.atoms) > 28 else "")
+        typer.echo(f"{t.trace_id}\t{t.agent}\t{preview}")
+    rate = len(hits) / max(len(traces), 1)
+    typer.echo(f"\n{len(hits)}/{len(traces)} traces matched ({rate:.1%})")
+
+
+@app.command()
 def report(
     dataset: Annotated[str, typer.Argument(help="HF dataset id, or a local canonical JSONL path.")],
     limit: Annotated[int, typer.Option(help="Max rows to stream from the Hub.")] = 3000,
