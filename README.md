@@ -4,8 +4,6 @@
 
 [**Live explorer**](https://midah-procgrep-explorer.hf.space) · [**Interactive essay**](https://hamidah.me/procgrep) · [**Paper (arXiv)**](https://arxiv.org/abs/2606.16988)
 
----
-
 ## What it does
 
 When a coding agent attempts a task, it leaves a sequence of actions: search the repo, read a file, edit a file, run tests, submit. `procgrep` converts those sequences into comparable representations and answers questions like:
@@ -18,8 +16,6 @@ When a coding agent attempts a task, it leaves a sequence of actions: search the
 - **Did my intervention actually change anything?** Identically configured agents already differ run to run; procgrep measures that noise floor so a claimed effect is read against it, not against zero.
 
 Beyond reading traces, procgrep lets you *program* a target procedure: specify it, compile it to a reward, decode mask, guard, or scaffold config, and verify the result against the noise floor of same-condition runs.
-
----
 
 ## Quickstart
 
@@ -49,8 +45,6 @@ for row in matrix.to_records():
     print(row)
 ```
 
----
-
 ## Core concepts
 
 **Atoms.** Each agent action is normalized to a canonical type: `localize`, `search_repo`, `read_file`, `edit`, `run_test`, `create_file`, `delete_file`, `submit`, `think`, with `error` and `other` as catch-alls. This shared alphabet makes agents on different scaffolds comparable. Adapters can emit finer-grained atoms where they help (node-typed AST edits for GumTree traces); the procedures layered on top are learned per corpus, not fixed.
@@ -62,8 +56,6 @@ for row in matrix.to_records():
 **Fingerprint.** A trajectory encoded as a distribution over procedures: how often each appeared. Two trajectories with similar fingerprints approached the problem similarly. It is a plain count vector over the procedure vocabulary, not a hash or an embedding: unlike a hash, two trajectories can legitimately share one; unlike an embedding, you can read exactly which procedures make two fingerprints differ.
 
 **JSD.** Jensen-Shannon divergence: how different two fingerprints are. 0 = identical, 1 = completely non-overlapping. Used to compare agents, groups, or training conditions.
-
----
 
 ## Main uses
 
@@ -151,8 +143,6 @@ print(diff.summary())
 
 This tells you: did the child preserve the parent's action repertoire? Did the distribution concentrate (mode collapse)? Do failing child trajectories look less like the parent than passing ones? Where in the sequence does the child diverge?
 
----
-
 ## Programming procedures
 
 procgrep turns a target procedure into something you specify, hand to a scaffold, and verify, with no model in the loop.
@@ -190,8 +180,6 @@ print(report.behavior_moved, report.outcome_delta, report.verdict)
 
 [`runner/`](runner/) (`procgrep-runner`, a separate package) runs paired baseline/enforced arms via mini-swe-agent, seals a run manifest, and feeds the traces back to `verify` with paired-bootstrap confidence intervals. It lives outside the core so procgrep only emits and measures, which is what keeps the measurements reproducible.
 
----
-
 ## CLI
 
 ```bash
@@ -221,6 +209,11 @@ Traces that fail to parse are counted, not averaged in: an unmatched corpus
 reports `parse yield 0/60 non-empty (adapter mismatch? try --dry-run)`.
 
 ```bash
+# Ask in English; the model compiles the question to a regex ONCE, matching
+# stays deterministic grep. Prints the regex + what it literally matches, and
+# refuses questions the regex layer can't express. Needs ANTHROPIC_API_KEY.
+procgrep ask "did it submit without ever running a test?" nebius/SWE-rebench-openhands-trajectories
+
 # Watch a rollout live: tail a file of atoms (or --demo) in a local web view
 procgrep watch --demo
 
@@ -276,8 +269,6 @@ search_repo -> read_file
 
 Read the trees as the corpus's habits: an edit-streak block, an edit-test loop that ends in submit, and the search-then-read pair.
 
----
-
 ## Installation
 
 ```bash
@@ -286,16 +277,18 @@ pip install procgrep[reward]   # includes pyyaml for reward spec scoring
 pip install procgrep[dev]      # development dependencies
 ```
 
----
-
 ## Notes
 
 - Python 3.10+. No LLM SDK required; procgrep never calls a model.
-- Adapters cover autonomous scaffolds (SWE-agent, OpenHands, Agentless, and more) and interactive sessions: `claude-code`, plus Cursor via `cursor-vscdb` or the `cursor-companion` exporter.
-- **Try it on your own sessions.** `python examples/procgrep_view.py` auto-detects local Claude Code and Cursor sessions and opens the panel on them; `python examples/procgrep_export.py --out sessions.json` exports them for pooled studies.
-- **Privacy.** Ingest keeps only atoms and hashed identifiers (`anonymize=True`); `to_shareable()` exports atoms and counts, never prompts, code, or paths. Only the shareable export crosses the machine boundary.
-- **procgrep sees only logged actions.** Some scaffolds run steps that never surface as tool calls (one Moatless trace hid 71 internal `RunTests`), so procgrep is accurate about the log, not the behavior. Audit each new adapter once for what it surfaces.
-- **Scope.** The atom alphabet targets coding tool-call traces; the machinery is domain-general, but GUI/browser traces would want a different alphabet. procgrep characterizes the trajectory an agent produces, complementary to prompt optimizers like DSPy.
-- `ProcedureLibrary("dir/")` versions specs as YAML for `enforce` / `verify` / `score`; `cluster_tasks(texts, embedder)` accepts any local embedder. To add a scaffold, register a `TraceAdapter`; see `examples/python/05_custom_adapter.py`.
+- Adapters cover SWE-agent, OpenHands, Agentless, and more, plus interactive sessions (`claude-code`, Cursor). To add a scaffold, register a `TraceAdapter`; see `examples/python/05_custom_adapter.py`.
+- **Try it on your own sessions.** `python examples/procgrep_view.py` opens the panel on your local Claude Code and Cursor sessions.
+- **Privacy.** Ingest keeps only atoms and hashed identifiers; `to_shareable()` never exports prompts, code, or paths.
+- **procgrep is accurate about the log, not the behavior.** Steps a scaffold never surfaces as tool calls are invisible (one Moatless trace hid 71 internal test runs); audit each new adapter once.
 
-Measurement reference: [docs/METRICS.md](docs/METRICS.md). Worked case studies: [docs/STUDIES.md](docs/STUDIES.md). Runnable demos: [`examples/`](examples/); the explorer backend: [`hf-space/`](hf-space/); the essay and figures: [`docs/`](docs/). The precomputed spine store is on Hugging Face at [`midah/procgrep-spines`](https://huggingface.co/datasets/midah/procgrep-spines), regenerable via `analysis/build_spines.py`. Cite via `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation.
+## Where things live
+
+- [`examples/`](examples/) — runnable demos
+- [`docs/`](docs/) — the essay and figures, plus [METRICS.md](docs/METRICS.md) (measurement reference) and [STUDIES.md](docs/STUDIES.md) (worked case studies)
+- [`hf-space/`](hf-space/) — the live-explorer backend
+- [`midah/procgrep-spines`](https://huggingface.co/datasets/midah/procgrep-spines) — the precomputed spine store; regenerate with `analysis/build_spines.py`
+- Cite via `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation
