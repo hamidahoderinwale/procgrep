@@ -27,7 +27,7 @@ Modules:
 - ``stats``: group-level descriptive and discriminative summaries.
 - ``adapters``: trace format adapters (SWE-agent, Agentless, DARS, GumTree).
 
-Public API is re-exported here; see README and METRICS.md for usage.
+Public API is re-exported here; see README and docs/METRICS.md for usage.
 """
 
 from __future__ import annotations

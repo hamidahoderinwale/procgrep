@@ -68,3 +68,7 @@ plateau/
 runner/uv.lock
 runner/runs/
 data/student/
+
+# The ecosystem-map build outputs regenerate from docs/build/*.py; keep only the scripts.
+docs/build/index.html
+docs/build/data/
