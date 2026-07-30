@@ -508,6 +508,10 @@ details.anatomy .codecard{margin:14px 18px}
 <h2>Inducing action vocabularies</h2>
 <p>Given a set of procedures that we might want to compare, which we can call a procedural space, we need a vocabulary or a set of actions that we can use to describe all of them. The contributions of this framework comes from being able to define this vocabulary bottom-up instead of with a more hard-coded or classifier based approach. We benchmark our methods against prompt-based classifiers, finding that across four judge models, prompt-based classifiers have near-zero agreement across model families and struggle to identify compositional trajectories. This affirms our motivations for having representations that can be shared across models and instances to allow for comparative analysis (Table <a href="#tab:judge_comparison" data-reference-type="ref" data-reference="tab:judge_comparison">10</a>).</p>
 <p>This means that there are features of the full vocabulary or alphabet which we can study in itself and can form the basis of insights. To define our vocabulary, we need to be able to extract these procedures and label them to understand what they are. Each procedure should be composable and collapse into one another because steps are taken in sequence for specific tasks and to avoid redundancy—where each procedure of the trajectory should be meaningfully unique or composed of unique sub-procedures. We find that procedural diversity does not correspond with capabilities, where stronger and newer extended-thinking models do better with fewer procedures (Claude-3.7 = 32, Claude-4 = 35) compared to older Claude-3/3.5 models, which have repertoires of 42–44 procedures—which is relatively counter-intuitive.</p>
+<figure id="fig:vocab_tree" data-latex-placement="H">
+<img loading="lazy" src="figures/induced_vocab_tree/induced_vocab_tree.png" style="width:100.0%" width="1300" height="974" />
+<figcaption>Induced vocabulary tree, showing how different action verbs collapse with each other.</figcaption>
+</figure>
 </section>
 <section id="an-information-theory-of-procedures" class="level2">
 <h2 id="sec-info-theory">An information theory of procedures</h2>
