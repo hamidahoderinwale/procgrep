@@ -28,8 +28,7 @@ from typing import Any
 
 from procgrep.ingest.adapters.claude_code import load_claude_transcript, to_shareable
 from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions
-
-_CURSOR_DEFAULT = "~/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
+from procgrep.ingest.clients import find_client
 
 
 def _cursor_shareables(db: Path, *, limit: int) -> list[dict[str, Any]]:
@@ -59,7 +58,9 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--out", default="procgrep_sessions.json", help="output JSON file")
     parser.add_argument("--path", default="~/.claude/projects", help="Claude Code transcript dir")
-    parser.add_argument("--cursor", default=_CURSOR_DEFAULT, help="Cursor state.vscdb")
+    parser.add_argument(
+        "--cursor", default=None, help="Cursor state.vscdb; found automatically when omitted"
+    )
     parser.add_argument("--limit", type=int, default=50, help="most recent N sessions per source")
     parser.add_argument("--no-cursor", action="store_true", help="skip Cursor")
     parser.add_argument("--no-claude-code", action="store_true", help="skip Claude Code")
@@ -81,9 +82,9 @@ def main() -> None:
 
     n_cursor = 0
     if not args.no_cursor:
-        db = Path(args.cursor).expanduser()
-        if db.exists():
-            for payload in _cursor_shareables(db, limit=args.limit):
+        cursor = find_client("cursor", path=args.cursor)
+        if cursor is not None:
+            for payload in _cursor_shareables(cursor.path, limit=args.limit):
                 if payload["atoms"]:
                     shareables.append(payload)
                     n_cursor += 1

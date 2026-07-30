@@ -6,6 +6,10 @@ between commands except on disk.
 
 Subcommands: `canonicalize`, `fit-bpe`, `encode`, `jsd`, `umap`,
 `probe`, `match-patterns`, `list-adapters`.
+
+`clients` and `cursor` are the exception to the chaining rule: the sessions they
+read are already on disk in a client-specific place, so they locate that place
+themselves and produce the first JSONL the other subcommands consume.
 """
 
 from __future__ import annotations
@@ -655,6 +659,61 @@ def watch(
     from procgrep.watch import serve
 
     raise SystemExit(serve(tail=tail, demo=demo, port=port, interval=interval))
+
+
+@app.command()
+def clients() -> None:
+    """Show the coding clients on this machine whose sessions procgrep can read."""
+    from procgrep.ingest.clients import discover_clients
+
+    found = discover_clients()
+    if not found:
+        typer.echo("no local sessions found (looked for Cursor and Claude Code)")
+        raise SystemExit(1)
+    for client in found:
+        typer.echo(f"{client.name}\t{client.adapter}\t{client.size_label}\t{client.path}")
+
+
+@app.command()
+def cursor(
+    output_path: Annotated[
+        Path, typer.Option("--output", "-o", help="Canonical trace JSONL to write.")
+    ] = Path("cursor-traces.jsonl"),
+    db: Annotated[
+        Path | None,
+        typer.Option("--db", help="Cursor state.vscdb; found automatically when omitted."),
+    ] = None,
+) -> None:
+    """Canonicalize your own Cursor sessions, locating Cursor's store for you.
+
+    Reads the SQLite store Cursor already keeps, so nothing needs to be running
+    and no exporter is involved. Only structure crosses the boundary: turn type
+    and tool name, never prompt text, tool arguments, or code.
+    """
+    from procgrep.ingest.adapters.cursor_vscdb import read_state_vscdb, session_rework
+    from procgrep.ingest.clients import find_client
+
+    client = find_client("cursor", path=db)
+    if client is None:
+        where = f" at {db}" if db else ""
+        typer.echo(f"no Cursor session store found{where}; pass --db to point at one")
+        raise SystemExit(1)
+    typer.echo(f"reading {client.name} ({client.size_label}) from {client.path}")
+
+    records = list(read_state_vscdb(client.path))
+    traces = canonicalize_fn(records, adapter="cursor-vscdb")
+    n = write_jsonl(output_path, traces_to_records(traces))
+    atoms = sum(len(t.atoms) for t in traces)
+    typer.echo(f"wrote {n} traces ({atoms} atoms) to {output_path}")
+
+    # Rework is the session-level signal this store makes available and a
+    # dataset of autonomous rollouts cannot: re-editing a file the same session
+    # already edited, i.e. correction rather than forward progress.
+    stats = [session_rework(r["events"]) for r in records]
+    prompts = sum(int(s["prompts"]) for s in stats)
+    rework = sum(int(s["rework_prompts"]) for s in stats)
+    if prompts:
+        typer.echo(f"rework: {rework}/{prompts} prompts re-edited a file ({rework / prompts:.1%})")
 
 
 @app.command(name="list-adapters")
