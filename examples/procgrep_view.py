@@ -34,6 +34,7 @@ from typing import Any
 from procgrep.cliff import enrich_panel_session
 from procgrep.ingest.adapters.claude_code import build_panel_session
 from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions as build_cursor_sessions
+from procgrep.ingest.clients import find_client
 
 PANEL = Path(__file__).resolve().parent.parent / "docs" / "live_fingerprint.html"
 
@@ -78,8 +79,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--cursor",
-        default="~/Library/Application Support/Cursor/User/globalStorage/state.vscdb",
-        help="Cursor state.vscdb to include; skipped if absent",
+        default=None,
+        help="Cursor state.vscdb to include; found automatically when omitted, skipped if absent",
     )
     parser.add_argument("--limit", type=int, default=12, help="most recent N Claude Code sessions")
     parser.add_argument(
@@ -104,9 +105,9 @@ def main() -> None:
             sessions.append(panel)
     n_cc = len(sessions)
 
-    cursor_db = Path(args.cursor).expanduser()
-    if cursor_db.exists():
-        for panel in build_cursor_sessions(cursor_db, paraphrase=paraphrase, limit=args.limit):
+    cursor = find_client("cursor", path=args.cursor)
+    if cursor is not None:
+        for panel in build_cursor_sessions(cursor.path, paraphrase=paraphrase, limit=args.limit):
             panel = enrich_panel_session(panel)
             if len(panel["turns"]) >= 3:
                 sessions.append(panel)
