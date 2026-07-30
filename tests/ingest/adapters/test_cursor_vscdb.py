@@ -39,8 +39,14 @@ def test_tool_names_map_to_canonical_atoms():
 
 def test_inline_code_block_is_edit_and_unknown_tool_is_other():
     assert _atoms([{"kind": "ai", "tool": "_codeblock"}]) == ["edit"]
-    assert _atoms([{"kind": "ai", "tool": "todo_write"}]) == ["other"]
+    assert _atoms([{"kind": "ai", "tool": "mcp_linear_get_issue"}]) == ["other"]
     assert _atoms([{"kind": "ai"}]) == ["other"]
+
+
+def test_planning_tools_are_think():
+    """Bookkeeping is the agent orienting, not acting on the repo."""
+    assert _atoms([{"kind": "ai", "tool": "todo_write"}]) == ["think"]
+    assert _atoms([{"kind": "ai", "tool": "update_current_step"}]) == ["think"]
 
 
 def test_turn_order_preserved():
@@ -126,3 +132,60 @@ def test_build_panel_sessions_limit_zero(tmp_path):
     from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions
 
     assert build_panel_sessions(_make_db(tmp_path), limit=0) == []
+
+
+def test_read_state_vscdb(tmp_path):
+    from procgrep.ingest.adapters.cursor_vscdb import read_state_vscdb
+
+    records = list(read_state_vscdb(_make_db(tmp_path)))
+    assert [r["trace_id"] for r in records] == ["abc"]
+    assert [e.get("kind") for e in records[0]["events"]] == ["prompt", "ai", "ai"]
+
+
+def test_reasoning_turn_is_think_from_either_field():
+    """Reasoning models put the turn in `thinking`, older ones in `text`."""
+    from procgrep.ingest.adapters.cursor_vscdb import _atom_for_bubble, _event_for_bubble
+
+    for bubble in ({"type": 2, "text": "hm"}, {"type": 2, "thinking": {"text": "hm"}}):
+        assert _event_for_bubble(bubble) == {"kind": "think"}
+        assert _atom_for_bubble(bubble) == "think"
+    assert _atom_for_bubble({"type": 2}) == "other"
+
+
+def test_rule_table_and_panel_mapping_agree():
+    """Both paths must give a tool the same atom, or one session gets two streams."""
+    from procgrep.canonicalize import get_adapter
+    from procgrep.ingest.adapters.cursor_vscdb import _TOOL_ATOM, _atom_for_bubble
+
+    adapter = get_adapter("cursor-vscdb")
+    for tool, atom in _TOOL_ATOM.items():
+        if tool == "_codeblock":  # panel-only pseudo-tool, no bubble carries it
+            continue
+        assert adapter({"events": [{"kind": "ai", "tool": tool}]}) == [atom], tool
+        assert _atom_for_bubble({"type": 2, "toolFormerData": {"name": tool}}) == atom, tool
+
+
+def _add_junk_rows(db):
+    """A NULL value and a malformed blob, as a live store accumulates."""
+    import sqlite3
+
+    con = sqlite3.connect(db)
+    con.execute("INSERT INTO cursorDiskKV VALUES('composerData:orphan', NULL)")
+    con.execute("INSERT INTO cursorDiskKV VALUES('composerData:broken', '{not json')")
+    con.execute("INSERT INTO cursorDiskKV VALUES('bubbleId:abc:b9', NULL)")
+    con.commit()
+    con.close()
+
+
+def test_null_and_malformed_rows_cost_one_session_not_the_run(tmp_path):
+    """A single NULL-valued row must not abort the read of a whole store.
+
+    `json.loads(None)` raises TypeError, not ValueError, so an unguarded read
+    dies on the first orphaned key. Real stores carry a few.
+    """
+    from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions, read_state_vscdb
+
+    db = _make_db(tmp_path)
+    _add_junk_rows(db)
+    assert [r["trace_id"] for r in read_state_vscdb(db)] == ["abc"]
+    assert [s["meta"]["name"] for s in build_panel_sessions(db)] == ["Demo session"]
