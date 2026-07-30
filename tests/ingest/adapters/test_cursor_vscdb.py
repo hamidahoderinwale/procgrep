@@ -138,8 +138,19 @@ def test_read_state_vscdb(tmp_path):
     from procgrep.ingest.adapters.cursor_vscdb import read_state_vscdb
 
     records = list(read_state_vscdb(_make_db(tmp_path)))
-    assert [r["trace_id"] for r in records] == ["abc"]
+    assert len(records) == 1
     assert [e.get("kind") for e in records[0]["events"]] == ["prompt", "ai", "ai"]
+
+
+def test_trace_id_is_hashed_and_joins_to_the_panel_id(tmp_path):
+    """No real Cursor session id leaves, and the two views stay joinable."""
+    from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions, read_state_vscdb
+
+    db = _make_db(tmp_path)
+    (trace,) = read_state_vscdb(db)
+    (panel,) = build_panel_sessions(db)
+    assert trace["trace_id"] != "abc"
+    assert trace["trace_id"] == panel["meta"]["id"]
 
 
 def test_reasoning_turn_is_think_from_either_field():
@@ -187,5 +198,5 @@ def test_null_and_malformed_rows_cost_one_session_not_the_run(tmp_path):
 
     db = _make_db(tmp_path)
     _add_junk_rows(db)
-    assert [r["trace_id"] for r in read_state_vscdb(db)] == ["abc"]
+    assert len(list(read_state_vscdb(db))) == 1
     assert [s["meta"]["name"] for s in build_panel_sessions(db)] == ["Demo session"]

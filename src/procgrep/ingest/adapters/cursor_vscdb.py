@@ -139,9 +139,15 @@ cursor_vscdb_adapter = make_event_adapter(rules=CURSOR_VSCDB_RULES)
 register_adapter("cursor-vscdb", cursor_vscdb_adapter, overwrite=True)
 
 
-def _hash_path(path: str) -> str:
-    """Stable short hash of a workspace-relative path; no real path leaves."""
-    return hashlib.sha1(path.encode("utf-8")).hexdigest()[:12]
+def _hash_id(value: str) -> str:
+    """Stable short hash of a store-local identifier: path, or composer id.
+
+    One helper for both so a session's trace id and its panel id are the same
+    string and the two views can be joined. Stable across runs of the same
+    store, meaningless outside it, which is what "hashed identifiers" buys:
+    within-store joins without carrying the real path or session id.
+    """
+    return hashlib.sha1(value.encode("utf-8")).hexdigest()[:12]
 
 
 def _loads(value: object) -> dict[str, Any] | None:
@@ -202,7 +208,7 @@ def _event_for_bubble(bubble: dict[str, Any]) -> dict[str, Any]:
         params = _params(tf)
         path = params.get("targetFile") or params.get("relativeWorkspacePath")
         if path:
-            event["file"] = _hash_path(str(path))
+            event["file"] = _hash_id(str(path))
         return event
     if bubble.get("codeBlocks"):
         return {"kind": "ai", "tool": "_codeblock"}
@@ -258,6 +264,10 @@ def session_rework(events: Sequence[dict[str, Any]]) -> dict[str, float]:
 def read_state_vscdb(path: str | Path, *, agent: str = "cursor") -> Iterator[dict[str, Any]]:
     """Yield one ``{trace_id, agent, events}`` record per composer session.
 
+    ``trace_id`` is the hashed composer id, matching the panel's session id, so
+    a record carries no real Cursor session identifier while still joining to
+    the local view of the same store.
+
     Each session's turns are emitted in ``fullConversationHeadersOnly`` order so
     downstream atoms preserve the real human/agent interleaving.
 
@@ -293,7 +303,7 @@ def read_state_vscdb(path: str | Path, *, agent: str = "cursor") -> Iterator[dic
                 if (bid := str(header.get("bubbleId"))) in bubbles
             ]
             if events:
-                yield {"trace_id": composer_id, "agent": agent, "events": events}
+                yield {"trace_id": _hash_id(composer_id), "agent": agent, "events": events}
     finally:
         con.close()
 
@@ -403,7 +413,7 @@ def build_panel_sessions(
             if not turns:
                 continue
             created, updated = _dt_ms(cd.get("createdAt")), _dt_ms(cd.get("lastUpdatedAt"))
-            sid = hashlib.sha1(cid.encode("utf-8")).hexdigest()[:8]
+            sid = _hash_id(cid)
             sessions.append(
                 {
                     "meta": {
