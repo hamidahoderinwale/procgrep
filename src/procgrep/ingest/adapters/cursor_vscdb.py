@@ -32,14 +32,17 @@ Atom mapping (Cursor agent tool -> canonical atom):
     user turn (type 1)                          -> prompt_ai
     read_file                                   -> read_file
     grep / codebase_search / glob_file_search
-      / list_dir / rg / web_search              -> search_repo
+      / list_dir / rg / web_search / web_fetch
+      / semantic_search_full                    -> search_repo
     search_replace / write / apply_patch
       / edit_notebook / inline code block       -> edit
     delete_file                                 -> delete_file
     read_lints                                  -> lint
     run_terminal_cmd                            -> run_code
+    todo_write / update_current_step / task
+      / ask_question                            -> think
     ai reasoning turn, no tool                  -> think
-    anything else (todo_write, mcp_*, ...)      -> other
+    anything else (mcp_*, await, ...)           -> other
 
 Design decisions:
 
@@ -50,8 +53,15 @@ Design decisions:
   the command text is deliberately not extracted, so the finer Bash split would
   be a guess. Sessions that need it can route the raw command through the
   claude-code Bash classifier separately.
-- A reasoning turn (no tool, has text) is ``think``, distinct from ``prompt_ai``
-  (the human handing off), mirroring the cursor-companion choice.
+- A reasoning turn is ``think``, distinct from ``prompt_ai`` (the human handing
+  off), mirroring the cursor-companion choice. Reasoning content lives in
+  ``thinking`` on reasoning models and ``text`` otherwise, so both are checked:
+  reading only ``text`` labels most modern assistant turns ``other``.
+
+- The rule table and ``_atom_for_bubble`` must agree. The rules drive
+  ``canonicalize`` (the shareable path) and ``_atom_for_bubble`` drives the
+  local panel; a tool mapped in one and not the other would give the same
+  session two different atom streams, so a test pins them together.
 """
 
 from __future__ import annotations
@@ -91,7 +101,12 @@ _SEARCH_TOOLS = {
     "rg",
     "web_search",
     "ripgrep_raw_search",
+    "semantic_search_full",
+    "web_fetch",
 }
+## Planning/bookkeeping tools: the agent orienting rather than acting on the
+## repo, so they read as `think` alongside a plain reasoning turn.
+_PLAN_TOOLS = {"todo_write", "update_current_step", "task", "ask_question"}
 _EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook", "edit_file", "_codeblock"}
 _TERMINAL_TOOLS = {"run_terminal_cmd", "run_terminal_command"}
 
@@ -116,6 +131,7 @@ CURSOR_VSCDB_RULES: tuple[EventRule, ...] = (
     EventRule(field_in("tool", _EDIT_TOOLS), (ATOM_EDIT,)),
     EventRule(field_in("tool", {"delete_file"}), (ATOM_DELETE_FILE,)),
     EventRule(field_in("tool", {"read_lints"}), (ATOM_LINT,)),
+    EventRule(field_in("tool", _PLAN_TOOLS), (ATOM_THINK,)),
     EventRule(field_in("tool", _TERMINAL_TOOLS), (ATOM_RUN_CODE,)),
 )
 
@@ -123,9 +139,32 @@ cursor_vscdb_adapter = make_event_adapter(rules=CURSOR_VSCDB_RULES)
 register_adapter("cursor-vscdb", cursor_vscdb_adapter, overwrite=True)
 
 
-def _hash_path(path: str) -> str:
-    """Stable short hash of a workspace-relative path; no real path leaves."""
-    return hashlib.sha1(path.encode("utf-8")).hexdigest()[:12]
+def _hash_id(value: str) -> str:
+    """Stable short hash of a store-local identifier: path, or composer id.
+
+    One helper for both so a session's trace id and its panel id are the same
+    string and the two views can be joined. Stable across runs of the same
+    store, meaningless outside it, which is what "hashed identifiers" buys:
+    within-store joins without carrying the real path or session id.
+    """
+    return hashlib.sha1(value.encode("utf-8")).hexdigest()[:12]
+
+
+def _loads(value: object) -> dict[str, Any] | None:
+    """Parse one ``cursorDiskKV`` value, or ``None`` when it is unusable.
+
+    A live store holds the occasional row whose ``value`` is SQL NULL (an
+    orphaned or half-written key). ``json.loads(None)`` raises ``TypeError``,
+    not ``ValueError``, so a single such row would abort a whole read; one bad
+    row should cost one session, not the run.
+    """
+    if not isinstance(value, (str, bytes, bytearray)):
+        return None
+    try:
+        parsed = json.loads(value)
+    except ValueError:
+        return None
+    return parsed if isinstance(parsed, dict) else None
 
 
 def _params(tf: dict[str, Any]) -> dict[str, Any]:
@@ -137,6 +176,18 @@ def _params(tf: dict[str, Any]) -> dict[str, Any]:
         except ValueError:
             return {}
     return p if isinstance(p, dict) else {}
+
+
+def _is_reasoning(bubble: dict[str, Any]) -> bool:
+    """Whether an assistant bubble is a reasoning turn.
+
+    Cursor puts a reasoning turn's content in ``thinking`` on reasoning models
+    and in ``text`` otherwise, so checking only ``text`` labels most modern
+    assistant turns ``other``: on a real store that was ~26k of 27.5k
+    otherwise-empty bubbles, i.e. the bulk of the ``other`` share. Presence is
+    all that is read; no reasoning content is extracted.
+    """
+    return bool(bubble.get("text") or bubble.get("thinking"))
 
 
 def _event_for_bubble(bubble: dict[str, Any]) -> dict[str, Any]:
@@ -157,13 +208,13 @@ def _event_for_bubble(bubble: dict[str, Any]) -> dict[str, Any]:
         params = _params(tf)
         path = params.get("targetFile") or params.get("relativeWorkspacePath")
         if path:
-            event["file"] = _hash_path(str(path))
+            event["file"] = _hash_id(str(path))
         return event
     if bubble.get("codeBlocks"):
         return {"kind": "ai", "tool": "_codeblock"}
-    if bubble.get("text"):
+    if _is_reasoning(bubble):
         return {"kind": "think"}
-    return {"kind": "ai"}  # no tool, no text -> falls through to ATOM_OTHER
+    return {"kind": "ai"}  # no tool, no reasoning -> falls through to ATOM_OTHER
 
 
 _FILE_EDIT_TOOLS = {"search_replace", "write", "apply_patch", "edit_notebook", "edit_file"}
@@ -213,34 +264,46 @@ def session_rework(events: Sequence[dict[str, Any]]) -> dict[str, float]:
 def read_state_vscdb(path: str | Path, *, agent: str = "cursor") -> Iterator[dict[str, Any]]:
     """Yield one ``{trace_id, agent, events}`` record per composer session.
 
+    ``trace_id`` is the hashed composer id, matching the panel's session id, so
+    a record carries no real Cursor session identifier while still joining to
+    the local view of the same store.
+
     Each session's turns are emitted in ``fullConversationHeadersOnly`` order so
     downstream atoms preserve the real human/agent interleaving.
+
+    Bubbles are read one session at a time by indexed key range rather than all
+    at once: a live store holds hundreds of thousands of bubbles, and loading
+    them up front costs minutes and gigabytes before the first record is
+    yielded. The ``>=``/``<`` range uses the key index, which ``LIKE`` does not
+    (it is case-insensitive by default, so it full-scans).
     """
     con = sqlite3.connect(f"file:{Path(path)}?mode=ro", uri=True)
     try:
-        bubbles: dict[str, dict[str, Any]] = {}
+        # Streamed, not fetchall: `Connection.execute` makes a fresh cursor per
+        # call, so the per-session bubble query below cannot invalidate this one,
+        # and peak memory stays one session rather than every session's blob.
         for key, value in con.execute(
-            "SELECT key, value FROM cursorDiskKV WHERE key LIKE 'bubbleId:%'"
+            "SELECT key, value FROM cursorDiskKV WHERE key >= 'composerData:' AND key < 'composerData;'"
         ):
-            try:
-                bubbles[key.split(":", 1)[1]] = json.loads(value)
-            except (ValueError, IndexError):
-                continue
-        for key, value in con.execute(
-            "SELECT key, value FROM cursorDiskKV WHERE key LIKE 'composerData:%'"
-        ):
-            try:
-                session = json.loads(value)
-            except ValueError:
+            session = _loads(value)
+            if session is None or ":" not in key:
                 continue
             composer_id = key.split(":", 1)[1]
-            events = []
-            for header in session.get("fullConversationHeadersOnly", []):
-                bubble = bubbles.get(f"{composer_id}:{header.get('bubbleId')}")
-                if bubble is not None:
-                    events.append(_event_for_bubble(bubble))
+            bubbles: dict[str, dict[str, Any]] = {}
+            for bkey, bvalue in con.execute(
+                "SELECT key, value FROM cursorDiskKV WHERE key >= ? AND key < ?",
+                (f"bubbleId:{composer_id}:", f"bubbleId:{composer_id};"),
+            ):
+                bubble = _loads(bvalue)
+                if bubble is not None and bkey.count(":") >= 2:
+                    bubbles[bkey.split(":", 2)[2]] = bubble
+            events = [
+                _event_for_bubble(bubbles[bid])
+                for header in session.get("fullConversationHeadersOnly", [])
+                if (bid := str(header.get("bubbleId"))) in bubbles
+            ]
             if events:
-                yield {"trace_id": composer_id, "agent": agent, "events": events}
+                yield {"trace_id": _hash_id(composer_id), "agent": agent, "events": events}
     finally:
         con.close()
 
@@ -251,7 +314,7 @@ _TOOL_ATOM = {
     **dict.fromkeys(_EDIT_TOOLS, ATOM_EDIT),
     "delete_file": ATOM_DELETE_FILE,
     "read_lints": ATOM_LINT,
-    "todo_write": ATOM_THINK,
+    **dict.fromkeys(_PLAN_TOOLS, ATOM_THINK),
     **dict.fromkeys(_TERMINAL_TOOLS, ATOM_RUN_CODE),
 }
 
@@ -266,7 +329,7 @@ def _atom_for_bubble(bubble: dict[str, Any]) -> str:
         return _TOOL_ATOM[tool]
     if not tool and bubble.get("codeBlocks"):
         return ATOM_EDIT
-    if not tool and bubble.get("text"):
+    if not tool and _is_reasoning(bubble):
         return ATOM_THINK
     return ATOM_OTHER
 
@@ -309,10 +372,9 @@ def build_panel_sessions(
         for key, value in con.execute(
             "SELECT key, value FROM cursorDiskKV WHERE key >= 'composerData:' AND key < 'composerData;'"
         ):
-            try:
-                composers.append((key.split(":", 1)[1], json.loads(value)))
-            except (ValueError, IndexError):
-                continue
+            parsed = _loads(value)
+            if parsed is not None and ":" in key:
+                composers.append((key.split(":", 1)[1], parsed))
         composers.sort(key=lambda c: c[1].get("lastUpdatedAt") or 0, reverse=True)
         if limit is not None:
             composers = composers[:limit]
@@ -322,10 +384,9 @@ def build_panel_sessions(
                 "SELECT key, value FROM cursorDiskKV WHERE key >= ? AND key < ?",
                 (f"bubbleId:{cid}:", f"bubbleId:{cid};"),
             ):
-                try:
-                    bubbles[key.split(":", 2)[2]] = json.loads(value)
-                except (ValueError, IndexError):
-                    continue
+                parsed = _loads(value)
+                if parsed is not None and key.count(":") >= 2:
+                    bubbles[key.split(":", 2)[2]] = parsed
             turns: list[dict[str, Any]] = []
             cur: dict[str, Any] | None = None
             for header in cd.get("fullConversationHeadersOnly", []):
@@ -352,7 +413,7 @@ def build_panel_sessions(
             if not turns:
                 continue
             created, updated = _dt_ms(cd.get("createdAt")), _dt_ms(cd.get("lastUpdatedAt"))
-            sid = hashlib.sha1(cid.encode("utf-8")).hexdigest()[:8]
+            sid = _hash_id(cid)
             sessions.append(
                 {
                     "meta": {

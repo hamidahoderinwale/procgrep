@@ -7,13 +7,14 @@ Registered: ``swe-agent``, ``swe-smith`` and ``swe-smith-native`` (share the
 swe-agent atom map), ``mini-swe-agent``, ``openhands``, ``react-text``,
 ``agentless``, ``dars``, ``moatless``, ``prompt-completion`` (OpenAI-style
 prompt/completion SFT tool-use corpora), ``gumtree`` (fine-grained
-node-typed AST atoms), ``cursor-companion`` (human+AI sessions from Cursor
-IDE via the cursor-telemetry companion service), ``claude-code``
+node-typed AST atoms), ``cursor-vscdb`` (human+AI Cursor sessions read straight
+from Cursor's own ``state.vscdb``, no exporter needed), ``cursor-companion``
+(the same sessions via the cursor-telemetry companion service), ``claude-code``
 (Claude Code session transcripts from ``~/.claude/projects/``), and the other
 SWE-chat terminal-agent formats ``opencode``, ``codex``, and ``gemini-cli``
 (each mapping its own tool/event vocabulary into the same atom alphabet).
 
-The interactive adapters (``cursor-companion``, ``claude-code``, ``opencode``,
+The interactive adapters (``cursor-vscdb``, ``cursor-companion``, ``claude-code``, ``opencode``,
 ``codex``, ``gemini-cli``) extend the atom alphabet with ``prompt_ai`` to mark
 human-to-AI handoffs -- an event type absent from autonomous-agent traces. All identifying fields (workspace
 paths, session ids, file names, prompt text) are hashed or dropped before
@@ -35,6 +36,7 @@ from procgrep.ingest.adapters import (
     claude_code,
     codex,
     cursor_companion,
+    cursor_vscdb,
     dars,
     function_xml,
     gemini_cli,
@@ -55,6 +57,7 @@ __all__ = [
     "claude_code",
     "codex",
     "cursor_companion",
+    "cursor_vscdb",
     "dars",
     "function_xml",
     "gemini_cli",

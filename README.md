@@ -281,7 +281,7 @@ pip install procgrep[dev]      # development dependencies
 
 - Python 3.10+. No LLM SDK required; procgrep never calls a model.
 - Adapters cover SWE-agent, OpenHands, Agentless, and more, plus interactive sessions (`claude-code`, Cursor). To add a scaffold, register a `TraceAdapter`; see `examples/python/05_custom_adapter.py`.
-- **Try it on your own sessions.** `python examples/procgrep_view.py` opens the panel on your local Claude Code and Cursor sessions.
+- **Try it on your own sessions.** `procgrep clients` lists the clients found on this machine; `procgrep cursor` reads Cursor's own store, locating it for you, and writes canonical traces the other subcommands accept. `python examples/procgrep_view.py` opens the visual panel on the same sessions.
 - **Privacy.** Ingest keeps only atoms and hashed identifiers; `to_shareable()` never exports prompts, code, or paths.
 - **procgrep is accurate about the log, not the behavior.** Steps a scaffold never surfaces as tool calls are invisible (one Moatless trace hid 71 internal test runs); audit each new adapter once.
 
