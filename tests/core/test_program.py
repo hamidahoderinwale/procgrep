@@ -190,6 +190,8 @@ def test_verify_lever_when_behavior_and_outcome_move() -> None:
     assert report.behavior_moved
     assert report.outcome_delta > 0
     assert report.verdict == "lever"
+    # the JSD numbers name the vocabulary they were measured under
+    assert report.vocab_spec == vocab.spec.compact()
 
 
 def test_verify_epiphenomenal_when_behavior_moves_but_outcome_flat() -> None:

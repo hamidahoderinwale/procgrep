@@ -113,12 +113,17 @@ class VerifyReport:
         verdict: ``"lever"`` (behavior moved and outcome improved),
             ``"epiphenomenal"`` (behavior moved, outcome did not), or
             ``"weak_enforcement"`` (behavior did not move).
+        vocab_spec: Compact key (``content_hash:vocab_size``) of the
+            vocabulary the JSD numbers were measured under; see
+            `procgrep.bpe.VocabSpec`. They are only comparable to another
+            report's when the keys match.
     """
 
     behavior_moved: bool
     fingerprint_jsd_to_target: tuple[float, float]
     outcome_delta: float
     verdict: Verdict
+    vocab_spec: str | None = None
 
 
 @dataclass(frozen=True)
@@ -317,6 +322,7 @@ def verify(
         fingerprint_jsd_to_target=(round(before_jsd, 6), round(after_jsd, 6)),
         outcome_delta=round(outcome_delta, 6),
         verdict=verdict,
+        vocab_spec=vocab.spec.compact(),
     )
 
 

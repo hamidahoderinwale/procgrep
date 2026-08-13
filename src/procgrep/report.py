@@ -62,6 +62,10 @@ class CorpusReport:
         exact_duplicate_rate: ``1 - unique atom sequences / n_traces``.
         n_empty: Traces that canonicalized to zero atoms; a high count
             usually means the adapter did not match the source format.
+        vocab_spec: Compact key (``content_hash:vocab_size``) of the
+            vocabulary fit for this report; see `procgrep.bpe.VocabSpec`.
+            Entropy, effective-vocab, and JSD numbers are only comparable
+            to another report's when the keys match.
     """
 
     source: str
@@ -75,6 +79,7 @@ class CorpusReport:
     n_empty: int = 0
     agents: list[AgentRow] = field(default_factory=list)
     jsd_pairs: list[tuple[str, str, float]] = field(default_factory=list)
+    vocab_spec: str | None = None
 
     def to_dict(self) -> dict[str, object]:
         """JSON-ready mapping of every field."""
@@ -98,7 +103,9 @@ class CorpusReport:
             "action mix        "
             + "  ".join(f"{atom} {share:.0%}" for atom, share in self.atom_mix[:6]),
             "",
-            f"procedures        {self.procedure_vocab_size} learned; top by share:",
+            f"procedures        {self.procedure_vocab_size} learned"
+            + (f" (vocab {self.vocab_spec})" if self.vocab_spec else "")
+            + "; top by share:",
         ]
         lines += [f"  {share:5.1%}  {proc}" for proc, share in self.top_procedures]
         if len(self.agents) > 1:
@@ -151,7 +158,7 @@ def build_report(
         key=lambda kv: -kv[1],
     )
 
-    vocab = fit_bpe([t.atoms for t in parsed], vocab_size=vocab_size, seed=seed)
+    vocab = fit_bpe([t.atoms for t in parsed], vocab_size=vocab_size, seed=seed, fit_corpus=source)
     fingerprints = encode(parsed, vocab=vocab)
     tokens = vocab.tokens()
 
@@ -184,6 +191,7 @@ def build_report(
         n_empty=n_empty,
         agents=agents,
         jsd_pairs=jsd_pairs,
+        vocab_spec=vocab.spec.compact(),
     )
 
 

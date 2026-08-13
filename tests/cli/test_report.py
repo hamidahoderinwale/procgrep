@@ -44,6 +44,18 @@ def test_summary_and_dict_round_trip(structured_corpus) -> None:
     assert payload["n_traces"] == rep.n_traces
 
 
+def test_report_carries_the_vocabulary_spec(structured_corpus) -> None:
+    rep = build_report(structured_corpus, source="unit", vocab_size=24)
+    assert rep.vocab_spec is not None
+    # deterministic: rebuilding on the same corpus yields the same spec
+    assert (
+        build_report(structured_corpus, source="unit", vocab_size=24).vocab_spec == rep.vocab_spec
+    )
+    # the spec is printed with the numbers and survives the JSON round trip
+    assert f"vocab {rep.vocab_spec}" in rep.summary()
+    assert json.loads(json.dumps(rep.to_dict()))["vocab_spec"] == rep.vocab_spec
+
+
 def test_cli_report_on_bundled_synthetic(tmp_path: Path) -> None:
     # the bundled file is raw, so canonicalize first, exactly as a user would
     canonical = tmp_path / "canonical.jsonl"
