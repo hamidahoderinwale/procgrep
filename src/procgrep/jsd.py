@@ -41,11 +41,17 @@ class JsdMatrix:
             symmetric with zero diagonal; full grid is emitted for
             easy indexing.
         base: Log base used for the divergence.
+        vocab_spec: Compact key (``content_hash:vocab_size``) of the
+            vocabulary the fingerprints were encoded under; see
+            `procgrep.bpe.VocabSpec`. Values from two matrices are only
+            comparable when their keys match. ``None`` when the input
+            fingerprints carried no spec.
     """
 
     groups: tuple[str, ...]
     records: tuple[JsdRecord, ...]
     base: float
+    vocab_spec: str | None = None
 
     def to_array(self) -> npt.NDArray[np.float64]:
         """Dense ``(n, n)`` matrix in group order."""
@@ -94,9 +100,16 @@ def jsd_matrix(
     Args:
         group_by: ``"group"`` uses `Fingerprint.group`; ``"agent"``
             groups by agent name instead.
+
+    Raises:
+        ValueError: The fingerprints carry two or more different
+            vocabulary specs. Their distributions live over different
+            token sets, so any JSD between them would be meaningless.
     """
+    fingerprint_list = list(fingerprints)
+    vocab_spec = _shared_vocab_spec(fingerprint_list)
     by_group: dict[str, list[npt.NDArray[np.float64]]] = {}
-    for fp in fingerprints:
+    for fp in fingerprint_list:
         key = fp.agent if group_by == "agent" else fp.group
         by_group.setdefault(key, []).append(fp.distribution())
 
@@ -112,7 +125,24 @@ def jsd_matrix(
             value = 0.0 if row == col else jsd(means[row], means[col], base=base)
             records.append(JsdRecord(row=row, col=col, jsd=value))
 
-    return JsdMatrix(groups=groups, records=tuple(records), base=base)
+    return JsdMatrix(groups=groups, records=tuple(records), base=base, vocab_spec=vocab_spec)
+
+
+def _shared_vocab_spec(fingerprints: Sequence[Fingerprint]) -> str | None:
+    """The one vocabulary spec the fingerprints share, or None if untagged.
+
+    Untagged fingerprints (``vocab_spec is None``, from files written
+    before the spec existed) are treated as unknown and do not trip the
+    guard; mixing two known-different specs raises.
+    """
+    specs = sorted({fp.vocab_spec for fp in fingerprints if fp.vocab_spec is not None})
+    if len(specs) > 1:
+        raise ValueError(
+            f"fingerprints were encoded under {len(specs)} different vocabularies "
+            f"({', '.join(specs)}); JSD between them is meaningless — re-encode "
+            "all traces under one vocabulary before comparing"
+        )
+    return specs[0] if specs else None
 
 
 def _normalize(arr: npt.NDArray[np.float64]) -> npt.NDArray[np.float64]:

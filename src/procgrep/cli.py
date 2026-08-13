@@ -157,6 +157,7 @@ def jsd(
         "groups": list(matrix.groups),
         "records": matrix.to_records(),
         "base": matrix.base,
+        "vocab_spec": matrix.vocab_spec,
     }
     write_json(output_path, payload)
     typer.echo(f"wrote JSD matrix ({len(matrix.groups)} groups) to {output_path}")
