@@ -42,3 +42,11 @@ def test_encode_forwards_identity_fields(small_corpus: list) -> None:
         assert fp.trace_id == trace.trace_id
         assert fp.agent == trace.agent
         assert fp.group == trace.grouping()
+
+
+def test_encode_stamps_the_vocabulary_spec(small_corpus: list) -> None:
+    sequences = [t.atoms for t in small_corpus]
+    vocab = fit_bpe(sequences, vocab_size=10)
+    fps = encode(small_corpus, vocab=vocab)
+    for fp in fps:
+        assert fp.vocab_spec == vocab.spec.compact()

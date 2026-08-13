@@ -94,11 +94,12 @@ def fit_bpe_cmd(
         vocab_size=vocab_size,
         seed=seed,
         min_pair_frequency=min_pair_frequency,
+        fit_corpus=input_path.name,
     )
     save_vocab_fn(vocab, output_path)
     typer.echo(
         f"learned vocabulary: {len(vocab.atoms)} atoms + {len(vocab.merges)} merges "
-        f"= {vocab.size} tokens; wrote {output_path}"
+        f"= {vocab.size} tokens (vocab {vocab.spec.compact()}); wrote {output_path}"
     )
 
 
