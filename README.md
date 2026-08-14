@@ -57,6 +57,10 @@ for row in matrix.to_records():
 
 **JSD.** Jensen-Shannon divergence: how different two fingerprints are. 0 = identical, 1 = completely non-overlapping. Used to compare agents, groups, or training conditions.
 
+### Reporting measurements
+
+An absolute divergence number depends on the vocabulary it was measured under: refit the procedures on a different corpus, or at a different vocabulary size, and the same pair of agents gets a different JSD. So every vocabulary carries a spec — its size, seed, atom alphabet, and a hash of its merge list — and procgrep stamps the compact form (`hash:size`) on fingerprints, JSD matrices, and reports. Two numbers are comparable exactly when their specs match, and comparing fingerprints encoded under different vocabularies raises an error. When you publish a divergence number or a threshold, report the spec alongside it, the way an instrument reading comes with its calibration.
+
 ## Main uses
 
 ### Compare two agents
@@ -199,7 +203,7 @@ exact duplicates    0.0%
 
 action mix        think 44%  read_file 15%  run_code 11%  search_repo 9%  run_test 6%  edit 5%
 
-procedures        64 learned; top by share:
+procedures        64 learned (vocab 9b0a4c2f81d3:64); top by share:
    4.9%  read_file▁think
    4.5%  read_file▁think▁read_file▁think
    4.2%  run_test▁think
