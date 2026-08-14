@@ -643,6 +643,86 @@ def report(
 
 
 @app.command()
+def floor(
+    dataset: Annotated[str, typer.Argument(help="HF dataset id, or a local canonical JSONL path.")],
+    condition: Annotated[
+        str,
+        typer.Option(
+            "--condition",
+            "-c",
+            help="Field naming identically-configured runs: 'agent', 'group', or any "
+            "metadata key / dataset column.",
+        ),
+    ],
+    adapter: Annotated[
+        str | None,
+        typer.Option("--adapter", "-a", help="Adapter override for Hub ingestion."),
+    ] = None,
+    limit: Annotated[int, typer.Option(help="Max rows to stream from the Hub.")] = 3000,
+    config: Annotated[
+        str | None, typer.Option(help="HF config name for multi-config datasets.")
+    ] = None,
+    vocab_size: Annotated[int, typer.Option("--vocab-size", "-V")] = 64,
+    seed: Annotated[
+        int, typer.Option(help="Seeds the vocabulary fit and the Monte Carlo draws.")
+    ] = 0,
+    n_draws: Annotated[int, typer.Option(help="Monte Carlo draws per group size.")] = 200,
+    delta: Annotated[
+        list[float] | None,
+        typer.Option(
+            "--delta",
+            help="Target detectable difference; repeat the flag for a grid "
+            "(default: 0.05 0.1 0.2).",
+        ),
+    ] = None,
+    out: Annotated[
+        Path | None, typer.Option("--out", "-o", help="Write the JSON report here, not stdout.")
+    ] = None,
+) -> None:
+    """Measure your eval harness's noise floor and the runs a target effect needs.
+
+    Groups trajectories by --condition (runs sharing a value count as
+    identically configured) and reports, per condition cell, how far apart
+    two disjoint groups of n same-condition runs land anyway -- across a
+    grid of n -- plus seeds_needed: the smallest n whose floor sits below
+    each target difference. Read any claimed effect against this floor,
+    not against zero. JSON only; ingestion notes go to stderr so stdout
+    stays parseable.
+    """
+    import json as json_lib
+
+    from procgrep.floor import DEFAULT_DELTAS, measure_floor
+    from procgrep.ingest import ingest as ingest_fn
+
+    if Path(dataset).exists():
+        traces = list(records_to_traces(read_jsonl(Path(dataset))))
+    else:
+        traces, plan = ingest_fn(dataset, limit=limit, config=config, adapter=adapter)
+        typer.echo(plan.summary(), err=True)
+
+    try:
+        rep = measure_floor(
+            traces,
+            condition=condition,
+            source=dataset,
+            vocab_size=vocab_size,
+            seed=seed,
+            n_draws=n_draws,
+            deltas=tuple(delta) if delta else DEFAULT_DELTAS,
+        )
+    except ValueError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
+
+    payload = json_lib.dumps(rep.to_dict(), indent=2)
+    if out is not None:
+        out.write_text(payload + "\n")
+        typer.echo(f"wrote {out}", err=True)
+    else:
+        typer.echo(payload)
+
+
+@app.command()
 def watch(
     tail: Annotated[
         str | None, typer.Option(help="Follow a file; each appended line is one action atom.")

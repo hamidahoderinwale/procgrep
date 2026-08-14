@@ -13,6 +13,8 @@ Modules:
 
 - ``bpe`` / ``encode``: vocabulary induction and trajectory encoding.
 - ``jsd``: pairwise and group-level Jensen-Shannon divergence.
+- ``floor``: same-condition noise floor by Monte Carlo subsampling, and the
+  runs-needed table it implies.
 - ``lineage_diff``: four-axis structural comparison between two agent groups
   (vocabulary, entropy, outcome-quadrant, conditional). ``noise_floor``
   calibrates it against a same-model nuisance control.
@@ -43,6 +45,7 @@ from procgrep.bpe import (
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.cluster import Embedder, cluster_tasks, hf_embedder
 from procgrep.encode import Fingerprint, encode
+from procgrep.floor import CellFloor, FloorPoint, FloorReport, SeedsNeeded, measure_floor
 from procgrep.guard import GuardDecision, ProcedureGuard
 from procgrep.ingest import adapters as adapters
 from procgrep.ingest.adapters.gumtree import (
@@ -100,10 +103,13 @@ __all__ = [
     "Atom",
     "AtomSequence",
     "AxisResult",
+    "CellFloor",
     "DecodeArtifact",
     "DiscriminativeProcedure",
     "Embedder",
     "Fingerprint",
+    "FloorPoint",
+    "FloorReport",
     "GroupAtomFrequencies",
     "GroupEntropyStats",
     "GuardArtifact",
@@ -122,6 +128,7 @@ __all__ = [
     "ProcedureVocabulary",
     "RewardArtifact",
     "RewardResult",
+    "SeedsNeeded",
     "SummaryDiff",
     "Trace",
     "TraceAdapter",
@@ -151,6 +158,7 @@ __all__ = [
     "load_spec",
     "load_vocab",
     "match_patterns",
+    "measure_floor",
     "noise_floor",
     "optimize",
     "parse_gumtree_jsondiff",
