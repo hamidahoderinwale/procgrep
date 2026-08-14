@@ -83,6 +83,30 @@ mean_b = np.mean([fp.distribution() for fp in fps_b], axis=0)
 print("JSD:", jsd(mean_a, mean_b))
 ```
 
+### Measure your noise floor
+
+Identically configured agents do not produce identical runs: re-run the same setup and the two batches already diverge. `procgrep floor` measures that baseline — the divergence your harness produces when *nothing* differs — so a claimed effect is read against it, not against zero.
+
+Point it at your traces and name the column that identifies identically-configured runs:
+
+```bash
+procgrep floor traces/canonical.jsonl --condition config_id
+procgrep floor midah/procgrep-spines --condition dataset --limit 400
+```
+
+For each condition it repeatedly splits 2n same-condition runs into two disjoint groups of n and reports the JSD between the group means, across a grid of group sizes (JSON to stdout or `--out`):
+
+```json
+"floor": [
+  {"n": 5,   "mean": 0.559, "p2_5": 0.337, "p97_5": 0.805},
+  {"n": 50,  "mean": 0.106, "p2_5": 0.073, "p97_5": 0.148},
+  {"n": 200, "mean": 0.031, "p2_5": 0.021, "p97_5": 0.042}
+],
+"seeds_needed": [{"delta": 0.1, "n": 100}, {"delta": 0.2, "n": 50}]
+```
+
+The floor falls roughly as 1/n, and `seeds_needed` inverts the curve: to detect an effect of 0.1 on this harness you need about 100 runs per arm — the smallest group size whose floor's 97.5th percentile sits below 0.1 (`"n": null` means even the largest supported group does not get there). At small n the same-condition floor spans real cross-condition differences, so an underpowered comparison cannot tell a real change from a re-run. Conditions with fewer than 10 runs are refused by name; repeated trace_ids are kept as distinct rollouts (a re-run is a rollout), with a warning so true duplicate rows get caught. The same measurement is `procgrep.measure_floor(traces, condition=...)` in Python, and every block carries the vocabulary spec it was measured under (see "Reporting measurements").
+
 ### Find what makes an agent fail
 
 ```python
@@ -213,6 +237,10 @@ Traces that fail to parse are counted, not averaged in: an unmatched corpus
 reports `parse yield 0/60 non-empty (adapter mismatch? try --dry-run)`.
 
 ```bash
+# Your noise floor: how far apart two same-condition run groups land anyway,
+# per group size, and the runs-per-arm a target effect needs
+procgrep floor traces/canonical.jsonl --condition config_id --out floor.json
+
 # Ask in English; the model compiles the question to a regex ONCE, matching
 # stays deterministic grep. Prints the regex + what it literally matches, and
 # refuses questions the regex layer can't express. Needs ANTHROPIC_API_KEY.
