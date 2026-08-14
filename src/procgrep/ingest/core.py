@@ -333,6 +333,19 @@ def _sniff_react_text(schema: DatasetSchema) -> float:
     return 0.8 if has_fence else 0.0
 
 
+def _sniff_spine(schema: DatasetSchema) -> float:
+    # A `spine` column holding a space-joined atom string is procgrep's own
+    # precomputed format (analysis/build_spines.py); near-certain when a
+    # sample row confirms the string shape, tentative on the bare column.
+    if "spine" not in schema.columns:
+        return 0.0
+    for row in schema.sample_rows:
+        value = row.get("spine")
+        if isinstance(value, str) and value.strip():
+            return 0.95
+    return 0.4
+
+
 def _sniff_prompt_completion(schema: DatasetSchema) -> float:
     # OpenAI-style prompt/completion column pair; confident when a completion
     # turn carries structured tool_calls, tentative on the bare column pair.
@@ -346,6 +359,7 @@ def _sniff_prompt_completion(schema: DatasetSchema) -> float:
 
 
 SNIFFERS: tuple[Sniffer, ...] = (
+    Sniffer("spine", _sniff_spine),
     Sniffer("prompt-completion", _sniff_prompt_completion),
     Sniffer("openhands", _sniff_openhands),
     Sniffer("mini-swe-agent", _sniff_mini_swe),

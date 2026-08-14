@@ -9,9 +9,10 @@ swe-agent atom map), ``mini-swe-agent``, ``openhands``, ``react-text``,
 prompt/completion SFT tool-use corpora), ``gumtree`` (fine-grained
 node-typed AST atoms), ``cursor-companion`` (human+AI sessions from Cursor
 IDE via the cursor-telemetry companion service), ``claude-code``
-(Claude Code session transcripts from ``~/.claude/projects/``), and the other
+(Claude Code session transcripts from ``~/.claude/projects/``), the other
 SWE-chat terminal-agent formats ``opencode``, ``codex``, and ``gemini-cli``
-(each mapping its own tool/event vocabulary into the same atom alphabet).
+(each mapping its own tool/event vocabulary into the same atom alphabet), and
+``spine`` (precomputed space-joined atom strings, e.g. midah/procgrep-spines).
 
 The interactive adapters (``cursor-companion``, ``claude-code``, ``opencode``,
 ``codex``, ``gemini-cli``) extend the atom alphabet with ``prompt_ai`` to mark
@@ -45,6 +46,7 @@ from procgrep.ingest.adapters import (
     openhands,
     prompt_completion,
     react_text,
+    spine,
     swe_agent,
     swe_agent_traj,
     swe_smith,
@@ -65,6 +67,7 @@ __all__ = [
     "openhands",
     "prompt_completion",
     "react_text",
+    "spine",
     "swe_agent",
     "swe_agent_traj",
     "swe_smith",

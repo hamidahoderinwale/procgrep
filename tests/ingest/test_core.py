@@ -91,6 +91,16 @@ def test_sniff_swe_smith_from_ids_and_plain_messages() -> None:
     assert conf > 0.5
 
 
+def test_sniff_spine_from_space_joined_column() -> None:
+    schema = _schema(
+        ("dataset", "trace_id", "agent", "spine"),
+        ({"dataset": "d", "trace_id": "t", "agent": "a", "spine": "think edit run_test"},),
+    )
+    adapter, conf = _top(schema)
+    assert adapter == "spine"
+    assert conf > 0.5
+
+
 # --- ranking invariants -----------------------------------------------------
 
 
@@ -100,7 +110,7 @@ def test_sniff_returns_all_sniffers_ranked_in_unit_range() -> None:
         ({"messages": [{"role": "assistant", "tool_calls": [{"function": {"name": "x"}}]}]},),
     )
     ranked = sniff(schema)
-    assert len(ranked) == 6
+    assert len(ranked) == 7
     confs = [r.confidence for r in ranked]
     assert confs == sorted(confs, reverse=True)
     assert all(0.0 <= c <= 1.0 for c in confs)
