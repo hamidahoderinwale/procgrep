@@ -7,6 +7,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
+from procgrep.bpe import load_vocab
 from procgrep.cli import app
 
 runner = CliRunner()
@@ -53,6 +54,8 @@ def test_canonicalize_fit_encode_jsd_pipeline(tmp_path: Path) -> None:
     payload = json.loads(jsd_out.read_text())
     assert "groups" in payload
     assert "records" in payload
+    # The matrix names the vocabulary its numbers were measured under.
+    assert payload["vocab_spec"] == load_vocab(vocab).spec.compact()
 
 
 def test_compare_errors_on_empty_input(tmp_path: Path) -> None:

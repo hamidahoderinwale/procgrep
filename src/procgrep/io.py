@@ -75,22 +75,27 @@ def records_to_traces(records: Iterable[dict[str, Any]]) -> Iterator[Trace]:
 def fingerprints_to_records(fingerprints: Iterable[Fingerprint]) -> Iterator[dict[str, Any]]:
     """Convert `Fingerprint` objects to JSON-friendly dictionaries."""
     for fp in fingerprints:
-        yield {
+        record: dict[str, Any] = {
             "trace_id": fp.trace_id,
             "agent": fp.agent,
             "group": fp.group,
             "counts": list(fp.counts),
         }
+        if fp.vocab_spec is not None:
+            record["vocab_spec"] = fp.vocab_spec
+        yield record
 
 
 def records_to_fingerprints(records: Iterable[dict[str, Any]]) -> Iterator[Fingerprint]:
     """Reconstruct `Fingerprint` objects from JSON-friendly dictionaries."""
     for record in records:
+        vocab_spec = record.get("vocab_spec")
         yield Fingerprint(
             trace_id=str(record["trace_id"]),
             agent=str(record["agent"]),
             group=str(record["group"]),
             counts=tuple(int(c) for c in record["counts"]),
+            vocab_spec=None if vocab_spec is None else str(vocab_spec),
         )
 
 

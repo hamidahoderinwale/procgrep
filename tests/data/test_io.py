@@ -41,3 +41,12 @@ def test_fingerprint_round_trip_through_jsonl(tmp_path: Path, structured_corpus:
         assert original.agent == restored.agent
         assert original.group == restored.group
         assert original.counts == restored.counts
+        assert original.vocab_spec == restored.vocab_spec
+
+
+def test_fingerprint_records_without_vocab_spec_load(tmp_path: Path) -> None:
+    # Fingerprint files written before the spec existed have no vocab_spec key.
+    path = tmp_path / "fp.jsonl"
+    path.write_text('{"trace_id": "t", "agent": "a", "group": "g", "counts": [1, 2]}\n')
+    (fp,) = records_to_fingerprints(read_jsonl(path))
+    assert fp.vocab_spec is None

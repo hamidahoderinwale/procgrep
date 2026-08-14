@@ -90,3 +90,58 @@ def test_render_vocab_tree_handles_no_merges() -> None:
     vocab = fit_bpe([["a", "b"]], vocab_size=2, seed=0)
     tree = render_vocab_tree(vocab)
     assert "0 merges, 0 maximal procedures" in tree
+
+
+def test_spec_hash_is_deterministic_across_refits(small_corpus: list) -> None:
+    sequences = [t.atoms for t in small_corpus]
+    a = fit_bpe(sequences, vocab_size=10)
+    b = fit_bpe(sequences, vocab_size=10)
+    assert a.spec.content_hash == b.spec.content_hash
+    assert a.spec.compact() == b.spec.compact()
+
+
+def test_spec_hash_changes_with_vocab_size() -> None:
+    sequences = [["a", "b", "c", "d"] * 4]
+    a = fit_bpe(sequences, vocab_size=5, min_pair_frequency=1)
+    b = fit_bpe(sequences, vocab_size=7, min_pair_frequency=1)
+    assert a.merges != b.merges  # different merge lists...
+    assert a.spec.content_hash != b.spec.content_hash  # ...different hashes
+
+
+def test_spec_hash_changes_with_fit_corpus() -> None:
+    a = fit_bpe([["a", "b", "c"] * 4], vocab_size=5, min_pair_frequency=1)
+    b = fit_bpe([["a", "c", "b"] * 4], vocab_size=5, min_pair_frequency=1)
+    assert a.spec.content_hash != b.spec.content_hash
+
+
+def test_spec_carries_size_seed_alphabet_and_merge_count(small_corpus: list) -> None:
+    sequences = [t.atoms for t in small_corpus]
+    vocab = fit_bpe(sequences, vocab_size=10, seed=7, fit_corpus="unit-corpus")
+    spec = vocab.spec
+    assert spec.vocab_size == vocab.size
+    assert spec.n_atoms == len(vocab.atoms)
+    assert spec.n_merges == len(vocab.merges)
+    assert spec.seed == 7
+    assert spec.atoms == vocab.atoms
+    assert spec.fit_corpus == "unit-corpus"
+    assert spec.compact() == f"{spec.content_hash}:{vocab.size}"
+
+
+def test_fit_corpus_round_trips_through_disk(tmp_path: Path, small_corpus: list) -> None:
+    sequences = [t.atoms for t in small_corpus]
+    vocab = fit_bpe(sequences, vocab_size=10, fit_corpus="swe-bench-lite")
+    out_path = tmp_path / "vocab.json"
+    save_vocab(vocab, out_path)
+    loaded = load_vocab(out_path)
+    assert loaded.fit_corpus == "swe-bench-lite"
+    assert loaded.spec == vocab.spec
+
+
+def test_load_vocab_without_fit_corpus_field(tmp_path: Path, small_corpus: list) -> None:
+    # Vocab files written before the spec existed have no fit_corpus key.
+    sequences = [t.atoms for t in small_corpus]
+    vocab = fit_bpe(sequences, vocab_size=10)
+    out_path = tmp_path / "vocab.json"
+    save_vocab(vocab, out_path)
+    loaded = load_vocab(out_path)
+    assert loaded.fit_corpus is None

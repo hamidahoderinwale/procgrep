@@ -80,3 +80,34 @@ def test_jsd_matrix_separates_distinct_agents(structured_corpus: list) -> None:
     matrix = jsd_matrix(fps, group_by="agent").to_array()
     # The editor and searcher agents use disjoint procedure palettes.
     assert matrix[0, 1] > 0.5
+
+
+def test_jsd_matrix_carries_the_vocabulary_spec(structured_corpus: list) -> None:
+    sequences = [t.atoms for t in structured_corpus]
+    vocab = fit_bpe(sequences, vocab_size=20)
+    fps = encode(structured_corpus, vocab=vocab)
+    matrix = jsd_matrix(fps, group_by="agent")
+    assert matrix.vocab_spec == vocab.spec.compact()
+
+
+def test_jsd_matrix_rejects_mixed_vocabularies(structured_corpus: list) -> None:
+    sequences = [t.atoms for t in structured_corpus]
+    vocab_a = fit_bpe(sequences, vocab_size=12)
+    vocab_b = fit_bpe(sequences, vocab_size=20)
+    fps = encode(structured_corpus[:6], vocab=vocab_a) + encode(
+        structured_corpus[6:], vocab=vocab_b
+    )
+    with pytest.raises(ValueError, match="different vocabularies"):
+        jsd_matrix(fps, group_by="agent")
+
+
+def test_jsd_matrix_accepts_untagged_fingerprints(structured_corpus: list) -> None:
+    # Fingerprints loaded from files written before the spec existed have
+    # vocab_spec=None; they must still aggregate, with the spec unknown.
+    from dataclasses import replace
+
+    sequences = [t.atoms for t in structured_corpus]
+    vocab = fit_bpe(sequences, vocab_size=20)
+    fps = [replace(fp, vocab_spec=None) for fp in encode(structured_corpus, vocab=vocab)]
+    matrix = jsd_matrix(fps, group_by="agent")
+    assert matrix.vocab_spec is None

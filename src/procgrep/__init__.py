@@ -32,7 +32,14 @@ Public API is re-exported here; see README and docs/METRICS.md for usage.
 
 from __future__ import annotations
 
-from procgrep.bpe import ProcedureVocabulary, fit_bpe, load_vocab, render_vocab_tree, save_vocab
+from procgrep.bpe import (
+    ProcedureVocabulary,
+    VocabSpec,
+    fit_bpe,
+    load_vocab,
+    render_vocab_tree,
+    save_vocab,
+)
 from procgrep.canonicalize import canonicalize, register_adapter
 from procgrep.cluster import Embedder, cluster_tasks, hf_embedder
 from procgrep.encode import Fingerprint, encode
@@ -120,6 +127,7 @@ __all__ = [
     "TraceAdapter",
     "UmapResult",
     "VerifyReport",
+    "VocabSpec",
     "__version__",
     "atom_frequencies_per_group",
     "autonomy_runlength",

@@ -28,12 +28,18 @@ class Fingerprint:
         group: Forwarded from the originating `Trace`. Falls back to
             ``agent`` when the trace had no group label.
         counts: Length ``vocab.size``, aligned to ``vocab.tokens()``.
+        vocab_spec: Compact key (``content_hash:vocab_size``) of the
+            vocabulary this fingerprint was encoded under; see
+            `procgrep.bpe.VocabSpec`. Counts are only comparable between
+            fingerprints with equal keys. ``None`` on fingerprints from
+            before the spec existed.
     """
 
     trace_id: str
     agent: str
     group: str
     counts: tuple[int, ...]
+    vocab_spec: str | None = None
 
     @property
     def total(self) -> int:
@@ -75,6 +81,7 @@ def encode(traces: Iterable[Trace], *, vocab: ProcedureVocabulary) -> list[Finge
     """
     index = vocab.index()
     size = vocab.size
+    spec_key = vocab.spec.compact()
     out: list[Fingerprint] = []
     for trace in traces:
         tokenized = apply_vocab(trace.atoms, vocab)
@@ -90,6 +97,7 @@ def encode(traces: Iterable[Trace], *, vocab: ProcedureVocabulary) -> list[Finge
                 agent=trace.agent,
                 group=trace.grouping(),
                 counts=tuple(counts),
+                vocab_spec=spec_key,
             )
         )
     return out
