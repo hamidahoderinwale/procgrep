@@ -11,8 +11,9 @@ node-typed AST atoms), ``cursor-companion`` (human+AI sessions from Cursor
 IDE via the cursor-telemetry companion service), ``claude-code``
 (Claude Code session transcripts from ``~/.claude/projects/``), the other
 SWE-chat terminal-agent formats ``opencode``, ``codex``, and ``gemini-cli``
-(each mapping its own tool/event vocabulary into the same atom alphabet), and
-``spine`` (precomputed space-joined atom strings, e.g. midah/procgrep-spines).
+(each mapping its own tool/event vocabulary into the same atom alphabet), ``spine`` (precomputed space-joined atom strings, e.g. midah/procgrep-spines),
+and ``bdtrace`` (bdtrace's standardized record, one adapter for every local
+agent store it exports from).
 
 The interactive adapters (``cursor-companion``, ``claude-code``, ``opencode``,
 ``codex``, ``gemini-cli``) extend the atom alphabet with ``prompt_ai`` to mark
@@ -33,6 +34,7 @@ from __future__ import annotations
 
 from procgrep.ingest.adapters import (
     agentless,
+    bdtrace,
     claude_code,
     codex,
     cursor_companion,
@@ -54,6 +56,7 @@ from procgrep.ingest.adapters import (
 
 __all__ = [
     "agentless",
+    "bdtrace",
     "claude_code",
     "codex",
     "cursor_companion",
