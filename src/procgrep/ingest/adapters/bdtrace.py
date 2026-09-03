@@ -29,8 +29,9 @@ Atom mapping::
     run, anything else                 -> run_code
     other / unrecognized               -> other
 
-Pass ``--trace-id-field instance_id`` to ``procgrep canonicalize``; bdtrace
-exports carry no ``agent`` field unless one was added downstream.
+Pass ``--trace-id-field instance_id`` to ``procgrep canonicalize``. bdtrace
+labels every record with its source as ``agent`` (overridable at import), so
+grouping and cross-agent comparison work without further mapping.
 """
 
 from __future__ import annotations
