@@ -49,7 +49,13 @@ def test_malformed_records_are_empty_not_fatal() -> None:
 def test_registered_and_canonicalizes_a_bdtrace_export() -> None:
     assert get_adapter("bdtrace") is bdtrace_adapter
     traces = canonicalize(
-        [{"instance_id": "claude-abc", "agent": "claude", "events": [_event("edit"), _event("test")]}],
+        [
+            {
+                "instance_id": "claude-abc",
+                "agent": "claude",
+                "events": [_event("edit"), _event("test")],
+            }
+        ],
         adapter="bdtrace",
         trace_id_field="instance_id",
     )
