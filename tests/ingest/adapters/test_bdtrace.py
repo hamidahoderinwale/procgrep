@@ -24,15 +24,40 @@ def test_maps_the_bdtrace_taxonomy() -> None:
     assert bdtrace_adapter(record) == ["prompt_ai", "read_file", "edit", "search_repo", "run_test"]
 
 
-def test_run_splits_version_control_from_execution() -> None:
+def test_run_commands_classify_through_the_shared_classifier() -> None:
+    """bdtrace types every shell call `run`, so the command decides the atom. A
+    private prefix test here would collapse package and lint into run_code and
+    read cross-agent comparisons as a structural zero for those atoms."""
     record = {
         "events": [
             _event("run", tool="Bash", command="git commit -m x"),
+            _event("run", tool="Bash", command="cd repo && git push"),
+            _event("run", tool="Bash", command="pip install requests"),
+            _event("run", tool="Bash", command="ruff check src"),
+            _event("run", tool="Bash", command="pytest -q"),
             _event("run", tool="Bash", command="python build.py"),
+        ]
+    }
+    assert bdtrace_adapter(record) == [
+        "version_control",
+        "version_control",
+        "package",
+        "lint",
+        "run_test",
+        "run_code",
+    ]
+
+
+def test_an_unrecognized_command_stays_other() -> None:
+    """The invariant the shared classifier is built around: an unknown command
+    must not inflate a specific atom."""
+    record = {
+        "events": [
+            _event("run", tool="Bash", command="frobnicate --wat"),
             _event("run", tool="Bash"),
         ]
     }
-    assert bdtrace_adapter(record) == ["version_control", "run_code", "run_code"]
+    assert bdtrace_adapter(record) == ["other", "other"]
 
 
 def test_legacy_code_change_and_unknown_types() -> None:
