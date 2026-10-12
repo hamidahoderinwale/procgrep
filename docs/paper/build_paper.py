@@ -26,6 +26,25 @@ OUT = ROOT.parent / "index.html"  # docs/index.html — the procgrep Pages root
 TITLE = "Agent trajectories as programs"
 AUTHOR = "Hamidah Oderinwale"
 SUBTITLE = "Fingerprinting and programming coding-agent behavior."
+# Preferred citation, mirrored from CITATION.cff; the essay shows it as a copyable block.
+BIBTEX = """@misc{oderinwale2026agenttrajectories,
+  title         = {Agent trajectories as programs: fingerprinting and programming coding-agent behavior},
+  author        = {Oderinwale, Hamidah},
+  year          = {2026},
+  eprint        = {2606.16988},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.16988}
+}"""
+CITE_JS = """// Copy-to-clipboard for the BibTeX block; falls back to a selection copy where the async API is absent.
+(function(){const b=document.getElementById('cite-copy'),t=document.getElementById('cite-bib');if(!b||!t)return;
+  function done(ok){b.textContent=ok?'copied':'copy failed';b.classList.toggle('on',ok);
+    setTimeout(function(){b.textContent='copy';b.classList.remove('on');},1600);}
+  b.addEventListener('click',function(){const s=t.textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){done(true);},function(){done(false);});return;}
+    const r=document.createRange();r.selectNodeContents(t);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}sel.removeAllRanges();done(ok);});
+})();
+"""
 
 
 def run_pandoc() -> str:
@@ -325,6 +344,9 @@ font-family:var(--mono);font-size:13px}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
 .abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
 .abstract .avail a{color:var(--copper)}
+.cite{max-width:var(--col);margin:18px auto 0;padding:0 var(--gutter) 0 32px}
+.cite .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0;padding:12px 14px;border:1px solid var(--rule);border-radius:3px;background:#fff;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:#2a2520}
 /* showcase */
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
@@ -409,7 +431,7 @@ math{font-family:var(--serif)}
 .sidenote .sn-ref:last-child{margin-bottom:0}
 .sidenote a{color:var(--copper);word-break:break-word}
 @media(max-width:1100px){
-  .hero,.abstract,.toc,article{padding-right:32px}
+  .hero,.abstract,.cite,.toc,article{padding-right:32px}
   /* no room for a margin — drop the sidenotes; the in-text citation is still a hyperlink to References */
   .sidenote{display:none}}
 /* grounded tooltips */
@@ -784,6 +806,8 @@ def main() -> None:
 
 <div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
+<div class="cite" id="cite"><div class="lab">Cite <button class="jbtn" id="cite-copy" type="button" aria-label="copy BibTeX">copy</button></div>
+<pre id="cite-bib">{html.escape(BIBTEX)}</pre></div>
 
 {SHOWCASE}
 
@@ -798,6 +822,7 @@ def main() -> None:
 <script>{FT_JS}</script>
 <script>{PIPE_JS}</script>
 <script>{DIST_JS}</script>
+<script>{CITE_JS}</script>
 <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.js"></script>
 <script>window.addEventListener('load',function(){{
   if(!window.katex)return;
