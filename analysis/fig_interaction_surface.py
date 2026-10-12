@@ -21,6 +21,7 @@ from pathlib import Path
 
 from procgrep.ingest.adapters.claude_code import build_panel_session
 from procgrep.ingest.adapters.cursor_vscdb import build_panel_sessions
+from procgrep.ingest.clients import find_client
 
 PAL = {
     "paper": "#F7F5F2",
@@ -57,11 +58,13 @@ def claude_code_runs(path: str = "~/.claude/projects", recent: int = 30) -> list
     ]
 
 
-def cursor_runs(db: str, limit: int = 60) -> list[int]:
+def cursor_runs(db: str | None = None, limit: int = 60) -> list[int]:
+    """Turn lengths from Cursor sessions; locates Cursor's store when ``db`` is None."""
+    client = find_client("cursor", path=db)
+    if client is None:
+        return []
     return [
-        len(t["seq"])
-        for s in build_panel_sessions(Path(db).expanduser(), limit=limit)
-        for t in s["turns"]
+        len(t["seq"]) for s in build_panel_sessions(client.path, limit=limit) for t in s["turns"]
     ]
 
 
@@ -152,9 +155,7 @@ def main() -> None:
     import argparse
 
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument(
-        "--cursor", default="~/Library/Application Support/Cursor/User/globalStorage/state.vscdb"
-    )
+    parser.add_argument("--cursor", default=None, help="Cursor state.vscdb; found automatically")
     parser.add_argument(
         "--out", default="docs/figures/interaction_surface/interaction_surface_runlength.html"
     )
