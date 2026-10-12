@@ -38,7 +38,7 @@ grouping and cross-agent comparison work without further mapping.
 
 from __future__ import annotations
 
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from procgrep.canonicalize import EventRule, field_in, make_event_adapter, register_adapter
@@ -85,7 +85,7 @@ def _run_subkind(event: Mapping[str, Any]) -> str | None:
     return _classify_terminal_command(str(event.get("command", "")))
 
 
-def _run_is(subkind: str):
+def _run_is(subkind: str) -> Callable[[Mapping[str, Any]], bool]:
     """Predicate: a `run` event whose command classifies as this sub-kind."""
 
     def predicate(event: Mapping[str, Any]) -> bool:
