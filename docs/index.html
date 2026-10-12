@@ -83,6 +83,9 @@ transform:scaleX(0);transform-origin:left;transition:transform .18s ease}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
 .abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
 .abstract .avail a{color:var(--copper)}
+.cite{max-width:var(--col);margin:18px auto 0;padding:0 var(--gutter) 0 32px}
+.cite .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px;display:flex;align-items:center;gap:10px}
+.cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0;padding:12px 14px;border:1px solid var(--rule);border-radius:3px;background:#fff;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:#2a2520}
 /* showcase */
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
@@ -281,6 +284,15 @@ details.anatomy .codecard{margin:14px 18px}
 
 <div class="abstract" id="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. <code>ProcGrep</code> is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
+<div class="cite" id="cite"><div class="lab">Cite <button class="jbtn" id="cite-copy" type="button" aria-label="copy BibTeX">copy</button></div>
+<pre id="cite-bib">@misc{oderinwale2026agenttrajectories,
+  title         = {Agent trajectories as programs: fingerprinting and programming coding-agent behavior},
+  author        = {Oderinwale, Hamidah},
+  year          = {2026},
+  eprint        = {2606.16988},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.16988}
+}</pre></div>
 <p class="tipnote">Note: hover the dotted terms for tooltips. These tooltips are AI-generated and may not be accurate; where a source is cited in the tooltip, that link is authoritative.</p>
 
 
@@ -2155,5 +2167,14 @@ function toggleNav(){document.body.classList.toggle('navhidden');}
 (function(){const el=document.getElementById('lastmod');if(!el)return;
   const d=new Date(document.lastModified);
   if(!isNaN(d)) el.textContent='updated '+d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});})();
+// Copy-to-clipboard for the BibTeX block; falls back to a selection copy where the async API is absent.
+(function(){const b=document.getElementById('cite-copy'),t=document.getElementById('cite-bib');if(!b||!t)return;
+  function done(ok){b.textContent=ok?'copied':'copy failed';b.classList.toggle('on',ok);
+    setTimeout(function(){b.textContent='copy';b.classList.remove('on');},1600);}
+  b.addEventListener('click',function(){const s=t.textContent;
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){done(true);},function(){done(false);});return;}
+    const r=document.createRange();r.selectNodeContents(t);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}sel.removeAllRanges();done(ok);});
+})();
 </script>
 </body></html>
