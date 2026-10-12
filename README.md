@@ -324,3 +324,16 @@ pip install procgrep[dev]      # development dependencies
 - [`hf-space/`](hf-space/) — the live-explorer backend
 - [`midah/procgrep-spines`](https://huggingface.co/datasets/midah/procgrep-spines) — the precomputed spine store; regenerate with `analysis/build_spines.py`
 - Cite via `CITATION.cff` (GitHub's *Cite this repository*), with the paper as the primary citation
+
+## Citation
+
+```bibtex
+@misc{oderinwale2026agenttrajectories,
+  title         = {Agent trajectories as programs: fingerprinting and programming coding-agent behavior},
+  author        = {Oderinwale, Hamidah},
+  year          = {2026},
+  eprint        = {2606.16988},
+  archivePrefix = {arXiv},
+  url           = {https://arxiv.org/abs/2606.16988}
+}
+```
