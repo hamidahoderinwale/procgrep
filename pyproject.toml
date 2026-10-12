@@ -122,7 +122,9 @@ indent-style = "space"
 line-ending = "lf"
 
 [tool.mypy]
-python_version = "3.10"
+# No python_version pin: mypy follows the interpreter it runs under (3.12 in the
+# lint job). numpy>=2.5 ships stubs that need 3.12 syntax, so a 3.10 target cannot
+# check them; the pytest matrix is what covers 3.10 and 3.11 at runtime.
 strict = true
 warn_return_any = true
 warn_unused_ignores = true
@@ -139,6 +141,7 @@ module = [
     "datasets.*",
     "typer.*",
     "sentence_transformers.*",
+    "certifi",  # optional fallback in ask.py; not installed in the lint job
 ]
 ignore_missing_imports = true
 
