@@ -83,9 +83,17 @@ transform:scaleX(0);transform-origin:left;transition:transform .18s ease}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
 .abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
 .abstract .avail a{color:var(--copper)}
-.cite{max-width:var(--col);margin:18px auto 0;padding:0 var(--gutter) 0 32px}
-.cite .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0;padding:12px 14px;border:1px solid var(--rule);border-radius:3px;background:#fff;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:#2a2520}
+.cite{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:80}
+.cite summary{list-style:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:13px;padding:12px 18px;border-radius:24px;box-shadow:0 3px 14px #14110e20}
+.cite summary::-webkit-details-marker{display:none}
+.cite summary:hover{background:var(--olive)}
+.cite summary:focus-visible,.cite button:focus-visible{outline:2px solid var(--copper);outline-offset:4px}
+.cite-panel{position:absolute;right:0;bottom:calc(100% + 12px);width:min(440px,calc(100vw - 40px));max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);overflow:auto;box-sizing:border-box;padding:20px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;box-shadow:0 8px 32px #14110e26}
+.cite .lab{font-family:var(--mono);font-size:14px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.cite-close{font:inherit;color:var(--olive);background:none;border:0;padding:8px;cursor:pointer}
+.cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.cite-copy{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:4px;padding:10px 14px;cursor:pointer}
+@media print{.cite{display:none}}
 /* showcase */
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
@@ -179,7 +187,7 @@ math{font-family:var(--serif)}
 .sidenote .sn-ref:last-child{margin-bottom:0}
 .sidenote a{color:var(--copper);word-break:break-word}
 @media(max-width:1100px){
-  .hero,.abstract,.cite,.toc,article{padding-right:32px}
+  .hero,.abstract,.toc,article{padding-right:32px}
   /* no room for a margin — drop the sidenotes; the in-text citation is still a hyperlink to References */
   .sidenote{display:none}}
 /* grounded tooltips */
@@ -284,7 +292,10 @@ details.anatomy .codecard{margin:14px 18px}
 
 <div class="abstract" id="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. <code>ProcGrep</code> is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
-<div class="cite" id="cite"><div class="lab">Cite <button class="jbtn" id="cite-copy" type="button" aria-label="copy BibTeX">copy</button></div>
+<details class="cite" id="cite">
+<summary>Cite this work</summary>
+<div class="cite-panel" role="region" aria-labelledby="cite-title">
+<div class="lab"><span id="cite-title">Cite this work</span><button class="cite-close" id="cite-close" type="button" aria-label="Close citation">&times;</button></div>
 <pre id="cite-bib">@misc{oderinwale2026agenttrajectories,
   title         = {Agent trajectories as programs: fingerprinting and programming coding-agent behavior},
   author        = {Oderinwale, Hamidah},
@@ -292,8 +303,10 @@ details.anatomy .codecard{margin:14px 18px}
   eprint        = {2606.16988},
   archivePrefix = {arXiv},
   url           = {https://arxiv.org/abs/2606.16988}
-}</pre></div>
-<p class="tipnote">Note: hover the dotted terms for tooltips. These tooltips are AI-generated and may not be accurate; where a source is cited in the tooltip, that link is authoritative.</p>
+}</pre>
+<button class="cite-copy" id="cite-copy" type="button" aria-live="polite">Copy BibTeX</button>
+</div></details>
+<p class="tipnote">Note: hover the dotted terms for tooltips. These tooltips are AI-generated and may not be accurate.</p>
 
 
 <aside class="showcase" id="showcase">
@@ -303,9 +316,6 @@ details.anatomy .codecard{margin:14px 18px}
     <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
   </div>
 </aside>
-<figure class="exfig" id="compare-fig">
-  <img src="figures/explorer_compare/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy" width="2360" height="2360">
-</figure>
 
 
 <nav class='toc'><div class='toclab'>Contents</div><ol><li><a href="#background"><span class="tocn">01</span><span class="toct">Background</span></a></li><li><a href="#a-theory-of-procedural-understanding"><span class="tocn">02</span><span class="toct">A theory of procedural understanding</span></a></li><li><a href="#why-procedural-representations-matter"><span class="tocn">03</span><span class="toct">Why procedural representations matter</span></a></li><li><a href="#natural-studies-with-procedural-representations"><span class="tocn">04</span><span class="toct">Natural studies with procedural representations</span></a></li><li><a href="#controlled-evaluations-with-procedural-controls"><span class="tocn">05</span><span class="toct">Controlled evaluations with procedural controls</span></a></li><li><a href="#sec:distillation"><span class="tocn">06</span><span class="toct">Do students behave like their teachers? (a distilled model case study)</span></a></li><li><a href="#conclusion"><span class="tocn">07</span><span class="toct">Conclusion</span></a></li><li><a href="#appendix"><span class="tocn">08</span><span class="toct">Appendix</span></a></li><li><a href="#references"><span class="tocn">★</span><span class="toct">References</span></a></li></ol></nav>
@@ -2167,14 +2177,21 @@ function toggleNav(){document.body.classList.toggle('navhidden');}
 (function(){const el=document.getElementById('lastmod');if(!el)return;
   const d=new Date(document.lastModified);
   if(!isNaN(d)) el.textContent='updated '+d.toLocaleDateString('en-US',{year:'numeric',month:'short',day:'numeric'});})();
-// Copy-to-clipboard for the BibTeX block; falls back to a selection copy where the async API is absent.
-(function(){const b=document.getElementById('cite-copy'),t=document.getElementById('cite-bib');if(!b||!t)return;
-  function done(ok){b.textContent=ok?'copied':'copy failed';b.classList.toggle('on',ok);
-    setTimeout(function(){b.textContent='copy';b.classList.remove('on');},1600);}
+// The native disclosure works without JavaScript; add dismissal and clipboard feedback.
+(function(){const box=document.getElementById('cite'),b=document.getElementById('cite-copy'),t=document.getElementById('cite-bib');if(!box||!b||!t)return;
+  const trigger=box.querySelector('summary');
+  function close(){box.open=false;trigger.focus();}
+  document.getElementById('cite-close').addEventListener('click',close);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&box.open){close();e.preventDefault();}});
+  document.addEventListener('click',function(e){if(box.open&&!box.contains(e.target))box.open=false;});
+  let timer;
+  function done(ok){b.textContent=ok?'Copied!':'Copy failed — select the text above';
+    clearTimeout(timer);timer=setTimeout(function(){b.textContent='Copy BibTeX';},2400);}
+  function fallback(){const r=document.createRange();r.selectNodeContents(t);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(ok)sel.removeAllRanges();done(ok);}
   b.addEventListener('click',function(){const s=t.textContent;
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){done(true);},function(){done(false);});return;}
-    const r=document.createRange();r.selectNodeContents(t);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
-    let ok=false;try{ok=document.execCommand('copy');}catch(e){}sel.removeAllRanges();done(ok);});
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){done(true);},fallback);return;}
+    fallback();});
 })();
 </script>
 </body></html>

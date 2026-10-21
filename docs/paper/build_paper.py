@@ -35,14 +35,21 @@ BIBTEX = """@misc{oderinwale2026agenttrajectories,
   archivePrefix = {arXiv},
   url           = {https://arxiv.org/abs/2606.16988}
 }"""
-CITE_JS = """// Copy-to-clipboard for the BibTeX block; falls back to a selection copy where the async API is absent.
-(function(){const b=document.getElementById('cite-copy'),t=document.getElementById('cite-bib');if(!b||!t)return;
-  function done(ok){b.textContent=ok?'copied':'copy failed';b.classList.toggle('on',ok);
-    setTimeout(function(){b.textContent='copy';b.classList.remove('on');},1600);}
+CITE_JS = """// The native disclosure works without JavaScript; add dismissal and clipboard feedback.
+(function(){const box=document.getElementById('cite'),b=document.getElementById('cite-copy'),t=document.getElementById('cite-bib');if(!box||!b||!t)return;
+  const trigger=box.querySelector('summary');
+  function close(){box.open=false;trigger.focus();}
+  document.getElementById('cite-close').addEventListener('click',close);
+  document.addEventListener('keydown',function(e){if(e.key==='Escape'&&box.open){close();e.preventDefault();}});
+  document.addEventListener('click',function(e){if(box.open&&!box.contains(e.target))box.open=false;});
+  let timer;
+  function done(ok){b.textContent=ok?'Copied!':'Copy failed — select the text above';
+    clearTimeout(timer);timer=setTimeout(function(){b.textContent='Copy BibTeX';},2400);}
+  function fallback(){const r=document.createRange();r.selectNodeContents(t);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
+    let ok=false;try{ok=document.execCommand('copy');}catch(e){}if(ok)sel.removeAllRanges();done(ok);}
   b.addEventListener('click',function(){const s=t.textContent;
-    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){done(true);},function(){done(false);});return;}
-    const r=document.createRange();r.selectNodeContents(t);const sel=getSelection();sel.removeAllRanges();sel.addRange(r);
-    let ok=false;try{ok=document.execCommand('copy');}catch(e){}sel.removeAllRanges();done(ok);});
+    if(navigator.clipboard&&navigator.clipboard.writeText){navigator.clipboard.writeText(s).then(function(){done(true);},fallback);return;}
+    fallback();});
 })();
 """
 
@@ -127,9 +134,6 @@ SHOWCASE = """
   </div>
   <p class="caption">The live explorer: query the whole store, set two groups side by side, and replay any trajectory. No model call.</p>
 </aside>
-<figure class="exfig" id="compare-fig">
-  <img src="figures/explorer_compare.png" alt="The compare view of the live explorer, two groups side by side" loading="lazy">
-</figure>
 <figure class="exfig" id="replay-fig">
   <video autoplay loop muted playsinline poster="figures/replay_poster.png" aria-label="Replaying one trajectory step by step with a live structural query firing">
     <source src="figures/replay.webm" type="video/webm">
@@ -344,9 +348,17 @@ font-family:var(--mono);font-size:13px}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
 .abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
 .abstract .avail a{color:var(--copper)}
-.cite{max-width:var(--col);margin:18px auto 0;padding:0 var(--gutter) 0 32px}
-.cite .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px;display:flex;align-items:center;gap:10px}
-.cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0;padding:12px 14px;border:1px solid var(--rule);border-radius:3px;background:#fff;overflow:auto;white-space:pre-wrap;overflow-wrap:anywhere;color:#2a2520}
+.cite{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:80}
+.cite summary{list-style:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:13px;padding:12px 18px;border-radius:24px;box-shadow:0 3px 14px #14110e20}
+.cite summary::-webkit-details-marker{display:none}
+.cite summary:hover{background:var(--olive)}
+.cite summary:focus-visible,.cite button:focus-visible{outline:2px solid var(--copper);outline-offset:4px}
+.cite-panel{position:absolute;right:0;bottom:calc(100% + 12px);width:min(440px,calc(100vw - 40px));max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);overflow:auto;box-sizing:border-box;padding:20px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;box-shadow:0 8px 32px #14110e26}
+.cite .lab{font-family:var(--mono);font-size:14px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.cite-close{font:inherit;color:var(--olive);background:none;border:0;padding:8px;cursor:pointer}
+.cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
+.cite-copy{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:4px;padding:10px 14px;cursor:pointer}
+@media print{.cite{display:none}}
 /* showcase */
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
@@ -431,7 +443,7 @@ math{font-family:var(--serif)}
 .sidenote .sn-ref:last-child{margin-bottom:0}
 .sidenote a{color:var(--copper);word-break:break-word}
 @media(max-width:1100px){
-  .hero,.abstract,.cite,.toc,article{padding-right:32px}
+  .hero,.abstract,.toc,article{padding-right:32px}
   /* no room for a margin — drop the sidenotes; the in-text citation is still a hyperlink to References */
   .sidenote{display:none}}
 /* grounded tooltips */
@@ -806,8 +818,13 @@ def main() -> None:
 
 <div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
-<div class="cite" id="cite"><div class="lab">Cite <button class="jbtn" id="cite-copy" type="button" aria-label="copy BibTeX">copy</button></div>
-<pre id="cite-bib">{html.escape(BIBTEX)}</pre></div>
+<details class="cite" id="cite">
+<summary>Cite this work</summary>
+<div class="cite-panel" role="region" aria-labelledby="cite-title">
+<div class="lab"><span id="cite-title">Cite this work</span><button class="cite-close" id="cite-close" type="button" aria-label="Close citation">&times;</button></div>
+<pre id="cite-bib">{html.escape(BIBTEX)}</pre>
+<button class="cite-copy" id="cite-copy" type="button" aria-live="polite">Copy BibTeX</button>
+</div></details>
 
 {SHOWCASE}
 
