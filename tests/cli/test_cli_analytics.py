@@ -94,6 +94,26 @@ def test_compare_prints_without_output_file(tmp_path: Path) -> None:
     assert "Pass rate" in result.stdout
 
 
+def test_compare_includes_actions_outside_the_old_partial_alphabet(tmp_path: Path) -> None:
+    a, b, out = tmp_path / "a.jsonl", tmp_path / "b.jsonl", tmp_path / "report.json"
+    _write_jsonl(a, [{"atoms_canonical": ["submit", "submit"]}] * 12)
+    _write_jsonl(b, [{"atoms_canonical": ["localize", "localize"]}] * 12)
+    result = runner.invoke(app, ["compare", str(a), str(b), "-o", str(out)])
+    assert result.exit_code == 0, result.output
+    assert json.loads(out.read_text())["canonical_jsd"] == 1.0
+
+
+def test_compare_rejects_wrong_record_schema_without_overwriting_output(tmp_path: Path) -> None:
+    a, b, out = tmp_path / "a.jsonl", tmp_path / "b.jsonl", tmp_path / "report.json"
+    _write_jsonl(a, [{"atoms": ["edit"]}])
+    _write_jsonl(b, [{"atoms_canonical": ["edit"]}])
+    out.write_text("existing output\n")
+    result = runner.invoke(app, ["compare", str(a), str(b), "-o", str(out)])
+    assert result.exit_code == 1
+    assert "atoms_canonical" in result.output
+    assert out.read_text() == "existing output\n"
+
+
 # --- curate -----------------------------------------------------------------
 
 

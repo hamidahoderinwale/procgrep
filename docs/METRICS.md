@@ -49,6 +49,41 @@ matrix = jsd_matrix(fingerprints, group_by="agent")
 
 ---
 
+### Comparing pooled action counts
+
+`procgrep compare` and `procgrep.comparison.build_comparison` use the same
+implementation. Inputs are comparison records with `atoms_canonical` and optional
+`atoms_native` and `resolved` fields. These are action sequences, not the encoded
+`counts` records consumed by `procgrep jsd`.
+
+```python
+from procgrep.comparison import build_comparison
+
+report = build_comparison(records_a, records_b, name_a="A", name_b="B")
+print(report.canonical_jsd)
+```
+
+Counts are pooled within each corpus, so longer traces contribute more actions.
+`jsd_matrix` instead averages each trace's normalized procedure distribution,
+giving traces equal weight. These measurements need not agree. All comparison
+JSDs use base 2 by default and include every observed action; `base=` and the
+CLI's `--base` option select another logarithm base.
+
+Comparison JSON reports now carry `schema_version: 2`, `base`,
+`aggregation: "pooled_counts"`, `smoothing: 0.0`, the observed canonical alphabet,
+and the positional coverage settings. Existing metric keys remain. Positional
+comparisons use up to 40 zero-based steps with at least 10 traces per side at each
+step. Missing observations produce `null`, including absent native actions or
+bigrams; insufficient positional coverage produces an empty curve and a null
+peak.
+
+Earlier unversioned reports used natural logarithms, added a small pseudocount,
+and omitted some canonical actions. Their values are not interchangeable with
+these reports. Changing the base to `math.e` restores the old unit, but does not
+restore the omitted actions or smoothing. Historical outputs are not rewritten.
+
+---
+
 ### Effective vocabulary size
 
 **What it tells you.** How many distinct action patterns an agent actually uses, accounting for how often it uses each.
