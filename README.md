@@ -2,7 +2,9 @@
 
 `procgrep` reads agent trace logs and tells you how agents differ in *how they work*, not just whether they passed.
 
-[**Live explorer**](https://midah-procgrep-explorer.hf.space) · [**Interactive essay**](https://hamidah.me/procgrep) · [**Paper (arXiv)**](https://arxiv.org/abs/2606.16988)
+[**Paper (arXiv)**](https://arxiv.org/abs/2606.16988)
+
+[**Dataset (Hugging Face)**](https://huggingface.co/datasets/midah/procgrep-spines)
 
 ## What it does
 
