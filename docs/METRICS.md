@@ -84,6 +84,47 @@ restore the omitted actions or smoothing. Historical outputs are not rewritten.
 
 ---
 
+### Comparing next-action conduct
+
+The experimental `procgrep.conduct_tree` module compares what groups do after
+the same action context. Encode groups together so their state and action axes
+agree. The default context is one action; `think` is excluded before encoding.
+
+```python
+from procgrep.conduct_tree import build_conduct_tree, encode_cells
+
+cells = encode_cells({"agent_a": runs_a, "agent_b": runs_b})
+tree = build_conduct_tree(cells, seed=0)
+```
+
+The distance is base-2 JSD between next-action distributions, weighted by the
+mean visit share of each context and normalized over shared visited contexts.
+It does not penalize contexts reached by only one group; `unshared_mass` reports
+that visit share separately. Empty observations or no shared visited context
+raise `ValueError`, rather than reporting identical conduct. Cells supplied to
+`distance_matrix` must have matching ordered axes.
+
+The default tree uses average linkage. Bootstrap support is the fraction of
+run-resampled trees containing a clade, not evidence of model ancestry. Each
+cell needs at least two runs for its split-half floor. Floors describe variation
+at the half-sample size; they are not significance tests. Resamples and forecast
+halves without observed transitions also raise `ValueError`.
+
+`precedence_poset` compares the first occurrence of each action pair in runs
+containing both. It uses Wilson intervals without continuity correction, with
+`z=1.96` by default. These are unadjusted pairwise intervals, not simultaneous
+confidence for the graph. An edge requires an interval excluding 0.5. A cyclic
+relation raises `ValueError`; only an acyclic relation is reduced to a Hasse
+diagram. `poset_distance` requires shared observed action pairs.
+
+`next_action_scores` splits one cell's runs into training and test halves. Pass
+a pooled count table containing all of that cell's transitions on the same axes;
+the function subtracts its held-out transitions before fitting the pooled
+baseline. The own-cell and unigram baselines use the training half. Scores are
+top-1 accuracy and cross-entropy in bits, with positive add-alpha smoothing.
+
+---
+
 ### Effective vocabulary size
 
 **What it tells you.** How many distinct action patterns an agent actually uses, accounting for how often it uses each.

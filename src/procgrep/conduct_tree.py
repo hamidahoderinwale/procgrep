@@ -16,9 +16,11 @@ than the pooled table -- past conduct forecasting future conduct.
 
 from __future__ import annotations
 
+import math
 from collections import Counter
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass, field
+from typing import cast
 
 import numpy as np
 import numpy.typing as npt
@@ -30,6 +32,7 @@ START: Atom = "<s>"
 """Synthetic state before the first action of a run."""
 
 Matrix = npt.NDArray[np.float64]
+SampleIndex = Sequence[int] | npt.NDArray[np.int64]
 
 
 @dataclass(frozen=True)
@@ -50,10 +53,10 @@ class ConductCell:
     def n_runs(self) -> int:
         return int(self.counts.shape[0])
 
-    def table(self, index: Sequence[int] | None = None) -> Matrix:
+    def table(self, index: SampleIndex | None = None) -> Matrix:
         """Summed transition counts over ``index`` (all runs when None)."""
-        arr = self.counts if index is None else self.counts[np.asarray(index)]
-        return arr.sum(axis=0).astype(np.float64)
+        arr = self.counts if index is None else self.counts[np.asarray(index, dtype=np.intp)]
+        return np.asarray(arr.sum(axis=0), dtype=np.float64)
 
 
 @dataclass(frozen=True)
@@ -143,9 +146,7 @@ def encode_cells(
 
 def _transitions(run: Sequence[Atom], context_k: int) -> list[tuple[str, Atom]]:
     padded = [START] * context_k + list(run)
-    return [
-        ("|".join(padded[i - context_k : i]), padded[i]) for i in range(context_k, len(padded))
-    ]
+    return [("|".join(padded[i - context_k : i]), padded[i]) for i in range(context_k, len(padded))]
 
 
 def conditional_distance(
@@ -158,11 +159,15 @@ def conditional_distance(
     which sums to the distance. Weight for a state is the mean of its visit
     share on the two sides, so the measure is symmetric. States visited by
     only one side are skipped (their share is reported by `unshared_mass`).
+    Missing observations or no shared visited state raise ``ValueError``.
     """
+    _validate_tables(table_a, table_b)
     visits_a = table_a.sum(axis=1)
     visits_b = table_b.sum(axis=1)
-    share_a = visits_a / max(visits_a.sum(), 1.0)
-    share_b = visits_b / max(visits_b.sum(), 1.0)
+    if visits_a.sum() == 0 or visits_b.sum() == 0:
+        raise ValueError("both conditions need observations to compare conduct")
+    share_a = visits_a / visits_a.sum()
+    share_b = visits_b / visits_b.sum()
     contrib = np.zeros(table_a.shape[0], dtype=np.float64)
     total_weight = 0.0
     for s in range(table_a.shape[0]):
@@ -172,22 +177,36 @@ def conditional_distance(
         contrib[s] = w * jsd(table_a[s], table_b[s])
         total_weight += w
     if total_weight == 0:
-        return 0.0, contrib
+        raise ValueError("conduct comparison needs a shared state with observations on both sides")
     contrib /= total_weight
     return float(contrib.sum()), contrib
 
 
 def unshared_mass(table_a: Matrix, table_b: Matrix) -> float:
     """Share of visits (mean of both sides) in states only one side ever reaches."""
+    _validate_tables(table_a, table_b)
     va, vb = table_a.sum(axis=1), table_b.sum(axis=1)
+    if va.sum() == 0 or vb.sum() == 0:
+        raise ValueError("both conditions need observations to measure unshared mass")
     only = (va == 0) | (vb == 0)
-    return float(0.5 * (va[only].sum() / max(va.sum(), 1) + vb[only].sum() / max(vb.sum(), 1)))
+    return float(0.5 * (va[only].sum() / va.sum() + vb[only].sum() / vb.sum()))
 
 
-def distance_matrix(cells: Sequence[ConductCell], index: Sequence[Sequence[int]] | None = None) -> Matrix:
-    tables = [
-        c.table(None if index is None else index[i]) for i, c in enumerate(cells)
-    ]
+def _validate_tables(table_a: Matrix, table_b: Matrix) -> None:
+    if table_a.ndim != 2 or table_b.ndim != 2 or table_a.shape != table_b.shape:
+        raise ValueError("conduct tables must have the same two-dimensional shape")
+    if any(not np.isfinite(t).all() or (t < 0).any() for t in (table_a, table_b)):
+        raise ValueError("conduct counts must be finite and non-negative")
+
+
+def distance_matrix(
+    cells: Sequence[ConductCell], index: Sequence[SampleIndex] | None = None
+) -> Matrix:
+    if cells and any(c.states != cells[0].states or c.actions != cells[0].actions for c in cells):
+        raise ValueError("conduct cells must share the same ordered states and actions")
+    if index is not None and len(index) != len(cells):
+        raise ValueError("one resampling index is required per cell")
+    tables = [c.table(None if index is None else index[i]) for i, c in enumerate(cells)]
     n = len(cells)
     m = np.zeros((n, n), dtype=np.float64)
     for i in range(n):
@@ -204,9 +223,13 @@ def split_half_floor(
 ) -> dict[str, float]:
     """Distance between two random halves of one cell's runs: the same-condition noise.
 
-    Reported at the half-n the split produces; a cross-cell distance below the
-    p95 here is indistinguishable from sampling noise at that n.
+    Reported at the half-n the split produces; this is a descriptive baseline,
+    not a significance test. Both halves require observed transitions.
     """
+    if cell.n_runs < 2:
+        raise ValueError("a split-half floor needs at least two runs")
+    if reps < 1:
+        raise ValueError("floor repetitions must be positive")
     rng = np.random.default_rng(seed)
     n = cell.n_runs
     vals = []
@@ -238,7 +261,15 @@ def build_conduct_tree(
 
     if len(cells) < 2:
         raise ValueError("a tree needs at least two cells")
+    if any(c.n_runs < 2 for c in cells):
+        raise ValueError("each tree cell needs at least two runs for its split-half floor")
+    if n_bootstrap < 0 or floor_reps < 1 or top_states < 0:
+        raise ValueError(
+            "bootstrap and top-state counts must be non-negative; floor repetitions must be positive"
+        )
     names = tuple(c.name for c in cells)
+    if len(set(names)) != len(names):
+        raise ValueError("conduct cell names must be unique")
     dist = distance_matrix(cells)
     link = linkage(squareform(dist, checks=False), method=linkage_method)
     clades = _clades(link, len(cells))
@@ -249,17 +280,19 @@ def build_conduct_tree(
         hits: Counter[frozenset[int]] = Counter()
         for _ in range(n_bootstrap):
             idx = [rng.integers(0, c.n_runs, size=c.n_runs) for c in cells]
-            boot_link = linkage(squareform(distance_matrix(cells, idx), checks=False), method=linkage_method)
+            boot_link = linkage(
+                squareform(distance_matrix(cells, idx), checks=False), method=linkage_method
+            )
             for clade in _clades(boot_link, len(cells)):
                 hits[clade] += 1
         support = {c: hits[c] / n_bootstrap for c in clades}
 
     tables = [c.table() for c in cells]
     merges = []
-    for row, (left, right) in zip(link, _merge_sides(link, len(cells))):
+    for row, (left, right) in zip(link, _merge_sides(link, len(cells)), strict=True):
         clade = frozenset(left | right)
-        ta = sum(tables[i] for i in left)
-        tb = sum(tables[i] for i in right)
+        ta = np.stack([tables[i] for i in sorted(left)]).sum(axis=0)
+        tb = np.stack([tables[i] for i in sorted(right)]).sum(axis=0)
         _, contrib = conditional_distance(ta, tb)
         order = np.argsort(-contrib)[:top_states]
         deviations = []
@@ -328,11 +361,12 @@ def precedence_poset(
     """Order-of-operations skeleton from first-occurrence positions.
 
     For each ordered pair of actions, P(a before b) over runs containing both.
-    A pair is kept as a precedence when its normal-approximation interval
-    excludes 0.5; the transitive reduction of the kept relation is the Hasse
-    diagram. Cycles (edit-test loops) are invisible here by construction --
-    this is the phase skeleton, not the conduct.
+    A pair is kept when its Wilson interval excludes 0.5. These are unadjusted
+    pairwise intervals, not simultaneous confidence for the graph. A cyclic
+    relation raises ``ValueError`` instead of producing a Hasse diagram.
     """
+    if not math.isfinite(z) or z <= 0:
+        raise ValueError("z must be finite and positive")
     drop = set(exclude_atoms)
     firsts = []
     for run in runs:
@@ -352,30 +386,50 @@ def precedence_poset(
             if not both:
                 continue
             p = sum(1 for x, y in both if x < y) / len(both)
-            half = z * float(np.sqrt(max(p * (1 - p), 1e-12) / len(both)))
-            pairs[f"{a}<{b}"] = {"p": p, "n": len(both), "lo": p - half, "hi": p + half}
-            if p - half > 0.5:
+            lo, hi = _wilson_interval(p, len(both), z)
+            pairs[f"{a}<{b}"] = {"p": p, "n": len(both), "lo": lo, "hi": hi}
+            if lo > 0.5:
                 relation.add((a, b))
-            elif p + half < 0.5:
+            elif hi < 0.5:
                 relation.add((b, a))
     hasse = _transitive_reduction(relation)
     return {"actions": list(acts), "pairs": pairs, "hasse": sorted(hasse), "n_runs": len(runs)}
 
 
+def _wilson_interval(p: float, n: int, z: float) -> tuple[float, float]:
+    denominator = 1 + z * z / n
+    center = (p + z * z / (2 * n)) / denominator
+    half = z * math.sqrt(p * (1 - p) / n + z * z / (4 * n * n)) / denominator
+    return max(0.0, center - half), min(1.0, center + half)
+
+
 def poset_distance(poset_a: Mapping[str, object], poset_b: Mapping[str, object]) -> float:
     """Mean absolute difference in P(a before b) over pairs both posets measured."""
-    pa = poset_a["pairs"]
-    pb = poset_b["pairs"]
-    shared = set(pa) & set(pb)  # type: ignore[arg-type]
+    pa = cast(Mapping[str, Mapping[str, float]], poset_a["pairs"])
+    pb = cast(Mapping[str, Mapping[str, float]], poset_b["pairs"])
+    shared = set(pa) & set(pb)
     if not shared:
-        return float("nan")
-    return float(np.mean([abs(pa[k]["p"] - pb[k]["p"]) for k in shared]))  # type: ignore[index]
+        raise ValueError("poset comparison needs shared observed action pairs")
+    return float(np.mean([abs(pa[k]["p"] - pb[k]["p"]) for k in sorted(shared)]))
 
 
 def _transitive_reduction(relation: set[tuple[Atom, Atom]]) -> set[tuple[Atom, Atom]]:
     succ: dict[Atom, set[Atom]] = {}
     for a, b in relation:
         succ.setdefault(a, set()).add(b)
+    nodes = {a for edge in relation for a in edge}
+    degree = Counter(b for _, b in relation)
+    ready = [a for a in nodes if degree[a] == 0]
+    visited = 0
+    while ready:
+        node = ready.pop()
+        visited += 1
+        for nxt in succ.get(node, ()):
+            degree[nxt] -= 1
+            if degree[nxt] == 0:
+                ready.append(nxt)
+    if visited != len(nodes):
+        raise ValueError("estimated precedence relation contains a cycle; no partial order exists")
 
     def reaches(x: Atom, y: Atom, skip: tuple[Atom, Atom]) -> bool:
         stack = [x]
@@ -403,19 +457,29 @@ def next_action_scores(
 ) -> dict[str, dict[str, float]]:
     """Does a cell's own conduct table forecast its held-out runs better than the pooled one?
 
-    Runs are split in half at random; the training half's table, the pooled
-    table (all cells, all runs -- a mild leak of the test half that favours
-    the pooled baseline), and a unigram over actions each score the test half
-    by top-1 accuracy and cross-entropy in bits, with add-``alpha`` smoothing.
+    ``pooled_table`` must include all of this cell's transitions on the same
+    ordered axes. This cell's held-out transitions are subtracted before
+    fitting the pooled baseline. All models use add-``alpha`` smoothing.
     """
+    if cell.n_runs < 2:
+        raise ValueError("a forecast needs at least two runs")
+    if not math.isfinite(alpha) or alpha <= 0:
+        raise ValueError("alpha must be finite and positive")
+    all_counts = cell.table()
+    _validate_tables(all_counts, pooled_table)
+    if (pooled_table < all_counts).any():
+        raise ValueError("pooled_table must include all transitions from this cell")
     rng = np.random.default_rng(seed)
     perm = rng.permutation(cell.n_runs)
     train, test = perm[: cell.n_runs // 2], perm[cell.n_runs // 2 :]
     own = cell.table(train)
     test_counts = cell.table(test)
+    if own.sum() == 0 or test_counts.sum() == 0:
+        raise ValueError("forecast training and test halves both need observations")
+    pooled_train = pooled_table - test_counts
     unigram = np.tile(own.sum(axis=0), (own.shape[0], 1))
     out = {}
-    for label, table in (("own", own), ("pooled", pooled_table), ("unigram", unigram)):
+    for label, table in (("own", own), ("pooled", pooled_train), ("unigram", unigram)):
         probs = (table + alpha) / (table + alpha).sum(axis=1, keepdims=True)
         n = test_counts.sum()
         ce = float(-(test_counts * np.log2(probs)).sum() / n)
