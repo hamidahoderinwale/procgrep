@@ -63,6 +63,12 @@ An absolute divergence number depends on the vocabulary it was measured under: r
 
 ## Main uses
 
+Encoding raises `ValueError` if a trace contains actions absent from the fitted
+vocabulary. Fit a vocabulary covering those actions, or explicitly use
+`encode(..., unknown="ignore")` (`procgrep encode --unknown ignore`) to retain
+the legacy behavior of dropping their counts. Covered traces and the fingerprint
+file format are unchanged.
+
 ### Compare two agents
 
 ```python

@@ -7,7 +7,7 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from procgrep.bpe import load_vocab
+from procgrep.bpe import fit_bpe, load_vocab, save_vocab
 from procgrep.cli import app
 
 runner = CliRunner()
@@ -93,6 +93,48 @@ def test_canonicalize_unknown_adapter_errors(tmp_path: Path) -> None:
         ],
     )
     assert result.exit_code != 0
+
+
+def test_encode_unknown_action_errors_without_overwriting_output(tmp_path: Path) -> None:
+    traces = tmp_path / "traces.jsonl"
+    traces.write_text('{"trace_id":"held-out","agent":"a","atoms":["edit","lint"]}\n')
+    vocab = tmp_path / "vocab.json"
+    save_vocab(fit_bpe([["edit"]], vocab_size=1), vocab)
+    output = tmp_path / "fingerprints.jsonl"
+    output.write_text("existing output\n")
+
+    result = runner.invoke(app, ["encode", "-i", str(traces), "-v", str(vocab), "-o", str(output)])
+    assert result.exit_code == 1
+    assert "held-out" in result.output
+    assert "lint" in result.output
+    assert output.read_text() == "existing output\n"
+
+    legacy = runner.invoke(
+        app,
+        ["encode", "-i", str(traces), "-v", str(vocab), "-o", str(output), "--unknown", "ignore"],
+    )
+    assert legacy.exit_code == 0, legacy.output
+    assert json.loads(output.read_text())["counts"] == [1]
+
+
+def test_encode_rejects_invalid_unknown_policy(tmp_path: Path) -> None:
+    result = runner.invoke(
+        app,
+        [
+            "encode",
+            "-i",
+            "unused",
+            "-v",
+            "unused",
+            "-o",
+            str(tmp_path / "out"),
+            "--unknown",
+            "drop",
+        ],
+    )
+    assert result.exit_code == 2
+    assert "error" in result.output
+    assert "ignore" in result.output
 
 
 def test_vocab_tree_from_existing_vocab(tmp_path: Path) -> None:

@@ -14,6 +14,7 @@ from procgrep.io import (
     traces_to_records,
     write_jsonl,
 )
+from procgrep.types import Trace
 
 
 def test_trace_round_trip_through_jsonl(tmp_path: Path, small_corpus: list) -> None:
@@ -50,3 +51,12 @@ def test_fingerprint_records_without_vocab_spec_load(tmp_path: Path) -> None:
     path.write_text('{"trace_id": "t", "agent": "a", "group": "g", "counts": [1, 2]}\n')
     (fp,) = records_to_fingerprints(read_jsonl(path))
     assert fp.vocab_spec is None
+
+
+def test_explicit_unknown_policy_preserves_the_fingerprint_wire_format() -> None:
+    vocab = fit_bpe([["edit"]], vocab_size=1)
+    trace = Trace(trace_id="held-out", agent="a", atoms=["edit", "lint"])
+    (fp,) = encode([trace], vocab=vocab, unknown="ignore")
+    (record,) = fingerprints_to_records([fp])
+    assert set(record) == {"trace_id", "agent", "group", "counts", "vocab_spec"}
+    assert list(records_to_fingerprints([record])) == [fp]
