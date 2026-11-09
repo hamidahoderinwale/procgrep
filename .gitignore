@@ -72,3 +72,7 @@ data/student/
 # The ecosystem-map build outputs regenerate from docs/build/*.py; keep only the scripts.
 docs/build/index.html
 docs/build/data/
+
+# Research planning records are kept locally, outside the public package.
+preregistrations/
+NOTES.md

@@ -1,6 +1,6 @@
 """Generate all paper figures for procgrep.
 
-Run from /Users/hamidaho/learning-from-dev/procgrep-audits/
+Run with python examples/paper/make_figures.py from the repository root.
 """
 
 from __future__ import annotations
@@ -339,7 +339,7 @@ def fig_native_heatstrip():
 def fig_procgrep_metrics():
     import sys as _sys
 
-    _sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/src")
+    _sys.path.insert(0, str(Path(__file__).resolve().parents[2] / "src"))
     from procgrep.bpe import fit_bpe
     from procgrep.encode import encode
     from procgrep.stats import effective_vocab_size_per_group, entropies_per_group

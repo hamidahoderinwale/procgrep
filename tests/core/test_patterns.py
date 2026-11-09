@@ -124,3 +124,52 @@ def test_combined_pattern_set(structured_corpus: list) -> None:
     report = match_patterns(structured_corpus, patterns)
     assert report.pass_rate_per_rule["has_submit"] == 1.0
     assert report.pass_rate_per_rule["long_read_run"] == 1.0
+
+
+@pytest.mark.parametrize(
+    ("name", "atoms", "violated"),
+    [
+        ("localize_before_edit", ["read_file", "edit"], False),
+        ("localize_before_edit", ["think", "search_repo", "think", "edit"], False),
+        ("localize_before_edit", ["edit", "read_file", "edit"], True),
+        ("localize_before_edit", ["edit"], True),
+        ("localize_before_edit", ["read_file"], True),
+        ("localize_before_edit", ["custom_read_file", "edit"], True),
+        ("tests_run_at_least_once", ["run_test"], False),
+        ("tests_run_at_least_once", ["edit", "run_test", "submit"], False),
+        ("tests_run_at_least_once", ["custom_run_test"], True),
+        ("test_before_submit", ["run_test", "submit"], False),
+        ("test_before_submit", ["run_test", "think", "submit"], False),
+        ("test_before_submit", ["submit", "run_test", "submit"], True),
+        ("test_before_submit", ["submit"], True),
+        ("test_before_submit", ["run_test"], True),
+        ("stuck_edit_loop", ["edit"] * 4, False),
+        ("stuck_edit_loop", ["edit"] * 5, True),
+        ("stuck_edit_loop", ["think"] + ["edit"] * 6, True),
+        ("stuck_edit_loop", ["edit"] * 4 + ["run_test", "edit"], False),
+        ("stuck_edit_loop", ["custom_edit"] + ["edit"] * 4, False),
+        ("read_thrashing", ["read_file"] * 9, False),
+        ("read_thrashing", ["read_file"] * 10, True),
+        ("read_thrashing", ["read_file"] * 9 + ["think", "read_file"], False),
+        ("ends_in_submit", ["submit"], False),
+        ("ends_in_submit", ["edit", "submit"], False),
+        ("ends_in_submit", ["submit", "think"], True),
+        ("ends_in_submit", ["custom_submit"], True),
+    ],
+)
+def test_failure_pattern_example(name: str, atoms: list[str], violated: bool) -> None:
+    path = Path(__file__).resolve().parents[2] / "examples/rules/known_failure_patterns.yaml"
+    pattern = next(p for p in load_patterns(path) if p.name == name)
+    trace = Trace(trace_id="example", agent="a", atoms=atoms)
+    report = match_patterns([trace], [pattern])
+    assert bool(report.violations) is violated
+
+
+def test_failure_pattern_example_accepts_complete_trace() -> None:
+    path = Path(__file__).resolve().parents[2] / "examples/rules/known_failure_patterns.yaml"
+    trace = Trace(
+        trace_id="complete",
+        agent="a",
+        atoms=["read_file", "edit", "run_test", "submit"],
+    )
+    assert match_patterns([trace], load_patterns(path)).violations == {}

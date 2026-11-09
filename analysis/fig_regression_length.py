@@ -8,6 +8,7 @@ canonical trajectory length on a log10 x-axis.
 """
 
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -15,10 +16,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.linear_model import LogisticRegression
 
-sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from figtheme import BLUE, init, style_axes
 
-ROOT = Path("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces")
+ROOT = Path(
+    os.environ.get(
+        "BIDIRECT_ROOT", Path(__file__).resolve().parents[2] / "bidirect-align-dev-traces"
+    )
+).expanduser()
 
 init()
 
@@ -75,7 +80,7 @@ ax.xaxis.grid(False)
 style_axes(ax)
 
 fig.savefig(
-    "/Users/hamidaho/learning-from-dev/procgrep/docs/figures/fig_regression_length.png",
+    Path(__file__).resolve().parents[1] / "docs/figures/fig_regression_length.png",
     dpi=200,
     facecolor="white",
     bbox_inches="tight",

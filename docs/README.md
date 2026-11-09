@@ -18,3 +18,17 @@ render from. Read this when you want to know what lives where under `docs/`.
 
 GitHub Pages serves the site from this directory; `index.html` is the landing
 page.
+
+## Regenerating figures
+
+Plot outputs resolve to this checkout's `docs/figures/`, regardless of the working
+directory. The patch-size, trajectory-length, and step/token-cost scripts read
+from a sibling `bidirect-align-dev-traces` checkout by default. Set `BIDIRECT_ROOT`
+to use a different location, for example:
+
+```bash
+BIDIRECT_ROOT=/path/to/bidirect-align-dev-traces python analysis/fig_regression_length.py
+```
+
+The paper cache reader accepts `--cache-dir /path/to/trajectory-cache`. These
+external inputs are not bundled with procgrep.

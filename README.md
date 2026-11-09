@@ -137,7 +137,7 @@ for trace_id, violations in report.violations.items():
     print(trace_id, violations)
 ```
 
-The `examples/rules/known_failure_patterns.yaml` file includes patterns validated on SWE-bench: edit streaks without tests, stuck reading loops, no exploration before editing. The matcher expresses contiguous runs, prefix requirements, and absence over the atom sequence, not temporal windows, variable binding, or probabilistic thresholds.
+The `examples/rules/known_failure_patterns.yaml` file illustrates configurable checks for edit streaks, repeated reads, and exploration before editing. These are heuristics; validate them on labeled traces before using them as failure predictors. The matcher expresses contiguous runs, prefix requirements, and absence over the atom sequence, not temporal windows, variable binding, or probabilistic thresholds.
 
 ### Score a trajectory against a procedural spec
 

@@ -10,6 +10,7 @@ dots only.
 """
 
 import json
+import os
 import sys
 from collections import Counter, defaultdict
 from pathlib import Path
@@ -18,10 +19,14 @@ import matplotlib.patches as mpatches
 import matplotlib.pyplot as plt
 import numpy as np
 
-sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 from figtheme import BLUE, INK, MAGENTA, RULE, init, style_axes
 
-ROOT = Path("/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces")
+ROOT = Path(
+    os.environ.get(
+        "BIDIRECT_ROOT", Path(__file__).resolve().parents[2] / "bidirect-align-dev-traces"
+    )
+).expanduser()
 
 init()
 
@@ -160,7 +165,7 @@ fig.suptitle(
 fig.tight_layout(rect=[0, 0.05, 1, 0.97])
 
 fig.savefig(
-    "/Users/hamidaho/learning-from-dev/procgrep/docs/figures/fig_step_vs_token_cost.png",
+    Path(__file__).resolve().parents[1] / "docs/figures/fig_step_vs_token_cost.png",
     dpi=200,
     facecolor="white",
     bbox_inches="tight",
