@@ -5,12 +5,13 @@ BPE at K=64 and K=128 against PrefixSpan at K=64 — three vocabulary induction
 conditions. Values are hardcoded from the paper evaluation run.
 
 Style: procgrep figtheme (monospace, Tufte-minimal, no grid).
-Output: ~/learning-from-dev/procgrep/docs/figures/fig_bpe_vs_prefixspan.png
+Output: docs/figures/fig_bpe_vs_prefixspan.png
 """
 
 import sys
+from pathlib import Path
 
-sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -53,7 +54,7 @@ for bar, val in zip(bars, values, strict=False):
 style_axes(ax)
 
 fig.savefig(
-    "/Users/hamidaho/learning-from-dev/procgrep/docs/figures/fig_bpe_vs_prefixspan.png",
+    Path(__file__).resolve().parents[1] / "docs/figures/fig_bpe_vs_prefixspan.png",
     dpi=200,
     facecolor="white",
     bbox_inches="tight",

@@ -4,10 +4,10 @@ Total canonical actions across all 300 attempts divided by tasks resolved.
 Horizontal bar, sorted by efficiency (fewest actions per resolution).
 
 Reads:
-    ~/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/aggregate_metrics_extended.json
-    ~/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json
+    bidirect-align-dev-traces/output/paper2_pilot/aggregate_metrics_extended.json
+    bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json
 Writes:
-    ~/learning-from-dev/procgrep/docs/figures/fig_steps_per_resolved.png
+    docs/figures/fig_steps_per_resolved.png
 """
 
 from __future__ import annotations

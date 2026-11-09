@@ -9,7 +9,7 @@ Handles two formats currently present in the cache:
   dars_traj_list:       DARS list of {role, content, thought, action} steps
 
 Usage:
-    python pull_from_cache.py --agent dars
+    python pull_from_cache.py --cache-dir /path/to/trajectory-cache --agent dars
     python pull_from_cache.py --agent claude37
     python pull_from_cache.py --agent all
 """
@@ -20,14 +20,12 @@ import json
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).parent
+HERE = Path(__file__).resolve().parent
 RES = HERE / "results"
-CACHE = Path(
-    "/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/trajectories/.cache"
-)
+CACHE = HERE.parents[2] / "bidirect-align-dev-traces/output/trajectories/.cache"
 
 sys.path.insert(0, str(Path(__file__).parent))
-sys.path.insert(0, str(Path("/Users/hamidaho/learning-from-dev/procgrep/src")))
+sys.path.insert(0, str(HERE.parents[1] / "src"))
 from pull_and_fingerprint import fetch_resolve_label
 from pull_and_fingerprint import fingerprint as swe_fingerprint
 
@@ -99,8 +97,8 @@ def get_resolved_from_cache(content: dict | list) -> bool | None:
 ## Main
 
 
-def fingerprint_agent(cfg: dict) -> None:
-    sub_dir = CACHE / cfg["sub"]
+def fingerprint_agent(cfg: dict, cache_dir: Path = CACHE) -> None:
+    sub_dir = cache_dir / cfg["sub"]
     if not sub_dir.exists():
         print(f"  Cache directory not found: {sub_dir}")
         return
@@ -192,11 +190,12 @@ def main():
 
     ap = argparse.ArgumentParser()
     ap.add_argument("--agent", default="all", help="dars | claude37 | all")
+    ap.add_argument("--cache-dir", type=Path, default=CACHE, help="Local trajectory cache directory")
     args = ap.parse_args()
 
     targets = AGENTS if args.agent == "all" else {args.agent: AGENTS[args.agent]}
     for name, cfg in targets.items():
-        fingerprint_agent(cfg)
+        fingerprint_agent(cfg, args.cache_dir.expanduser())
     print("\nBackfilling resolved labels from S3...")
     for name, cfg in targets.items():
         backfill_resolved(cfg)

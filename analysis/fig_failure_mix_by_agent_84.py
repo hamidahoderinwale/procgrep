@@ -5,10 +5,10 @@ y = composition failure rate (fraction of failures that are novel_composition).
 Color and connecting line by model family (Claude, GPT, Open-weight).
 
 Reads:
-    ~/learning-from-dev/bidirect-align-dev-traces/output/compositional_generalization/agent_libraries.json
-    ~/learning-from-dev/bidirect-align-dev-traces/output/compositional_generalization/instance_classification.json
+    bidirect-align-dev-traces/output/compositional_generalization/agent_libraries.json
+    bidirect-align-dev-traces/output/compositional_generalization/instance_classification.json
 Writes:
-    ~/learning-from-dev/procgrep/docs/figures/failure_mix_by_agent_84.png
+    docs/figures/failure_mix_by_agent_84.png
 """
 
 from __future__ import annotations

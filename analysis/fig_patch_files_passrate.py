@@ -6,13 +6,13 @@ Agents are drawn in procgrep palette colors (BLUE family = GPT; COPPER family =
 Claude; GREEN = DARS+R1). Dashed reference line at y=0 suppressed; no
 parentheticals in labels.
 
-Data: ~/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json
-      ~/learning-from-dev/bidirect-align-dev-traces/output/trajectories/.cache/<agent>/
+Data: bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json
+      bidirect-align-dev-traces/output/trajectories/.cache/<agent>/
 
-Run from repo root or pass absolute paths — this script uses absolute paths.
+Set BIDIRECT_ROOT if the data repository is not a sibling of this checkout.
 
 Style: procgrep figtheme.
-Output: ~/learning-from-dev/procgrep/docs/figures/fig_patch_files_passrate.png
+Output: docs/figures/fig_patch_files_passrate.png
 """
 
 import glob
@@ -20,11 +20,10 @@ import json
 import os
 import re
 import sys
-
-sys.path.insert(0, "/Users/hamidaho/learning-from-dev/procgrep/scripts")
-
 from collections import defaultdict
 from pathlib import Path
+
+sys.path.insert(0, str(Path(__file__).resolve().parent))
 
 import matplotlib.lines as mlines
 import matplotlib.pyplot as plt
@@ -34,12 +33,13 @@ from figtheme import init, style_axes
 
 init()
 
-CACHE = Path(
-    "/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/trajectories/.cache"
-)
-with open(
-    "/Users/hamidaho/learning-from-dev/bidirect-align-dev-traces/output/paper2_pilot/extended_pass_fail.json"
-) as fh:
+ROOT = Path(
+    os.environ.get(
+        "BIDIRECT_ROOT", Path(__file__).resolve().parents[2] / "bidirect-align-dev-traces"
+    )
+).expanduser()
+CACHE = ROOT / "output/trajectories/.cache"
+with open(ROOT / "output/paper2_pilot/extended_pass_fail.json") as fh:
     pf = json.load(fh)
 
 NAME = {
@@ -167,7 +167,7 @@ legend = ax.legend(handles=legend_handles, fontsize=8, frameon=False, loc="upper
 style_axes(ax)
 
 fig.savefig(
-    "/Users/hamidaho/learning-from-dev/procgrep/docs/figures/fig_patch_files_passrate.png",
+    Path(__file__).resolve().parents[1] / "docs/figures/fig_patch_files_passrate.png",
     dpi=200,
     facecolor="white",
     bbox_inches="tight",

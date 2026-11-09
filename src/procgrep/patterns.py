@@ -29,9 +29,8 @@ behavior on a labeled corpus.
 
 Failure-correlated is not hacking-correlated. Do not publish a rule
 file claiming to detect behavior X without the validation above. See
-``examples/rules/known_failure_patterns.yaml`` for source-cited
-failure patterns from Beyond Resolution Rates, Code Agent Behaviour,
-and HAI-Code.
+``examples/rules/known_failure_patterns.yaml`` for illustrative
+heuristics that require validation on the target corpus.
 """
 
 from __future__ import annotations

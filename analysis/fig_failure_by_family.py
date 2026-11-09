@@ -9,10 +9,10 @@ failures that fall in that category. Model family assigned by backbone name
 in submission ID.
 
 Reads:
-    ~/learning-from-dev/bidirect-align-dev-traces/output/compositional_generalization/agent_libraries.json
-    ~/learning-from-dev/bidirect-align-dev-traces/output/compositional_generalization/instance_classification.json
+    bidirect-align-dev-traces/output/compositional_generalization/agent_libraries.json
+    bidirect-align-dev-traces/output/compositional_generalization/instance_classification.json
 Writes:
-    ~/learning-from-dev/procgrep/docs/figures/failure_by_family.png
+    docs/figures/failure_by_family.png
 """
 
 from __future__ import annotations
