@@ -12,6 +12,7 @@ from __future__ import annotations
 from collections import Counter
 from collections.abc import Iterable
 from dataclasses import dataclass
+from typing import Literal
 
 import numpy as np
 import numpy.typing as npt
@@ -73,17 +74,35 @@ class Fingerprint:
         return float(-np.sum(positive * np.log(positive)))
 
 
-def encode(traces: Iterable[Trace], *, vocab: ProcedureVocabulary) -> list[Fingerprint]:
+def encode(
+    traces: Iterable[Trace],
+    *,
+    vocab: ProcedureVocabulary,
+    unknown: Literal["error", "ignore"] = "error",
+) -> list[Fingerprint]:
     """Encode traces under a fixed vocabulary.
 
     Position ``i`` in every returned fingerprint maps to
     ``vocab.tokens()[i]``. Output preserves input order.
+
+    Actions absent from the fitted alphabet raise ``ValueError`` by default.
+    ``unknown="ignore"`` retains the legacy behavior of discarding their counts.
     """
+    if unknown not in {"error", "ignore"}:
+        raise ValueError("unknown must be 'error' or 'ignore'")
     index = vocab.index()
+    known_atoms = frozenset(vocab.atoms)
     size = vocab.size
     spec_key = vocab.spec.compact()
     out: list[Fingerprint] = []
     for trace in traces:
+        unseen = sorted(set(trace.atoms) - known_atoms)
+        if unseen and unknown == "error":
+            raise ValueError(
+                f"trace {trace.trace_id!r} contains actions outside the vocabulary: "
+                f"{', '.join(unseen)}; fit a vocabulary covering these actions or pass "
+                "unknown='ignore' to discard them"
+            )
         tokenized = apply_vocab(trace.atoms, vocab)
         token_counts = Counter(tokenized)
         counts = [0] * size

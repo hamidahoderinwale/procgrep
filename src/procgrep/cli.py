@@ -138,11 +138,22 @@ def encode(
     input_path: Annotated[Path, typer.Option("--input", "-i", help="Canonical trace JSONL.")],
     vocab_path: Annotated[Path, typer.Option("--vocab", "-v", help="Vocabulary JSON.")],
     output_path: Annotated[Path, typer.Option("--output", "-o", help="Fingerprint JSONL.")],
+    unknown: Annotated[
+        str, typer.Option(help="Actions absent from the vocabulary: error or ignore.")
+    ] = "error",
 ) -> None:
     """Encode canonical traces as procedure-frequency fingerprints."""
+    if unknown not in {"error", "ignore"}:
+        raise typer.BadParameter("must be 'error' or 'ignore'", param_hint="--unknown")
     vocab = load_vocab(vocab_path)
     traces = records_to_traces(read_jsonl(input_path))
-    fingerprints = encode_fn(traces, vocab=vocab)
+    try:
+        fingerprints = encode_fn(
+            traces, vocab=vocab, unknown="ignore" if unknown == "ignore" else "error"
+        )
+    except ValueError as exc:
+        typer.echo(f"error: {exc}", err=True)
+        raise typer.Exit(1) from exc
     n = write_jsonl(output_path, fingerprints_to_records(fingerprints))
     typer.echo(f"wrote {n} fingerprints to {output_path}")
 
