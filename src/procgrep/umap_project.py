@@ -78,6 +78,10 @@ def umap_project(
         random_state=seed,
         n_components=2,
     )
+    # UMAP 0.6 will change its default layout; keep the 0.5.x pipeline.
+    # Older supported versions do not expose this parameter.
+    if "compatibility_layout" in reducer.get_params():
+        reducer.set_params(compatibility_layout=True)
     coords = reducer.fit_transform(matrix)
 
     return UmapResult(
