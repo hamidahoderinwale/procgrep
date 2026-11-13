@@ -1,6 +1,6 @@
 """Shared figure theme for procgrep custom plots — palette + Tufte-minimal axes.
 
-Usage (LIVE / essay figures — monospace):
+Usage (paper and essay figures — Instrument Sans):
     from figtheme import init, style_axes, save_fig, BLUE
     init()
     fig, ax = plt.subplots(...)
@@ -30,12 +30,17 @@ PAPER = "#F7F5F2"
 # Default categorical order, muted, warm-cool balanced, colorblind-aware.
 PALETTE = [BLUE, COPPER, GREEN, MAGENTA, OLIVE]
 
-_SANS_STACK = ["Arial", "Helvetica", "DejaVu Sans"]
+_SANS_STACK = ["Instrument Sans", "Helvetica Neue", "Helvetica", "Arial", "DejaVu Sans"]
 _DPI = 200
 
 
-def init(*, sans: bool = False) -> None:
-    """Global rcParams. Pass ``sans=True`` for PLATEAU figures."""
+def init(*, sans: bool = True) -> None:
+    """Use the bundled paper face; retain explicit monospace opt-in."""
+    from matplotlib import font_manager
+
+    font = Path(__file__).resolve().parents[1] / "docs/assets/fonts/InstrumentSans.ttf"
+    if font.exists():
+        font_manager.fontManager.addfont(str(font))
     if sans:
         plt.rcParams["font.family"] = "sans-serif"
         plt.rcParams["font.sans-serif"] = _SANS_STACK
@@ -43,6 +48,10 @@ def init(*, sans: bool = False) -> None:
     else:
         plt.rcParams["font.family"] = "monospace"
     plt.rcParams["axes.grid"] = False
+    plt.rcParams["font.weight"] = "normal"
+    plt.rcParams["axes.titleweight"] = "normal"
+    plt.rcParams["axes.labelweight"] = "normal"
+    plt.rcParams["pdf.fonttype"] = 42
     plt.rcParams["figure.facecolor"] = "white"
     plt.rcParams["savefig.facecolor"] = "white"
     plt.rcParams["savefig.dpi"] = _DPI

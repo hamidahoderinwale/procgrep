@@ -1,0 +1,8 @@
+/* Instrument Sans is bundled under the SIL Open Font License; see fonts/OFL.txt. */
+@font-face {
+  font-family: "Instrument Sans";
+  src: url("fonts/InstrumentSans.ttf") format("truetype");
+  font-style: normal;
+  font-weight: 400 700;
+  font-display: swap;
+}

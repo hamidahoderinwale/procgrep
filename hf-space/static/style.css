@@ -1,13 +1,11 @@
 /* ProcGrep explorer styles. Editorial palette shared with the static essay. */
 :root{
-  --paper:#F7F5F2; --ink:#14110E; --rule:#d9d4cc; --copper:#CB4D20; --blue:#5692E5;
-  --teal:#20A380; --olive:#585E53; --gray:#b7b1a7;
   --mono:ui-monospace,"SFMono-Regular",Menlo,monospace;
 }
 *{box-sizing:border-box}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--mono);font-size:13px;line-height:1.5}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:'Instrument Sans',Arial,sans-serif;font-size:13px;line-height:1.5}
 .wrap{max-width:1000px;margin:0 auto;padding:40px 32px 90px}
-h1{font-family:Georgia,serif;font-weight:400;font-size:27px;margin:0 0 6px}
+h1{font-family:'Instrument Sans',Arial,sans-serif;font-weight:400;font-size:27px;margin:0 0 6px}
 .sub{color:var(--olive);max-width:64ch;margin:0 0 22px}
 .dsbar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin:2px 0 16px;color:var(--olive)}
 select,input{font-family:var(--mono);font-size:12px;padding:6px 8px;border:1px solid var(--rule);background:#fff;color:var(--ink)}
