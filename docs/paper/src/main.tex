@@ -203,11 +203,10 @@ Benchmark scores tell you what an agent got right; they do not tell you how it g
   \rowcolor{owbg}     DARS      & DeepSeek-R1          & RL reasoning      & 300 \\
   \rowcolor{owbg}     Agentless & Claude-3.5           & RLHF dense        & 300 \\
   \rowcolor{owbg}     Moatless  & DeepSeek-V3          & MoE pretrain      & 300 \\
-  \rowcolor{owbg}     SWE-agent & SWE-agent-LM-32B$^\dagger$ & SFT-distilled (Qwen2.5-32B) & 499 \\
+  \rowcolor{owbg}     SWE-agent & SWE-agent-LM-32B & SFT-distilled (Qwen2.5-32B) & 499 \\
   \bottomrule
   \end{tabular}
-  \caption{Models and scaffolds studied with the number of task instances per agent (ten agents).
-  $^\dagger$Distilled from the Claude-3.7 teacher (row 3); analysed in \S\ref{sec:distillation}.}
+  \caption{Models and scaffolds studied with the number of task instances per agent (ten agents).}
   \label{tab:models}
   \end{table}
 
@@ -430,10 +429,7 @@ Random retrieval            & 289 & 0.13--0.24 & Baseline \\
 \bottomrule
 \end{tabular}
 \caption{Comparison of different procedural representations by their ability to
-signal whether the agent succeeded or failed, scored with F1 on single
-nearest-neighbor prediction. We find that representations derived
-directly from the trace beat the random baseline ($0.13$--$0.24$), and that
-natural-language accounts barely improve on it.}
+signal whether the agent succeeded or failed.}
 \label{tab:representation_comparison}
 \end{table}
 

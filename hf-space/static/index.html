@@ -2,6 +2,7 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>procgrep · query agent traces, live</title>
+<link rel="stylesheet" href="/static/fonts.css">
 <link rel="stylesheet" href="/static/theme.css">
 <link rel="stylesheet" href="/static/style.css">
 <style>
@@ -11,10 +12,10 @@
    arXiv, and GitHub. The eval content keeps the live query + compare views and
    talks to this same backend over same-origin relative paths. */
 body{padding-left:212px}
-.railnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#EFEAE2;display:flex;flex-direction:column}
+.railnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#f1f1ef;display:flex;flex-direction:column}
 .railnav .mark{margin:0 6px 14px;font-weight:600;display:inline-flex;align-items:center;gap:9px;color:var(--ink);text-decoration:none}
 .railnav .mark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}
-.railnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#E2DBD0;border-radius:7px;padding:3px}
+.railnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#e7e7e4;border-radius:7px;padding:3px}
 .railnav .surf button{flex:1;text-align:center;font:11px var(--mono);border:0;background:transparent;color:var(--olive);padding:6px 3px;border-radius:5px;cursor:pointer}
 .railnav .surf button.on{background:var(--ink);color:#fff}
 .railnav .railfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:1px}
@@ -30,7 +31,7 @@ body{padding-left:212px}
 .railnav #sesslist .sessitem.act .smeta{color:#cfc9bf}
 .railnav h2{font-size:10px;letter-spacing:.07em;text-transform:uppercase;color:var(--olive);margin:0 0 12px;font-weight:600}
 .railnav .ritem{display:block;width:100%;text-align:left;font-family:var(--mono);font-size:13px;border:0;background:transparent;color:var(--ink);padding:8px 10px;border-radius:6px;cursor:pointer;margin:0 0 2px}
-.railnav .ritem:hover{background:#ECE7DF}
+.railnav .ritem:hover{background:#e6e6e3}
 .railnav .ritem.act{background:var(--ink);color:#fff}
 .cgroup{display:contents}
 body.corpus-eval .cgroup[data-c="sess"]{display:none}
@@ -42,8 +43,8 @@ body.corpus-sess .cgroup[data-c="eval"]{display:none}
 .sesscallout code{background:#efeae2;padding:1px 6px;border-radius:3px;color:var(--ink)}
 @media(max-width:720px){
   body{padding-left:0}
-  .railnav{position:static;width:auto;height:auto;padding:12px 16px;background:#EFEAE2;
-    display:flex;flex-wrap:wrap;align-items:center;gap:4px}
+  .railnav{position:static;width:auto;height:auto;padding:12px 16px;background:#f1f1ef;
+    display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px}
   .railnav h2{margin:0 4px 0 0;font-size:9px}
   .railnav .ritem{display:inline-block;width:auto;padding:6px 9px;margin:0}
   .railnav .railfoot{flex-direction:row;flex-wrap:wrap;margin:0 0 0 8px;border:0;padding:0}
@@ -87,7 +88,7 @@ body.corpus-sess .cgroup[data-c="eval"]{display:none}
   <a id="dsource" class="dim src" target="_blank" rel="noopener"></a>
 </div>
 <p class="note prov">These are public agent-rollout corpora on Hugging Face (SWE-agent and OpenHands
-scaffolds solving SWE-bench-family GitHub issues). ProcGrep canonicalizes each trajectory into an action spine; nothing is re-hosted.</p>
+scaffolds solving SWE-bench-family GitHub issues).</p>
 <div class="qbar"><span class="mag">⌕</span>
   <input id="q" placeholder="atom pattern like (edit ){5,}, or an English question + Enter (BYO Anthropic key)" autocomplete="off"></div>
 <div class="tryline">try: <span id="trychips"></span> <span class="chip" id="noisetog">hide think/other</span></div>

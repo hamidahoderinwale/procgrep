@@ -127,7 +127,7 @@ def fix_figures(body: str) -> str:
 
 SHOWCASE = """
 <aside class="showcase" id="showcase">
-  <div class="sc-head"><span class="sc-eyebrow">procgrep demo · live</span>
+  <div class="sc-head">
     <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">open full screen ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="explorer/index.html#why" target="_blank" rel="noopener">structural vs LLM ↗</a></span></div>
   <div class="sc-frame">
     <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
@@ -321,15 +321,15 @@ DIST_JS = r"""
 """
 
 STYLE = """
-:root{--paper:#F7F5F2;--ink:#14110E;--rule:#d9d4cc;--copper:#CB4D20;--blue:#5692E5;
---teal:#20A380;--olive:#585E53;--gray:#b7b1a7;
---serif:'Charter','Iowan Old Style','Palatino Linotype',Palatino,'Spectral',Georgia,serif;
+:root{--paper:#fcfcfb;--ink:#1a1917;--rule:#c9c5bd;--copper:#c04472;--blue:#2f6be0;
+--teal:#139d9a;--olive:#5f5b54;--gray:#b7b1a7;
+--serif:'Instrument Sans',Arial,sans-serif;
 --mono:ui-monospace,"SFMono-Regular",Menlo,monospace}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--serif);
 font-size:18px;line-height:1.65;-webkit-font-smoothing:antialiased}
-.topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.92);backdrop-filter:blur(6px);
+.topbar{position:sticky;top:0;z-index:20;background:rgba(252,252,251,.92);backdrop-filter:blur(6px);
 font-family:var(--mono);font-size:13px}
 .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
 .topbar .in{max-width:1080px;margin:0 auto;padding:11px 32px;display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}
@@ -386,9 +386,9 @@ background:#fff;border-radius:4px}
 .toc .toct{transition:color .12s}
 /* article body */
 article{max-width:var(--col);margin:0 auto;padding:10px var(--gutter) 90px 32px;position:relative}
-article h1{font-size:28px;font-weight:600;margin:60px 0 12px;letter-spacing:-.01em}
-article h2{font-size:21px;font-weight:600;margin:38px 0 10px}
-article h3{font-size:17px;font-family:var(--mono);font-weight:600;margin:26px 0 8px;color:var(--olive)}
+article h1{font-size:32px;line-height:1.2;font-weight:600;margin:80px 0 20px;letter-spacing:-.02em}
+article h2{font-size:23px;line-height:1.3;font-weight:600;margin:48px 0 14px;letter-spacing:-.01em}
+article h3{font-size:19px;line-height:1.35;font-weight:600;margin:32px 0 10px}
 article p{margin:0 0 18px}
 article a{color:var(--copper)}
 article code{font-family:var(--mono);font-size:.86em;background:#efeae2;padding:1px 5px;border-radius:2px}
@@ -443,7 +443,7 @@ math{font-family:var(--serif)}
 .sidenote .sn-ref:last-child{margin-bottom:0}
 .sidenote a{color:var(--copper);word-break:break-word}
 @media(max-width:1100px){
-  .hero,.abstract,.toc,article{padding-right:32px}
+  .hero,.abstract,.toc,article{max-width:760px;padding-right:32px}
   /* no room for a margin — drop the sidenotes; the in-text citation is still a hyperlink to References */
   .sidenote{display:none}}
 /* grounded tooltips */
@@ -457,7 +457,7 @@ math{font-family:var(--serif)}
 .term .tip-src a{color:#e9b8a6}
 .foot{max-width:var(--col);margin:40px auto 0;padding:24px var(--gutter) 70px 32px;
 font-family:var(--mono);font-size:12px;color:var(--olive)}
-@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}.topbar .in{padding:10px 16px}.topbar nav{gap:6px 14px}}
+@media(max-width:960px){.toc{columns:1}.hero h1{font-size:32px}.hero,.abstract,.toc,article{padding-left:20px;padding-right:20px}article h1{font-size:27px;margin-top:60px}.topbar .in{padding:10px 16px}.topbar nav{gap:6px 14px}}
 /* code cards — light, Cursor-blog style (NOT a dark terminal theme) */
 .codecard{margin:24px 0;border:1px solid var(--rule);border-radius:7px;background:#fff;
   overflow:hidden;box-shadow:0 1px 2px rgba(20,17,14,.04)}
@@ -796,6 +796,7 @@ def main() -> None:
     page = f"""<!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="assets/fonts.css">
 <title>{html.escape(TITLE)} · ProcGrep</title>
 <style>{STYLE}</style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">

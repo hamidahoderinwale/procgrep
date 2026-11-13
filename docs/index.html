@@ -2,12 +2,10 @@
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Agent trajectories as programs · ProcGrep</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap">
+<link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/css/theme.css">
 <style>
-:root{--serif:'Source Serif 4','Source Serif Pro','Charter','Iowan Old Style',Georgia,serif;
+:root{--serif:'Instrument Sans',Arial,sans-serif;
 --mono:ui-monospace,"SFMono-Regular",Menlo,monospace}
 *{box-sizing:border-box}
 html{scroll-behavior:smooth}
@@ -21,18 +19,18 @@ body{padding-left:212px}
 .floatvid{float:right;width:42%;max-width:360px;margin:4px 0 12px 24px}
 .floatvid video{width:100%;display:block;border:2px solid var(--ink)}
 @media(max-width:700px){.floatvid{float:none;width:100%;max-width:100%;margin:16px auto}}
-.gnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#EFEAE2;display:flex;flex-direction:column;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;z-index:40}
+.gnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#f1f1ef;display:flex;flex-direction:column;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;z-index:40}
 .gnav .gmark{font-weight:600;display:inline-flex;align-items:center;gap:9px;margin:0 6px 14px;color:var(--ink);text-decoration:none;font-size:13px}
 .gnav .gmark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}
-.gnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#E2DBD0;border-radius:7px;padding:3px}
+.gnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#e7e7e4;border-radius:7px;padding:3px}
 .gnav .surf a{flex:1;text-align:center;font-size:11px;color:var(--olive);padding:6px 3px;border-radius:5px;text-decoration:none}
 .gnav .surf a.on,.gnav .surf a:hover{background:var(--ink);color:#fff}
 .gnav .seclist{display:flex;flex-direction:column;gap:1px}
 .gnav .sec{display:block;color:var(--ink);text-decoration:none;font-size:11.5px;line-height:1.3;padding:6px 8px;border-radius:6px}
-.gnav .sec:hover{background:#ECE7DF}.gnav .sec .n{color:var(--olive);margin-right:7px}
+.gnav .sec:hover{background:#e6e6e3}.gnav .sec .n{color:var(--olive);margin-right:7px}
 .gnav .gfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:1px}
 .gnav .gfoot a,.gnav .gfoot .cur{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 6px;border-radius:6px;text-decoration:none;color:var(--olive)}
-.gnav .gfoot a:hover{color:var(--ink);background:#ECE7DF}
+.gnav .gfoot a:hover{color:var(--ink);background:#e6e6e3}
 .gnav .gfoot .cur{color:var(--ink);cursor:default}
 .gnav .gfoot .ico{flex:0 0 15px;width:15px;height:15px;display:inline-flex;align-items:center;justify-content:center}
 .gnav .gfoot .ico svg{width:14px;height:14px;fill:currentColor}
@@ -40,7 +38,7 @@ body{padding-left:212px}
 .gnav .gfoot .ext,.gnav .gfoot .here{margin-left:auto;font-size:10px;color:var(--olive)}
 .gnav .gfoot .meta{margin-top:9px;padding:0 6px;font-size:10.5px;line-height:1.55;color:var(--olive)}
 .gnav .toolentry{display:block;color:#fff;text-decoration:none;font-size:13px;padding:7px 9px;margin:0 0 16px;border-radius:6px;background:var(--copper)}
-.gnav .toolentry:hover{background:#a83e16;color:#fff}
+.gnav .toolentry:hover{background:#963357;color:#fff}
 .gnav .toolentry:active{background:var(--ink);color:#fff}
 .gnav .sec.here{background:var(--ink);color:#fff}
 .gnav .sec.here .n{color:#cfc9bf}
@@ -50,10 +48,10 @@ body.navhidden{padding-left:0}
 .gtop{display:flex;align-items:center;margin:0 0 14px}
 .gtop .gmark{margin:0}
 .navtoggle{margin-left:auto;border:0;background:transparent;color:var(--olive);cursor:pointer;font-size:15px;line-height:1;padding:2px 8px;border-radius:5px}
-.navtoggle:hover{background:#ECE7DF}
+.navtoggle:hover{background:#e6e6e3}
 .navshow{position:fixed;left:12px;top:12px;z-index:50;display:none;border:0;background:var(--ink);color:#fff;border-radius:6px;padding:8px 11px;cursor:pointer;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
 body.navhidden .navshow{display:block}
-.topbar{position:sticky;top:0;z-index:20;background:rgba(247,245,242,.85);backdrop-filter:saturate(140%) blur(8px);
+.topbar{position:sticky;top:0;z-index:20;background:rgba(252,252,251,.85);backdrop-filter:saturate(140%) blur(8px);
 font-family:var(--mono);font-size:13px;border-bottom:1px solid var(--rule)}
 .progress{position:fixed;top:0;left:0;height:2px;width:0;background:var(--copper);z-index:40;transition:width .1s linear}
 .topbar .in{max-width:1080px;margin:0 auto;padding:10px 32px;display:flex;justify-content:space-between;align-items:center;gap:8px 16px;flex-wrap:wrap}
@@ -121,9 +119,9 @@ background:#fff;border-radius:4px}
 .toc .toct{transition:color .12s}
 /* article body */
 article{max-width:var(--col);margin:0 auto;padding:10px var(--gutter) 90px 32px;position:relative}
-article h1{font-size:28px;font-weight:600;margin:60px 0 12px;letter-spacing:-.01em}
-article h2{font-size:21px;font-weight:600;margin:38px 0 10px}
-article h3{font-size:17px;font-family:var(--mono);font-weight:600;margin:26px 0 8px;color:var(--olive)}
+article h1{font-size:32px;line-height:1.2;font-weight:600;margin:80px 0 20px;letter-spacing:-.02em}
+article h2{font-size:23px;line-height:1.3;font-weight:600;margin:48px 0 14px;letter-spacing:-.01em}
+article h3{font-size:19px;line-height:1.35;font-weight:600;margin:32px 0 10px}
 article p{margin:0 0 18px}
 article a{color:var(--copper)}
 article code{font-family:var(--mono);font-size:.86em;background:#efeae2;padding:1px 5px;border-radius:2px}
@@ -136,7 +134,7 @@ article table{width:100%;border-collapse:collapse;margin:24px 0;font-family:var(
 article th{text-align:left;font-weight:600;color:var(--olive);border-bottom:1px solid var(--ink);padding:6px 8px}
 article td{border-bottom:1px solid var(--rule);padding:6px 8px;vertical-align:top}
 /* the procgrep example query box */
-article .tcolorbox{background:#EFEAE2;border-radius:8px;padding:14px 18px;margin:22px 0;
+article .tcolorbox{background:#f1f1ef;border-radius:8px;padding:14px 18px;margin:22px 0;
 font-family:var(--mono);font-size:14px;line-height:1.55;color:var(--ink)}
 article .tcolorbox p{margin:0}
 /* citations + references */
@@ -187,7 +185,7 @@ math{font-family:var(--serif)}
 .sidenote .sn-ref:last-child{margin-bottom:0}
 .sidenote a{color:var(--copper);word-break:break-word}
 @media(max-width:1100px){
-  .hero,.abstract,.toc,article{padding-right:32px}
+  .hero,.abstract,.toc,article{max-width:760px;padding-right:32px}
   /* no room for a margin — drop the sidenotes; the in-text citation is still a hyperlink to References */
   .sidenote{display:none}}
 /* grounded tooltips */
@@ -201,7 +199,7 @@ math{font-family:var(--serif)}
 .term .tip-src a{color:#e9b8a6}
 .foot{max-width:var(--col);margin:40px auto 0;padding:24px var(--gutter) 70px 32px;
 font-family:var(--mono);font-size:12px;color:var(--olive)}
-@media(max-width:760px){.toc{columns:1}.hero h1{font-size:32px}
+@media(max-width:960px){.toc{columns:1}.hero h1{font-size:32px}.hero,.abstract,.toc,article{padding-left:20px;padding-right:20px}article h1{font-size:27px;margin-top:60px}
 html,body{overflow-x:clip}
 body{padding-left:0}
 .gnav{position:static;width:auto;height:auto;flex-direction:row;flex-wrap:wrap;align-items:center;gap:6px;padding:12px 16px}
@@ -209,7 +207,9 @@ body{padding-left:0}
 .gnav .surf{margin:0}
 .gnav .toolentry{display:inline-flex;align-items:center;width:auto;margin:0;padding:6px 10px}
 .gnav .seclist{display:none}
-.gnav .gfoot{margin:0 0 0 auto;border:0;padding:0;display:flex;gap:12px}
+.gnav .gtop{margin:0}
+.gnav .gfoot{margin:0 0 0 auto;border:0;padding:0;display:flex;flex-direction:row;flex-wrap:wrap;gap:4px 12px}
+.gnav .gfoot .meta,.gnav .gfoot .here{display:none}
 .topbar .in{padding:9px 16px;justify-content:flex-start;gap:4px 14px}
 .topbar .mark{flex:1}
 .topbar nav{width:100%;justify-content:flex-start;gap:6px 16px}
@@ -310,7 +310,7 @@ details.anatomy .codecard{margin:14px 18px}
 
 
 <aside class="showcase" id="showcase">
-  <div class="sc-head"><span class="sc-eyebrow">procgrep demo · live</span>
+  <div class="sc-head">
     <span><a class="sc-open" href="https://midah-procgrep-explorer.hf.space" target="_blank" rel="noopener">open full screen ↗</a> &nbsp;·&nbsp; <a class="sc-open" href="explorer/index.html#why" target="_blank" rel="noopener">structural vs LLM ↗</a></span></div>
   <div class="sc-frame">
     <iframe id="scframe" src="https://midah-procgrep-explorer.hf.space" title="ProcGrep live explorer" loading="lazy"></iframe>
@@ -344,7 +344,7 @@ details.anatomy .codecard{margin:14px 18px}
 <p>In this work, we use traces for a number of popular software engineering benchmarks and test a number of SOTA model families (GPT, Claude, DeepSeek, and Qwen). We use public archives of model traces for SWE-Bench (<a href="princeton-nlp/SWE-bench-experiments" class="uri">princeton-nlp/SWE-bench-experiments</a>) and do the same for Agentless logs. Table <a href="#tab:models" data-reference-type="ref" data-reference="tab:models">1</a> lists the full set of agents studied: ten agents across four <span class="term" tabindex="0">scaffolds<span class="tip"><span class="tip-def">The wrapper around a model that determines which tools it can use, how it acquires context, and how it reacts to feedback.</span><span class="tip-src">— <a href="#background">this paper, §Background</a></span></span></span> (SWE-agent, Agentless, DARS, Moatless) with models from the GPT, Claude, DeepSeek, and Qwen families.</p>
 <div id="tab:models">
 <table>
-<caption>Models and scaffolds studied with the number of task instances per agent (ten agents). <span class="math inline">^\dagger</span>Distilled from the Claude-3.7 teacher (row 3); analysed in §<a href="#sec:distillation" data-reference-type="ref" data-reference="sec:distillation">6</a>.</caption>
+<caption>Models and scaffolds studied with the number of task instances per agent (ten agents).</caption>
 <thead>
 <tr>
 <th style="text-align: left;"><strong>Scaffold</strong></th>
@@ -410,7 +410,7 @@ details.anatomy .codecard{margin:14px 18px}
 </tr>
 <tr>
 <td style="text-align: left;">SWE-agent</td>
-<td style="text-align: left;">SWE-agent-LM-32B<span class="math inline">^\dagger</span></td>
+<td style="text-align: left;">SWE-agent-LM-32B</td>
 <td style="text-align: left;">SFT-distilled (Qwen2.5-32B)</td>
 <td style="text-align: right;">499</td>
 </tr>
@@ -418,7 +418,7 @@ details.anatomy .codecard{margin:14px 18px}
 </table>
 </div>
 <details class="anatomy">
-<summary>Anatomy of one rollout: raw trace → canonical fingerprint <span class="anatomy-meta">SWE-agent-LM-32B · astropy__astropy-12907</span></summary>
+<summary>Anatomy of one rollout</summary>
 <div class="codecard"><div class="codecard-head"><span class="codecard-dot"></span><span class="codecard-name">astropy__astropy-12907.traj</span><span class="codecard-lang">json</span></div><pre class="codecard-body"><code><span class="cc-com">// step 0 of 34 — every step is a thought → action → observation triple</span>
 {
   <span class="cc-key">&quot;thought&quot;</span><span class="cc-punc">:</span> <span class="cc-str">&quot;I'll help you implement the necessary changes to fix the issue with the `separability_matrix` function for nested CompoundModels. ...&quot;</span><span class="cc-punc">,</span>
@@ -567,7 +567,7 @@ details.anatomy .codecard{margin:14px 18px}
 </figure>
 <div id="tab:representation_comparison">
 <table>
-<caption>Comparison of different procedural representations by their ability to signal whether the agent succeeded or failed, scored with F1 on single nearest-neighbor prediction. We find that representations derived directly from the trace beat the random baseline (<span class="math inline">0.13</span>–<span class="math inline">0.24</span>), and that natural-language accounts barely improve on it.</caption>
+<caption>Comparison of different procedural representations by their ability to signal whether the agent succeeded or failed.</caption>
 <thead>
 <tr>
 <th style="text-align: left;"><strong>Representation</strong></th>
@@ -2045,7 +2045,7 @@ Zhang, Ruixiang, Richard He Bai, Huangjie Zheng, Navdeep Jaitly, Ronan Collobert
   function hover(d){const dd=d.mean-peak.mean;
     tip.innerHTML=`<b>K=${d.V}</b> <span class="dim">realized ${d.vocab}</span> &nbsp; V-measure <b>${d.mean.toFixed(3)}</b> <span class="dim">±${d.sd.toFixed(3)}</span> &nbsp;·&nbsp; <span class="dim">${dd>=0?'this is the peak':dd.toFixed(3)+' vs peak'}</span>`;}
   const lab=document.createElement('label');
-  lab.style.cssText='position:absolute;top:2px;right:4px;z-index:2;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font:11px ui-monospace,Menlo,monospace;color:'+OLIVE+';user-select:none;background:rgba(247,245,242,.85);padding:2px 6px;border-radius:5px';
+  lab.style.cssText='position:absolute;top:2px;right:4px;z-index:2;display:inline-flex;align-items:center;gap:6px;cursor:pointer;font:11px ui-monospace,Menlo,monospace;color:'+OLIVE+';user-select:none;background:rgba(252,252,251,.85);padding:2px 6px;border-radius:5px';
   const box=document.createElement('input'); box.type='checkbox'; box.checked=true; box.style.cssText='accent-color:'+COPPER+';cursor:pointer';
   const t=document.createElement('span'); t.textContent='show all seeds';
   lab.appendChild(box); lab.appendChild(t);

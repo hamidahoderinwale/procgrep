@@ -60,19 +60,20 @@ def _theme():
                 "titleColor": NEAR_BLACK,
                 "labelFontSize": 10,
                 "titleFontSize": 11,
-                "labelFont": "sans-serif",
-                "titleFont": "sans-serif",
+                "labelFont": "Instrument Sans",
+                "titleFont": "Instrument Sans",
+                "titleFontWeight": "normal",
             },
             "header": {
                 "labelFontSize": 10,
                 "titleFontSize": 11,
-                "labelFont": "sans-serif",
+                "labelFont": "Instrument Sans",
             },
             "legend": {
                 "labelFontSize": 9,
                 "titleFontSize": 10,
-                "labelFont": "sans-serif",
-                "titleFont": "sans-serif",
+                "labelFont": "Instrument Sans",
+                "titleFont": "Instrument Sans",
                 "strokeColor": None,
                 "fillColor": "white",
             },
@@ -80,16 +81,26 @@ def _theme():
                 "fontSize": 12,
                 "anchor": "start",
                 "fontWeight": "normal",
-                "font": "sans-serif",
+                "font": "Instrument Sans",
                 "color": NEAR_BLACK,
             },
             "background": "white",
             "padding": 14,
-            "mark": {"font": "sans-serif"},
+            "mark": {"font": "Instrument Sans"},
         }
     }
 
 
 def register():
+    from pathlib import Path
+
+    font_dir = Path(__file__).resolve().parents[3] / "docs/assets/fonts"
+    if font_dir.exists():
+        try:
+            import vl_convert as vlc
+        except ImportError:
+            pass  # Interactive Altair charts do not need the static renderer.
+        else:
+            vlc.register_font_directory(str(font_dir))
     alt.themes.register("procgrep", _theme)
     alt.themes.enable("procgrep")
