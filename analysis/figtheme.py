@@ -19,14 +19,14 @@ from pathlib import Path
 import matplotlib.pyplot as plt
 
 # Project palette (matches docs/assets/css/theme.css).
-BLUE = "#5692E5"
-COPPER = "#CB4D20"
-GREEN = "#20A380"
-OLIVE = "#585E53"
-MAGENTA = "#B4184F"
-RULE = "#d9d4cc"
-INK = "#14110E"
-PAPER = "#F7F5F2"
+BLUE = "#2f6be0"
+COPPER = "#c04472"
+GREEN = "#139d9a"
+OLIVE = "#5f5b54"
+MAGENTA = "#8455e0"
+RULE = "#c9c5bd"
+INK = "#1a1917"
+PAPER = "#fcfcfb"
 # Default categorical order, muted, warm-cool balanced, colorblind-aware.
 PALETTE = [BLUE, COPPER, GREEN, MAGENTA, OLIVE]
 

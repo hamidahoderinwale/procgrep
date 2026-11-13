@@ -1,0 +1,32 @@
+{
+  "artifact": "induced_vocab_tree.png",
+  "sha256": "6a462d50c9d315a47a382ee8d75e957998fbac8ab395779c527e619b81c43c2a",
+  "input": "../../paper/data/induced_vocab_tree.json",
+  "input_sha256": "0030c1a88f329befede2e657b94a7af440ee050f2a96795583aa596724f47379",
+  "generator": "analysis/fig_induced_vocab_tree.py",
+  "font": "Instrument Sans",
+  "font_sha256": "b24f1812584816958afcf22e22d08e44318c5e51651e25d2438efdde389b33b1",
+  "profile": "Personal data-viz face and palette requested for the web essay",
+  "renderer": "Matplotlib retained for the established binary-tree layout",
+  "analysis_rerun": false,
+  "historical_recovery": {
+    "repo": "SALT-NLP/SWE-chat",
+    "revision": "f66cca95b14caaa4177f7ed5eaa424608dadcffa",
+    "code_revision": "413ef3d08defc0e1da31043cfc2f71fb5a3199c3",
+    "index_rows": 5851,
+    "join": "one_to_one",
+    "selected": 100,
+    "transcript_bytes": 281268974,
+    "included_by_agent": {
+      "Claude Code": 25,
+      "OpenCode": 23,
+      "Codex": 16,
+      "Gemini CLI": 25
+    },
+    "purpose": "Historical vocabulary underlying the published tree; no new corpus used for styling",
+    "recovery": "Original code and the only dataset revision preceding figure creation reproduce all displayed leaves, merge structures and agent-presence marks."
+  },
+  "review_status": "passed independent hash-bound visual and source review",
+  "review_record": "induced_vocab_tree.review.json",
+  "historical_recovery_refit": true
+}

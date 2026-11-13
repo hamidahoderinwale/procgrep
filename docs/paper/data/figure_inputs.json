@@ -1,0 +1,1086 @@
+{
+  "_meta": {
+    "purpose": "Saved plotted values for a presentation-only refresh",
+    "source_files": [
+      {
+        "path": "../bidirect-align-dev-traces/output/compositional_generalization/agent_libraries.json",
+        "sha256": "4adcb3327c6e042810b2f547ba8653cd5cc0c63814bee2537bb97831052f2154"
+      },
+      {
+        "path": "../bidirect-align-dev-traces/output/compositional_generalization/instance_classification.json",
+        "sha256": "71c0c888ba0ceb17e236fbb05945ce5e7e9a7f1d9e64e10d32c8d7c1a1e054cc"
+      },
+      {
+        "path": "docs/paper/data/interface_jsd_matrix.json",
+        "sha256": "3f81157585fa9ef9f23515461c33823cd596ac57171d6abe7f01ad232b9669b4"
+      },
+      {
+        "path": "analysis/fig_bpe_vs_prefixspan.py",
+        "git_commit": "ca2e1908c1bdc0469216daba95e80a1337e5be60",
+        "note": "Existing hardcoded published V-measure summaries; no new induction run."
+      }
+    ],
+    "unit": "one agent configuration for failure plots; one interface pair for matrix; one induction configuration for V-measure",
+    "n_agents": 84,
+    "classified_failures": 16382,
+    "family_counts": {
+      "Claude": 24,
+      "GPT": 19,
+      "Open-weight": 41
+    },
+    "scope": "Re-render saved results; no model, judge, encoder, or corpus reanalysis."
+  },
+  "failures": [
+    {
+      "agent": "20231010_rag_claude2",
+      "family": "Claude",
+      "resolved": 9,
+      "attempts": 300,
+      "classified_failures": 280,
+      "failure_counts": {
+        "novel_primitive": 240,
+        "novel_composition": 17,
+        "familiar": 23
+      }
+    },
+    {
+      "agent": "20231010_rag_gpt35",
+      "family": "GPT",
+      "resolved": 1,
+      "attempts": 300,
+      "classified_failures": 288,
+      "failure_counts": {
+        "novel_primitive": 283,
+        "familiar": 5,
+        "novel_composition": 0
+      }
+    },
+    {
+      "agent": "20231010_rag_swellama13b",
+      "family": "Open-weight",
+      "resolved": 3,
+      "attempts": 300,
+      "classified_failures": 286,
+      "failure_counts": {
+        "novel_primitive": 226,
+        "familiar": 29,
+        "novel_composition": 31
+      }
+    },
+    {
+      "agent": "20231010_rag_swellama7b",
+      "family": "Open-weight",
+      "resolved": 4,
+      "attempts": 300,
+      "classified_failures": 285,
+      "failure_counts": {
+        "novel_primitive": 252,
+        "familiar": 28,
+        "novel_composition": 5
+      }
+    },
+    {
+      "agent": "20240402_rag_claude3opus",
+      "family": "Claude",
+      "resolved": 13,
+      "attempts": 300,
+      "classified_failures": 277,
+      "failure_counts": {
+        "novel_primitive": 215,
+        "novel_composition": 38,
+        "familiar": 24
+      }
+    },
+    {
+      "agent": "20240402_rag_gpt4",
+      "family": "GPT",
+      "resolved": 8,
+      "attempts": 300,
+      "classified_failures": 282,
+      "failure_counts": {
+        "novel_primitive": 222,
+        "familiar": 37,
+        "novel_composition": 23
+      }
+    },
+    {
+      "agent": "20240402_sweagent_claude3opus",
+      "family": "Claude",
+      "resolved": 35,
+      "attempts": 300,
+      "classified_failures": 258,
+      "failure_counts": {
+        "novel_composition": 126,
+        "novel_primitive": 81,
+        "familiar": 51
+      }
+    },
+    {
+      "agent": "20240402_sweagent_gpt4",
+      "family": "GPT",
+      "resolved": 54,
+      "attempts": 300,
+      "classified_failures": 241,
+      "failure_counts": {
+        "novel_primitive": 93,
+        "novel_composition": 98,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20240509_amazon-q-developer-agent-20240430-dev",
+      "family": "Open-weight",
+      "resolved": 61,
+      "attempts": 300,
+      "classified_failures": 232,
+      "failure_counts": {
+        "novel_primitive": 54,
+        "novel_composition": 119,
+        "familiar": 59
+      }
+    },
+    {
+      "agent": "20240523_aider",
+      "family": "Open-weight",
+      "resolved": 79,
+      "attempts": 300,
+      "classified_failures": 217,
+      "failure_counts": {
+        "novel_primitive": 38,
+        "novel_composition": 126,
+        "familiar": 53
+      }
+    },
+    {
+      "agent": "20240524_opencsg_starship_gpt4",
+      "family": "GPT",
+      "resolved": 71,
+      "attempts": 300,
+      "classified_failures": 222,
+      "failure_counts": {
+        "novel_primitive": 43,
+        "novel_composition": 120,
+        "familiar": 59
+      }
+    },
+    {
+      "agent": "20240530_autocoderover-v20240408",
+      "family": "Open-weight",
+      "resolved": 57,
+      "attempts": 300,
+      "classified_failures": 237,
+      "failure_counts": {
+        "novel_primitive": 70,
+        "novel_composition": 115,
+        "familiar": 52
+      }
+    },
+    {
+      "agent": "20240604_CodeR",
+      "family": "Open-weight",
+      "resolved": 85,
+      "attempts": 300,
+      "classified_failures": 210,
+      "failure_counts": {
+        "novel_primitive": 35,
+        "novel_composition": 125,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20240612_IBM_Research_Agent101",
+      "family": "Open-weight",
+      "resolved": 80,
+      "attempts": 300,
+      "classified_failures": 215,
+      "failure_counts": {
+        "novel_composition": 122,
+        "novel_primitive": 40,
+        "familiar": 53
+      }
+    },
+    {
+      "agent": "20240612_MASAI_gpt4o",
+      "family": "GPT",
+      "resolved": 82,
+      "attempts": 300,
+      "classified_failures": 212,
+      "failure_counts": {
+        "novel_primitive": 24,
+        "novel_composition": 130,
+        "familiar": 58
+      }
+    },
+    {
+      "agent": "20240615_appmap-navie_gpt4o",
+      "family": "GPT",
+      "resolved": 65,
+      "attempts": 300,
+      "classified_failures": 228,
+      "failure_counts": {
+        "novel_composition": 136,
+        "familiar": 49,
+        "novel_primitive": 43
+      }
+    },
+    {
+      "agent": "20240617_factory_code_droid",
+      "family": "Open-weight",
+      "resolved": 94,
+      "attempts": 300,
+      "classified_failures": 199,
+      "failure_counts": {
+        "novel_primitive": 19,
+        "novel_composition": 126,
+        "familiar": 54
+      }
+    },
+    {
+      "agent": "20240617_moatless_gpt4o",
+      "family": "GPT",
+      "resolved": 74,
+      "attempts": 300,
+      "classified_failures": 220,
+      "failure_counts": {
+        "novel_primitive": 34,
+        "novel_composition": 125,
+        "familiar": 61
+      }
+    },
+    {
+      "agent": "20240620_sweagent_claude3.5sonnet",
+      "family": "Claude",
+      "resolved": 69,
+      "attempts": 300,
+      "classified_failures": 226,
+      "failure_counts": {
+        "novel_primitive": 47,
+        "novel_composition": 119,
+        "familiar": 60
+      }
+    },
+    {
+      "agent": "20240621_autocoderover-v20240620",
+      "family": "Open-weight",
+      "resolved": 92,
+      "attempts": 300,
+      "classified_failures": 204,
+      "failure_counts": {
+        "novel_primitive": 32,
+        "novel_composition": 116,
+        "familiar": 56
+      }
+    },
+    {
+      "agent": "20240622_Lingma_Agent",
+      "family": "Open-weight",
+      "resolved": 99,
+      "attempts": 300,
+      "classified_failures": 198,
+      "failure_counts": {
+        "novel_composition": 112,
+        "novel_primitive": 31,
+        "familiar": 55
+      }
+    },
+    {
+      "agent": "20240623_moatless_claude35sonnet",
+      "family": "Claude",
+      "resolved": 80,
+      "attempts": 300,
+      "classified_failures": 216,
+      "failure_counts": {
+        "novel_primitive": 33,
+        "novel_composition": 132,
+        "familiar": 51
+      }
+    },
+    {
+      "agent": "20240627_abanteai_mentatbot_gpt4o",
+      "family": "GPT",
+      "resolved": 114,
+      "attempts": 300,
+      "classified_failures": 181,
+      "failure_counts": {
+        "novel_primitive": 30,
+        "novel_composition": 101,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20240630_agentless_gpt4o",
+      "family": "GPT",
+      "resolved": 82,
+      "attempts": 300,
+      "classified_failures": 213,
+      "failure_counts": {
+        "novel_composition": 120,
+        "familiar": 47,
+        "novel_primitive": 46
+      }
+    },
+    {
+      "agent": "20240702_codestory_aide_mixed",
+      "family": "Open-weight",
+      "resolved": 129,
+      "attempts": 300,
+      "classified_failures": 168,
+      "failure_counts": {
+        "novel_composition": 94,
+        "novel_primitive": 25,
+        "familiar": 49
+      }
+    },
+    {
+      "agent": "20240706_sima_gpt4o",
+      "family": "GPT",
+      "resolved": 83,
+      "attempts": 300,
+      "classified_failures": 213,
+      "failure_counts": {
+        "novel_primitive": 31,
+        "novel_composition": 123,
+        "familiar": 59
+      }
+    },
+    {
+      "agent": "20240721_amazon-q-developer-agent-20240719-dev",
+      "family": "Open-weight",
+      "resolved": 89,
+      "attempts": 300,
+      "classified_failures": 207,
+      "failure_counts": {
+        "novel_primitive": 28,
+        "novel_composition": 129,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20240723_marscode-agent-dev",
+      "family": "Open-weight",
+      "resolved": 102,
+      "attempts": 300,
+      "classified_failures": 194,
+      "failure_counts": {
+        "novel_composition": 119,
+        "familiar": 53,
+        "novel_primitive": 22
+      }
+    },
+    {
+      "agent": "20240725_opendevin_codeact_v1.8_claude35sonnet",
+      "family": "Claude",
+      "resolved": 80,
+      "attempts": 300,
+      "classified_failures": 213,
+      "failure_counts": {
+        "novel_composition": 120,
+        "familiar": 59,
+        "novel_primitive": 34
+      }
+    },
+    {
+      "agent": "20240728_sweagent_gpt4o",
+      "family": "GPT",
+      "resolved": 55,
+      "attempts": 300,
+      "classified_failures": 240,
+      "failure_counts": {
+        "novel_primitive": 52,
+        "novel_composition": 127,
+        "familiar": 61
+      }
+    },
+    {
+      "agent": "20240806_SuperCoder2.0",
+      "family": "Open-weight",
+      "resolved": 102,
+      "attempts": 300,
+      "classified_failures": 192,
+      "failure_counts": {
+        "novel_primitive": 17,
+        "novel_composition": 118,
+        "familiar": 57
+      }
+    },
+    {
+      "agent": "20240808_RepoGraph_gpt4o",
+      "family": "GPT",
+      "resolved": 89,
+      "attempts": 300,
+      "classified_failures": 205,
+      "failure_counts": {
+        "novel_composition": 120,
+        "familiar": 45,
+        "novel_primitive": 40
+      }
+    },
+    {
+      "agent": "20240811_gru",
+      "family": "Open-weight",
+      "resolved": 107,
+      "attempts": 300,
+      "classified_failures": 188,
+      "failure_counts": {
+        "novel_primitive": 26,
+        "novel_composition": 109,
+        "familiar": 53
+      }
+    },
+    {
+      "agent": "20240820_honeycomb",
+      "family": "Open-weight",
+      "resolved": 115,
+      "attempts": 300,
+      "classified_failures": 182,
+      "failure_counts": {
+        "novel_primitive": 24,
+        "novel_composition": 111,
+        "familiar": 47
+      }
+    },
+    {
+      "agent": "20240828_autose_mixed",
+      "family": "Open-weight",
+      "resolved": 65,
+      "attempts": 300,
+      "classified_failures": 231,
+      "failure_counts": {
+        "novel_primitive": 50,
+        "novel_composition": 122,
+        "familiar": 59
+      }
+    },
+    {
+      "agent": "20240829_Isoform",
+      "family": "Open-weight",
+      "resolved": 105,
+      "attempts": 300,
+      "classified_failures": 190,
+      "failure_counts": {
+        "novel_primitive": 32,
+        "novel_composition": 108,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20240908_infant_gpt4o",
+      "family": "GPT",
+      "resolved": 90,
+      "attempts": 300,
+      "classified_failures": 205,
+      "failure_counts": {
+        "novel_primitive": 28,
+        "novel_composition": 127,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20240912_marscode-agent-dev",
+      "family": "Open-weight",
+      "resolved": 118,
+      "attempts": 300,
+      "classified_failures": 179,
+      "failure_counts": {
+        "novel_composition": 111,
+        "familiar": 48,
+        "novel_primitive": 20
+      }
+    },
+    {
+      "agent": "20240925_hyperagent_lite1",
+      "family": "Open-weight",
+      "resolved": 76,
+      "attempts": 300,
+      "classified_failures": 219,
+      "failure_counts": {
+        "novel_primitive": 46,
+        "novel_composition": 127,
+        "familiar": 46
+      }
+    },
+    {
+      "agent": "20241016_IBM-SWE-1.0",
+      "family": "Open-weight",
+      "resolved": 71,
+      "attempts": 300,
+      "classified_failures": 222,
+      "failure_counts": {
+        "novel_primitive": 42,
+        "novel_composition": 121,
+        "familiar": 59
+      }
+    },
+    {
+      "agent": "20241025_OpenHands-CodeAct-2.1-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 125,
+      "attempts": 300,
+      "classified_failures": 170,
+      "failure_counts": {
+        "novel_composition": 102,
+        "familiar": 52,
+        "novel_primitive": 16
+      }
+    },
+    {
+      "agent": "20241028_agentless-1.5_gpt4o",
+      "family": "GPT",
+      "resolved": 96,
+      "attempts": 300,
+      "classified_failures": 199,
+      "failure_counts": {
+        "novel_composition": 118,
+        "familiar": 56,
+        "novel_primitive": 25
+      }
+    },
+    {
+      "agent": "20241030_composio_swekit",
+      "family": "Open-weight",
+      "resolved": 123,
+      "attempts": 300,
+      "classified_failures": 173,
+      "failure_counts": {
+        "novel_primitive": 23,
+        "novel_composition": 104,
+        "familiar": 46
+      }
+    },
+    {
+      "agent": "20241111_codeshelltester_gpt4o",
+      "family": "GPT",
+      "resolved": 94,
+      "attempts": 300,
+      "classified_failures": 201,
+      "failure_counts": {
+        "novel_composition": 112,
+        "familiar": 59,
+        "novel_primitive": 30
+      }
+    },
+    {
+      "agent": "20241113_navie-2-gpt4o-sonnet",
+      "family": "Claude",
+      "resolved": 108,
+      "attempts": 300,
+      "classified_failures": 188,
+      "failure_counts": {
+        "novel_composition": 113,
+        "novel_primitive": 25,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20241117_moatless_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 115,
+      "attempts": 300,
+      "classified_failures": 181,
+      "failure_counts": {
+        "novel_composition": 108,
+        "familiar": 46,
+        "novel_primitive": 27
+      }
+    },
+    {
+      "agent": "20241117_reproducedRG_gpt4o",
+      "family": "GPT",
+      "resolved": 84,
+      "attempts": 300,
+      "classified_failures": 209,
+      "failure_counts": {
+        "novel_composition": 124,
+        "familiar": 40,
+        "novel_primitive": 45
+      }
+    },
+    {
+      "agent": "20241122_devlo",
+      "family": "Open-weight",
+      "resolved": 142,
+      "attempts": 300,
+      "classified_failures": 155,
+      "failure_counts": {
+        "novel_composition": 86,
+        "familiar": 48,
+        "novel_primitive": 21
+      }
+    },
+    {
+      "agent": "20241127_globant_codefixer_agent",
+      "family": "Open-weight",
+      "resolved": 145,
+      "attempts": 300,
+      "classified_failures": 152,
+      "failure_counts": {
+        "novel_composition": 99,
+        "familiar": 41,
+        "novel_primitive": 12
+      }
+    },
+    {
+      "agent": "20241128_SWE-Fixer_Qwen2.5-7b-retriever_Qwen2.5-72b-editor_20241128",
+      "family": "Open-weight",
+      "resolved": 70,
+      "attempts": 300,
+      "classified_failures": 224,
+      "failure_counts": {
+        "novel_primitive": 53,
+        "novel_composition": 121,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20241202_agentless-1.5_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 122,
+      "attempts": 300,
+      "classified_failures": 173,
+      "failure_counts": {
+        "novel_primitive": 29,
+        "novel_composition": 103,
+        "familiar": 41
+      }
+    },
+    {
+      "agent": "20241203_KortixAI-AgentPress-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 90,
+      "attempts": 300,
+      "classified_failures": 206,
+      "failure_counts": {
+        "novel_composition": 127,
+        "familiar": 44,
+        "novel_primitive": 35
+      }
+    },
+    {
+      "agent": "20241207_kodu_sonnet_v1",
+      "family": "Claude",
+      "resolved": 134,
+      "attempts": 300,
+      "classified_failures": 161,
+      "failure_counts": {
+        "novel_primitive": 18,
+        "novel_composition": 90,
+        "familiar": 53
+      }
+    },
+    {
+      "agent": "20241208_gru",
+      "family": "Open-weight",
+      "resolved": 146,
+      "attempts": 300,
+      "classified_failures": 151,
+      "failure_counts": {
+        "novel_composition": 88,
+        "familiar": 47,
+        "novel_primitive": 16
+      }
+    },
+    {
+      "agent": "20241220_PatchKitty-0.9_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 124,
+      "attempts": 300,
+      "classified_failures": 172,
+      "failure_counts": {
+        "novel_composition": 98,
+        "familiar": 53,
+        "novel_primitive": 21
+      }
+    },
+    {
+      "agent": "20241220_blackboxai_agent_v1",
+      "family": "Open-weight",
+      "resolved": 147,
+      "attempts": 300,
+      "classified_failures": 149,
+      "failure_counts": {
+        "novel_composition": 93,
+        "familiar": 42,
+        "novel_primitive": 14
+      }
+    },
+    {
+      "agent": "20250104_codefuse-aais",
+      "family": "Open-weight",
+      "resolved": 107,
+      "attempts": 300,
+      "classified_failures": 189,
+      "failure_counts": {
+        "novel_composition": 108,
+        "familiar": 52,
+        "novel_primitive": 29
+      }
+    },
+    {
+      "agent": "20250104_patched_codes_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 111,
+      "attempts": 300,
+      "classified_failures": 187,
+      "failure_counts": {
+        "novel_composition": 108,
+        "familiar": 57,
+        "novel_primitive": 22
+      }
+    },
+    {
+      "agent": "20250111_moatless_deepseek_v3",
+      "family": "Open-weight",
+      "resolved": 92,
+      "attempts": 300,
+      "classified_failures": 203,
+      "failure_counts": {
+        "novel_primitive": 29,
+        "novel_composition": 121,
+        "familiar": 53
+      }
+    },
+    {
+      "agent": "20250113_OpenCSG-Starship-Agentic-Coder_gpt4o",
+      "family": "GPT",
+      "resolved": 119,
+      "attempts": 300,
+      "classified_failures": 176,
+      "failure_counts": {
+        "novel_composition": 114,
+        "novel_primitive": 20,
+        "familiar": 42
+      }
+    },
+    {
+      "agent": "20250113_OrcaLoca",
+      "family": "Open-weight",
+      "resolved": 123,
+      "attempts": 300,
+      "classified_failures": 175,
+      "failure_counts": {
+        "novel_primitive": 29,
+        "novel_composition": 99,
+        "familiar": 47
+      }
+    },
+    {
+      "agent": "20250114_Isoform",
+      "family": "Open-weight",
+      "resolved": 165,
+      "attempts": 300,
+      "classified_failures": 134,
+      "failure_counts": {
+        "novel_primitive": 14,
+        "novel_composition": 84,
+        "familiar": 36
+      }
+    },
+    {
+      "agent": "20250114_moatless_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 117,
+      "attempts": 300,
+      "classified_failures": 181,
+      "failure_counts": {
+        "novel_primitive": 30,
+        "novel_composition": 99,
+        "familiar": 52
+      }
+    },
+    {
+      "agent": "20250205_dars_agent_claude_3.5_sonnet_deepseek_r1",
+      "family": "Claude",
+      "resolved": 141,
+      "attempts": 300,
+      "classified_failures": 156,
+      "failure_counts": {
+        "novel_composition": 82,
+        "familiar": 53,
+        "novel_primitive": 21
+      }
+    },
+    {
+      "agent": "20250207_aegis_o3mini",
+      "family": "GPT",
+      "resolved": 91,
+      "attempts": 300,
+      "classified_failures": 205,
+      "failure_counts": {
+        "novel_composition": 126,
+        "novel_primitive": 24,
+        "familiar": 55
+      }
+    },
+    {
+      "agent": "20250214_agentless_lite_o3_mini",
+      "family": "GPT",
+      "resolved": 97,
+      "attempts": 300,
+      "classified_failures": 197,
+      "failure_counts": {
+        "novel_primitive": 27,
+        "novel_composition": 114,
+        "familiar": 56
+      }
+    },
+    {
+      "agent": "20250226_sweagent_claude-3-7-sonnet-20250219",
+      "family": "Claude",
+      "resolved": 144,
+      "attempts": 300,
+      "classified_failures": 153,
+      "failure_counts": {
+        "novel_composition": 82,
+        "familiar": 50,
+        "novel_primitive": 21
+      }
+    },
+    {
+      "agent": "20250306_SWE-Fixer_Qwen2.5-7b-retriever_Qwen2.5-72b-editor",
+      "family": "Open-weight",
+      "resolved": 74,
+      "attempts": 300,
+      "classified_failures": 220,
+      "failure_counts": {
+        "novel_primitive": 53,
+        "novel_composition": 117,
+        "familiar": 50
+      }
+    },
+    {
+      "agent": "20250310_codefuse-cgm",
+      "family": "Open-weight",
+      "resolved": 132,
+      "attempts": 300,
+      "classified_failures": 164,
+      "failure_counts": {
+        "novel_composition": 104,
+        "familiar": 45,
+        "novel_primitive": 15
+      }
+    },
+    {
+      "agent": "20250425_Refact_Agent",
+      "family": "Open-weight",
+      "resolved": 180,
+      "attempts": 300,
+      "classified_failures": 119,
+      "failure_counts": {
+        "novel_composition": 68,
+        "familiar": 40,
+        "novel_primitive": 11
+      }
+    },
+    {
+      "agent": "20250509_Lingxi_claude-3-5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 128,
+      "attempts": 300,
+      "classified_failures": 168,
+      "failure_counts": {
+        "novel_composition": 103,
+        "familiar": 47,
+        "novel_primitive": 18
+      }
+    },
+    {
+      "agent": "20250515_codartai",
+      "family": "Open-weight",
+      "resolved": 125,
+      "attempts": 300,
+      "classified_failures": 172,
+      "failure_counts": {
+        "novel_composition": 92,
+        "novel_primitive": 32,
+        "familiar": 48
+      }
+    },
+    {
+      "agent": "20250526_sweagent_claude-4-sonnet-20250514",
+      "family": "Claude",
+      "resolved": 170,
+      "attempts": 300,
+      "classified_failures": 127,
+      "failure_counts": {
+        "novel_composition": 65,
+        "familiar": 43,
+        "novel_primitive": 19
+      }
+    },
+    {
+      "agent": "20250528_Codev",
+      "family": "Open-weight",
+      "resolved": 147,
+      "attempts": 300,
+      "classified_failures": 150,
+      "failure_counts": {
+        "novel_composition": 87,
+        "familiar": 43,
+        "novel_primitive": 20
+      }
+    },
+    {
+      "agent": "20250609_KGCompass_deepseek-v3",
+      "family": "Open-weight",
+      "resolved": 110,
+      "attempts": 300,
+      "classified_failures": 185,
+      "failure_counts": {
+        "novel_composition": 107,
+        "familiar": 50,
+        "novel_primitive": 28
+      }
+    },
+    {
+      "agent": "20250613_ExpeRepair-v1.0",
+      "family": "Open-weight",
+      "resolved": 145,
+      "attempts": 300,
+      "classified_failures": 151,
+      "failure_counts": {
+        "novel_composition": 94,
+        "familiar": 43,
+        "novel_primitive": 14
+      }
+    },
+    {
+      "agent": "20250619_KGCompass_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 138,
+      "attempts": 300,
+      "classified_failures": 156,
+      "failure_counts": {
+        "novel_composition": 98,
+        "familiar": 44,
+        "novel_primitive": 14
+      }
+    },
+    {
+      "agent": "20250625_ExpeRepair-v1_claude-4-sonnet-20250514",
+      "family": "Claude",
+      "resolved": 181,
+      "attempts": 300,
+      "classified_failures": 117,
+      "failure_counts": {
+        "novel_composition": 71,
+        "familiar": 35,
+        "novel_primitive": 11
+      }
+    },
+    {
+      "agent": "20250625_SemAgent_Multi-v1_Claude3.7Sonnet_Gemini2.5Pro",
+      "family": "Claude",
+      "resolved": 155,
+      "attempts": 300,
+      "classified_failures": 142,
+      "failure_counts": {
+        "novel_composition": 77,
+        "familiar": 47,
+        "novel_primitive": 18
+      }
+    },
+    {
+      "agent": "20250627_agentless_MCTS-Refine-7B",
+      "family": "Open-weight",
+      "resolved": 49,
+      "attempts": 300,
+      "classified_failures": 244,
+      "failure_counts": {
+        "novel_composition": 96,
+        "familiar": 61,
+        "novel_primitive": 87
+      }
+    },
+    {
+      "agent": "20250901_entroPO_R2E_QwenCoder30BA3B",
+      "family": "Open-weight",
+      "resolved": 135,
+      "attempts": 300,
+      "classified_failures": 161,
+      "failure_counts": {
+        "novel_composition": 96,
+        "familiar": 45,
+        "novel_primitive": 20
+      }
+    },
+    {
+      "agent": "20250901_entroPO_R2E_QwenCoder30BA3B_tts",
+      "family": "Open-weight",
+      "resolved": 149,
+      "attempts": 300,
+      "classified_failures": 147,
+      "failure_counts": {
+        "novel_composition": 75,
+        "familiar": 49,
+        "novel_primitive": 23
+      }
+    },
+    {
+      "agent": "20250906_KGCompass_claude-4-sonnet-20250514",
+      "family": "Claude",
+      "resolved": 175,
+      "attempts": 300,
+      "classified_failures": 121,
+      "failure_counts": {
+        "novel_composition": 75,
+        "familiar": 38,
+        "novel_primitive": 8
+      }
+    },
+    {
+      "agent": "20250911_isea_claude-3.5-sonnet-20241022",
+      "family": "Claude",
+      "resolved": 154,
+      "attempts": 300,
+      "classified_failures": 143,
+      "failure_counts": {
+        "novel_composition": 81,
+        "familiar": 44,
+        "novel_primitive": 18
+      }
+    }
+  ],
+  "interface_jsd": {
+    "Claude Code": {
+      "Claude Code": 0.0,
+      "Codex": 0.417,
+      "Gemini CLI": 0.212,
+      "OpenCode": 0.353
+    },
+    "Codex": {
+      "Claude Code": 0.417,
+      "Codex": 0.0,
+      "Gemini CLI": 0.33,
+      "OpenCode": 0.298
+    },
+    "Gemini CLI": {
+      "Claude Code": 0.212,
+      "Codex": 0.33,
+      "Gemini CLI": 0.0,
+      "OpenCode": 0.275
+    },
+    "OpenCode": {
+      "Claude Code": 0.353,
+      "Codex": 0.298,
+      "Gemini CLI": 0.275,
+      "OpenCode": 0.0
+    }
+  },
+  "induction": [
+    {
+      "method": "PrefixSpan",
+      "vocabulary_size": 64,
+      "vmeasure": 0.505
+    },
+    {
+      "method": "BPE",
+      "vocabulary_size": 64,
+      "vmeasure": 0.606
+    },
+    {
+      "method": "BPE",
+      "vocabulary_size": 128,
+      "vmeasure": 0.626
+    }
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "artifact": "fig_bpe_vs_prefixspan.png",
+  "sha256": "f62871e10158503ded2f35d4201660d90097335863be2a03c0973bd853aa84d2",
+  "input": "../../paper/data/figure_inputs.json",
+  "input_sha256": "36a3c41c784bbc5b516b476d2ec8fd07970beff3e95023579949aa9ca296ab66",
+  "generator": "analysis/render_essay_figures.py",
+  "font": "Instrument Sans",
+  "font_sha256": "b24f1812584816958afcf22e22d08e44318c5e51651e25d2438efdde389b33b1",
+  "profile": "Personal data-viz face and palette requested for the web essay",
+  "renderer": "Matplotlib retained for the established static figure pipeline",
+  "analysis_rerun": false,
+  "review_status": "passed independent hash-bound visual and source review",
+  "review_record": "fig_bpe_vs_prefixspan.review.json"
+}

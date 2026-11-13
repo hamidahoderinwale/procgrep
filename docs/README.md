@@ -36,3 +36,27 @@ BIDIRECT_ROOT=/path/to/bidirect-align-dev-traces python analysis/fig_regression_
 
 The paper cache reader accepts `--cache-dir /path/to/trajectory-cache`. These
 external inputs are not bundled with procgrep.
+
+## Figure regeneration
+
+`python analysis/render_essay_figures.py` renders the four static figures backed
+by `paper/data/figure_inputs.json`. The saved values include source hashes and
+observation units. The render step checks the bundled Instrument Sans font and
+writes directly to the image paths used by the essay, with provenance beside
+each PNG. The older four individual entry points call the same renderer.
+
+The original extended-cohort inputs for the action/token, actions-per-resolution,
+patch-size, and trajectory-length figures are unavailable locally. Those four
+image assets remain historical until their inputs can be recovered; do not
+rebuild them on a different corpus as a styling change. Other interactive
+figures read the saved JSON in this checkout; their text uses the same bundled face.
+
+`python analysis/fig_induced_vocab_tree.py` renders the saved historical vocabulary
+in `paper/data/induced_vocab_tree.json`, without network access. That snapshot was
+recovered using code `413ef3d08defc0e1da31043cfc2f71fb5a3199c3` and
+`SALT-NLP/SWE-chat@f66cca95b14caaa4177f7ed5eaa424608dadcffa` (the only revision
+predating the original figure). The original first-25-per-interface selection and
+adapter rules retain 89 of 100 sessions with at least two actions. The derived
+snapshot records selection IDs, transcript hashes, exclusions, merges and agent
+presence; all displayed trees and presence marks match the historical image.
+No GCP resources are needed for either rendering command.
