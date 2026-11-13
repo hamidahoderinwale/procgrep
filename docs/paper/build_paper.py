@@ -114,7 +114,7 @@ def build_toc(body: str) -> str:
         '<span class="toct">References</span></a></li>'
     )
     return (
-        "<nav class='toc'><div class='toclab'>Contents</div><ol>" + "".join(items) + "</ol></nav>"
+        "<nav class='toc'><ol>" + "".join(items) + "</ol></nav>"
     )
 
 
@@ -344,17 +344,16 @@ font-family:var(--mono);font-size:13px}
 .hero .byline{font-family:var(--mono);font-size:13px;color:var(--olive);padding:4px 0;display:flex;gap:18px;flex-wrap:wrap}
 .hero .byline a{color:var(--copper);text-decoration:none}
 .abstract{max-width:var(--col);margin:30px auto 0;padding:0 var(--gutter) 0 32px}
-.abstract .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
 .abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
 .abstract .avail a{color:var(--copper)}
 .cite{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:80}
-.cite summary{list-style:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:13px;padding:12px 18px;border-radius:24px;box-shadow:0 3px 14px #14110e20}
+.cite summary{list-style:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--serif);font-size:14px;padding:12px 18px;border-radius:24px;box-shadow:0 3px 14px #14110e20}
 .cite summary::-webkit-details-marker{display:none}
 .cite summary:hover{background:var(--olive)}
 .cite summary:focus-visible,.cite button:focus-visible{outline:2px solid var(--copper);outline-offset:4px}
 .cite-panel{position:absolute;right:0;bottom:calc(100% + 12px);width:min(440px,calc(100vw - 40px));max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);overflow:auto;box-sizing:border-box;padding:20px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;box-shadow:0 8px 32px #14110e26}
-.cite .lab{font-family:var(--mono);font-size:14px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.cite .lab{font-family:var(--serif);font-size:16px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .cite-close{font:inherit;color:var(--olive);background:none;border:0;padding:8px;cursor:pointer}
 .cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
 .cite-copy{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:4px;padding:10px 14px;cursor:pointer}
@@ -363,7 +362,6 @@ font-family:var(--mono);font-size:13px}
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
 .sc-head{display:flex;justify-content:space-between;align-items:baseline}
-.sc-eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--copper)}
 .sc-open{font-family:var(--mono);font-size:12px;color:var(--copper);text-decoration:none}
 .sc-open:hover{text-decoration:underline}
 .exfig{max-width:1020px;margin:26px auto;padding:0}
@@ -377,7 +375,6 @@ background:#fff;border-radius:4px}
 .sc-note a{color:var(--copper)}
 /* TOC */
 .toc{max-width:var(--col);margin:30px auto 12px;padding:0 var(--gutter) 0 32px}
-.toc .toclab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:12px}
 .toc ol{list-style:none;margin:0;padding:0;columns:2;column-gap:44px}
 .toc li{margin:0 0 8px;break-inside:avoid}
 .toc a{color:var(--ink);text-decoration:none;display:flex;gap:11px;align-items:baseline;font-size:15px;line-height:1.35}
@@ -412,7 +409,7 @@ math{font-family:var(--serif)}
 .interactive{margin:30px 0;padding:16px;border:1px solid var(--rule);border-radius:3px;background:#fff}
 .jsd-explainer{margin:30px 0}
 .jsd-explainer iframe{width:100%;height:620px;border:1px solid var(--rule);border-radius:3px;background:#fff;display:block}
-.interactive svg text{font-family:var(--mono)}
+.interactive svg text{font-family:var(--serif)}
 .jc{cursor:crosshair}
 .jtip{font-family:var(--mono);font-size:13px;color:var(--ink);min-height:38px;margin:2px 0 6px;line-height:1.5}
 .jtip .dim{color:var(--olive)}
@@ -797,7 +794,16 @@ def main() -> None:
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
 <link rel="stylesheet" href="assets/fonts.css">
-<title>{html.escape(TITLE)} · ProcGrep</title>
+<title>ProcGrep: {html.escape(TITLE)}</title>
+<meta name="description" content="ProcGrep fingerprints coding-agent traces and searches recurring procedures to compare how agents work.">
+<link rel="canonical" href="https://hamidah.me/procgrep/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ProcGrep: Agent trajectories as programs">
+<meta property="og:description" content="ProcGrep fingerprints coding-agent traces and searches recurring procedures to compare how agents work.">
+<meta property="og:url" content="https://hamidah.me/procgrep/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ProcGrep: Agent trajectories as programs">
+<meta name="twitter:description" content="ProcGrep fingerprints coding-agent traces and searches recurring procedures to compare how agents work.">
 <style>{STYLE}</style>
 <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css">
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
@@ -817,7 +823,7 @@ def main() -> None:
     <a href="https://github.com/hamidahoderinwale/procgrep">ProcGrep on GitHub ↗</a></div>
 </div>
 
-<div class="abstract"><div class="lab">Abstract</div><p>{abstract}</p>
+<div class="abstract"><p>{abstract}</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
 <details class="cite" id="cite">
 <summary>Cite this work</summary>

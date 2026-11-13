@@ -1,0 +1,23 @@
+{
+  "artifact": "failure_mix_by_agent_84.png",
+  "sha256": "01fb1fb662a37aac7408c17241ccecbdb10f2caf5aa71359b5cce3bc051cbaf7",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "independent": true,
+    "agent": "/root/figure_review"
+  },
+  "inspected": true,
+  "local_checks_passed": true,
+  "checks": {
+    "purpose": "pass",
+    "order": "pass",
+    "language": "pass",
+    "readability": "pass",
+    "evidence": "pass",
+    "pruning": "pass"
+  },
+  "issues": [],
+  "verdict": "pass",
+  "evidence": "Independent visual inspection and comparison with original source measurements; boundary clipping corrected and re-reviewed for both failure figures.",
+  "first_glance": "Most agents cluster around 50\u201365% novel-composition share; families overlap."
+}

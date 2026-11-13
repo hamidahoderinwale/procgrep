@@ -1,0 +1,23 @@
+{
+  "artifact": "failure_by_family.png",
+  "sha256": "c4a6191e9430e934882fab70239cffb7a4986b8d5cea34fbd1e808d554c974e1",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "independent": true,
+    "agent": "/root/figure_review"
+  },
+  "inspected": true,
+  "local_checks_passed": true,
+  "checks": {
+    "purpose": "pass",
+    "order": "pass",
+    "language": "pass",
+    "readability": "pass",
+    "evidence": "pass",
+    "pruning": "pass"
+  },
+  "issues": [],
+  "verdict": "pass",
+  "evidence": "Independent visual inspection and comparison with original source measurements; boundary clipping corrected and re-reviewed for both failure figures.",
+  "first_glance": "Novel compositions dominate most agents; familiar patterns follow, with fewer novel primitives."
+}

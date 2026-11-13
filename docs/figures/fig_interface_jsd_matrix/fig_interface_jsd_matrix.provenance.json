@@ -1,0 +1,14 @@
+{
+  "artifact": "fig_interface_jsd_matrix.png",
+  "sha256": "f6a06cf0b781820eb38250009591a3bca7db7b5b9208961e1cd483a4fa37269e",
+  "input": "../../paper/data/figure_inputs.json",
+  "input_sha256": "36a3c41c784bbc5b516b476d2ec8fd07970beff3e95023579949aa9ca296ab66",
+  "generator": "analysis/render_essay_figures.py",
+  "font": "Instrument Sans",
+  "font_sha256": "b24f1812584816958afcf22e22d08e44318c5e51651e25d2438efdde389b33b1",
+  "profile": "Personal data-viz face and palette requested for the web essay",
+  "renderer": "Matplotlib retained for the established static figure pipeline",
+  "analysis_rerun": false,
+  "review_status": "passed independent hash-bound visual and source review",
+  "review_record": "fig_interface_jsd_matrix.review.json"
+}

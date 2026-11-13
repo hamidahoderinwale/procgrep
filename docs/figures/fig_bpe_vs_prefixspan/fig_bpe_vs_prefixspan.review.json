@@ -1,0 +1,23 @@
+{
+  "artifact": "fig_bpe_vs_prefixspan.png",
+  "sha256": "f62871e10158503ded2f35d4201660d90097335863be2a03c0973bd853aa84d2",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "independent": true,
+    "agent": "/root/figure_review"
+  },
+  "inspected": true,
+  "local_checks_passed": true,
+  "checks": {
+    "purpose": "pass",
+    "order": "pass",
+    "language": "pass",
+    "readability": "pass",
+    "evidence": "pass",
+    "pruning": "pass"
+  },
+  "issues": [],
+  "verdict": "pass",
+  "evidence": "Independent visual inspection and comparison with original source measurements; boundary clipping corrected and re-reviewed for both failure figures.",
+  "first_glance": "BPE exceeds PrefixSpan at K=64; increasing BPE to K=128 adds a smaller gain."
+}

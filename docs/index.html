@@ -1,7 +1,16 @@
 <!doctype html>
 <html lang="en"><head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Agent trajectories as programs · ProcGrep</title>
+<title>ProcGrep: Agent trajectories as programs</title>
+<meta name="description" content="ProcGrep fingerprints coding-agent traces and searches recurring procedures to compare how agents work.">
+<link rel="canonical" href="https://hamidah.me/procgrep/">
+<meta property="og:type" content="article">
+<meta property="og:title" content="ProcGrep: Agent trajectories as programs">
+<meta property="og:description" content="ProcGrep fingerprints coding-agent traces and searches recurring procedures to compare how agents work.">
+<meta property="og:url" content="https://hamidah.me/procgrep/">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:title" content="ProcGrep: Agent trajectories as programs">
+<meta name="twitter:description" content="ProcGrep fingerprints coding-agent traces and searches recurring procedures to compare how agents work.">
 <link rel="stylesheet" href="assets/fonts.css">
 <link rel="stylesheet" href="assets/css/theme.css">
 <style>
@@ -19,14 +28,14 @@ body{padding-left:212px}
 .floatvid{float:right;width:42%;max-width:360px;margin:4px 0 12px 24px}
 .floatvid video{width:100%;display:block;border:2px solid var(--ink)}
 @media(max-width:700px){.floatvid{float:none;width:100%;max-width:100%;margin:16px auto}}
-.gnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#f1f1ef;display:flex;flex-direction:column;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;z-index:40}
+.gnav{position:fixed;left:0;top:0;bottom:0;width:212px;padding:22px 14px;overflow:auto;background:#f1f1ef;display:flex;flex-direction:column;font-family:var(--serif);z-index:40}
 .gnav .gmark{font-weight:600;display:inline-flex;align-items:center;gap:9px;margin:0 6px 14px;color:var(--ink);text-decoration:none;font-size:13px}
 .gnav .gmark::before{content:"";width:8px;height:8px;background:var(--copper);border-radius:1px}
 .gnav .surf{display:flex;gap:3px;margin:0 0 16px;background:#e7e7e4;border-radius:7px;padding:3px}
 .gnav .surf a{flex:1;text-align:center;font-size:11px;color:var(--olive);padding:6px 3px;border-radius:5px;text-decoration:none}
 .gnav .surf a.on,.gnav .surf a:hover{background:var(--ink);color:#fff}
 .gnav .seclist{display:flex;flex-direction:column;gap:1px}
-.gnav .sec{display:block;color:var(--ink);text-decoration:none;font-size:11.5px;line-height:1.3;padding:6px 8px;border-radius:6px}
+.gnav .sec{display:block;color:var(--ink);text-decoration:none;font-size:13px;line-height:1.4;padding:6px 8px;border-radius:6px}
 .gnav .sec:hover{background:#e6e6e3}.gnav .sec .n{color:var(--olive);margin-right:7px}
 .gnav .gfoot{margin-top:auto;border-top:1px solid var(--rule);padding-top:10px;display:flex;flex-direction:column;gap:1px}
 .gnav .gfoot a,.gnav .gfoot .cur{display:flex;align-items:center;gap:8px;font-size:12px;padding:5px 6px;border-radius:6px;text-decoration:none;color:var(--olive)}
@@ -47,9 +56,9 @@ body.navhidden .gnav{transform:translateX(-100%)}
 body.navhidden{padding-left:0}
 .gtop{display:flex;align-items:center;margin:0 0 14px}
 .gtop .gmark{margin:0}
-.navtoggle{margin-left:auto;border:0;background:transparent;color:var(--olive);cursor:pointer;font-size:15px;line-height:1;padding:2px 8px;border-radius:5px}
+.navtoggle{margin-left:auto;border:0;background:transparent;color:var(--olive);cursor:pointer;font-family:inherit;font-size:15px;line-height:1;padding:2px 8px;border-radius:5px}
 .navtoggle:hover{background:#e6e6e3}
-.navshow{position:fixed;left:12px;top:12px;z-index:50;display:none;border:0;background:var(--ink);color:#fff;border-radius:6px;padding:8px 11px;cursor:pointer;font:13px ui-monospace,SFMono-Regular,Menlo,monospace}
+.navshow{position:fixed;left:12px;top:12px;z-index:50;display:none;border:0;background:var(--ink);color:#fff;border-radius:6px;padding:8px 11px;cursor:pointer;font:13px var(--serif)}
 body.navhidden .navshow{display:block}
 .topbar{position:sticky;top:0;z-index:20;background:rgba(252,252,251,.85);backdrop-filter:saturate(140%) blur(8px);
 font-family:var(--mono);font-size:13px;border-bottom:1px solid var(--rule)}
@@ -77,17 +86,16 @@ transform:scaleX(0);transform-origin:left;transition:transform .18s ease}
 .hero .byline{font-family:var(--mono);font-size:13px;color:var(--olive);padding:4px 0;display:flex;gap:18px;flex-wrap:wrap}
 .hero .byline a{color:var(--copper);text-decoration:none}
 .abstract{max-width:var(--col);margin:30px auto 0;padding:0 var(--gutter) 0 32px}
-.abstract .lab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:8px}
 .abstract p{font-size:15px;line-height:1.62;margin:0;color:#2a2520}
 .abstract .avail{font-family:var(--mono);font-size:12px;color:var(--olive);margin-top:14px}
 .abstract .avail a{color:var(--copper)}
 .cite{position:fixed;right:max(20px,env(safe-area-inset-right));bottom:max(20px,env(safe-area-inset-bottom));z-index:80}
-.cite summary{list-style:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--mono);font-size:13px;padding:12px 18px;border-radius:24px;box-shadow:0 3px 14px #14110e20}
+.cite summary{list-style:none;cursor:pointer;background:var(--ink);color:var(--paper);font-family:var(--serif);font-size:14px;padding:12px 18px;border-radius:24px;box-shadow:0 3px 14px #14110e20}
 .cite summary::-webkit-details-marker{display:none}
 .cite summary:hover{background:var(--olive)}
 .cite summary:focus-visible,.cite button:focus-visible{outline:2px solid var(--copper);outline-offset:4px}
 .cite-panel{position:absolute;right:0;bottom:calc(100% + 12px);width:min(440px,calc(100vw - 40px));max-height:calc(100vh - 120px);max-height:calc(100dvh - 120px);overflow:auto;box-sizing:border-box;padding:20px;background:var(--paper);border:1px solid var(--rule);border-radius:8px;box-shadow:0 8px 32px #14110e26}
-.cite .lab{font-family:var(--mono);font-size:14px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+.cite .lab{font-family:var(--serif);font-size:16px;color:var(--ink);margin-bottom:14px;display:flex;align-items:center;justify-content:space-between;gap:16px}
 .cite-close{font:inherit;color:var(--olive);background:none;border:0;padding:8px;cursor:pointer}
 .cite pre{font-family:var(--mono);font-size:12px;line-height:1.5;margin:0 0 14px;white-space:pre-wrap;overflow-wrap:anywhere;color:var(--ink)}
 .cite-copy{font-family:var(--mono);font-size:12px;line-height:1.5;color:var(--ink);background:#fff;border:1px solid var(--rule);border-radius:4px;padding:10px 14px;cursor:pointer}
@@ -96,7 +104,6 @@ transform:scaleX(0);transform-origin:left;transition:transform .18s ease}
 .showcase{max-width:1020px;margin:40px auto;padding:22px;border:1px solid var(--ink);
 background:#fff;border-radius:4px}
 .sc-head{display:flex;justify-content:space-between;align-items:baseline}
-.sc-eyebrow{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--copper)}
 .sc-open{font-family:var(--mono);font-size:12px;color:var(--copper);text-decoration:none}
 .sc-open:hover{text-decoration:underline}
 .exfig{max-width:1020px;margin:26px auto;padding:0}
@@ -110,7 +117,6 @@ background:#fff;border-radius:4px}
 .sc-note a{color:var(--copper)}
 /* TOC */
 .toc{max-width:var(--col);margin:30px auto 12px;padding:0 var(--gutter) 0 32px}
-.toc .toclab{font-family:var(--mono);text-transform:uppercase;letter-spacing:.12em;font-size:11px;color:var(--olive);margin-bottom:12px}
 .toc ol{list-style:none;margin:0;padding:0;columns:2;column-gap:44px}
 .toc li{margin:0 0 8px;break-inside:avoid}
 .toc a{color:var(--ink);text-decoration:none;display:flex;gap:11px;align-items:baseline;font-size:15px;line-height:1.35}
@@ -146,7 +152,7 @@ math{font-family:var(--serif)}
 .interactive{margin:30px 0;padding:16px;border:1px solid var(--rule);border-radius:3px;background:#fff}
 .jsd-explainer{margin:30px 0}
 .jsd-explainer iframe{width:100%;height:620px;border:1px solid var(--rule);border-radius:3px;background:#fff;display:block}
-.interactive svg text{font-family:var(--mono)}
+.interactive svg text{font-family:var(--serif)}
 .jc{cursor:crosshair}
 .jtip{font-family:var(--mono);font-size:13px;color:var(--ink);min-height:38px;margin:2px 0 6px;line-height:1.5}
 .jtip .dim{color:var(--olive)}
@@ -290,7 +296,7 @@ details.anatomy .codecard{margin:14px 18px}
   <div class="byline"><span>Hamidah Oderinwale</span></div>
 </div>
 
-<div class="abstract" id="abstract"><div class="lab">Abstract</div><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. <code>ProcGrep</code> is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
+<div class="abstract" id="abstract"><p>Benchmark scores tell you what an agent got right; they do not tell you how it got there. In this work, we introduce methods for comparing agents procedurally in different contexts, where the model, tasks, and approaches vary. We compare ten agents and find that they are identifiable by their behavioral habits, which we define as <em>fingerprints</em>: a probe over these procedural signatures attributes an unseen trajectory to the correct agent at 85.7% accuracy on held-out tasks. We develop procedural representations for agent problem-solving procedures with an emergent vocabulary induction technique which is meant to be maximally compressive to avoid surface-level variation while being expressive enough to unveil the quirks of the models' patterns. We apply our framework to the software engineering evaluation dataset SWE-Bench to study the structural distinctness of agent trajectories and find that behavior is most similar between models from similar release periods and those that are distilled from one another (e.g., a distilled student model and its teacher have a Jensen-Shannon divergence of 0.25, about half the distance between other model pairs). As more models saturate evaluations, we believe that it will be important to probe model behavior along more holistic dimensions than success rates alone. We introduce <code>ProcGrep</code>, a library for auditing and evaluating agents for how they approach tasks at a procedural level given their traces in a top-down fashion. One application of ProcGrep is searching over past events. We show that ProcGrep outperforms LLMs on episodic search in both efficiency and accuracy, offering a deterministic, programmable approach to searching over traces. We believe this work has a range of applications to help developers work with and program coding agents, such as task-aware model routing, agent monitoring, and finer-grained cost analysis. <code>ProcGrep</code> is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p>
 <p class="avail">ProcGrep is available at <a href="https://github.com/hamidahoderinwale/procgrep">https://github.com/hamidahoderinwale/procgrep</a>.</p></div>
 <details class="cite" id="cite">
 <summary>Cite this work</summary>
@@ -318,7 +324,7 @@ details.anatomy .codecard{margin:14px 18px}
 </aside>
 
 
-<nav class='toc'><div class='toclab'>Contents</div><ol><li><a href="#background"><span class="tocn">01</span><span class="toct">Background</span></a></li><li><a href="#a-theory-of-procedural-understanding"><span class="tocn">02</span><span class="toct">A theory of procedural understanding</span></a></li><li><a href="#why-procedural-representations-matter"><span class="tocn">03</span><span class="toct">Why procedural representations matter</span></a></li><li><a href="#natural-studies-with-procedural-representations"><span class="tocn">04</span><span class="toct">Natural studies with procedural representations</span></a></li><li><a href="#controlled-evaluations-with-procedural-controls"><span class="tocn">05</span><span class="toct">Controlled evaluations with procedural controls</span></a></li><li><a href="#sec:distillation"><span class="tocn">06</span><span class="toct">Do students behave like their teachers? (a distilled model case study)</span></a></li><li><a href="#conclusion"><span class="tocn">07</span><span class="toct">Conclusion</span></a></li><li><a href="#appendix"><span class="tocn">08</span><span class="toct">Appendix</span></a></li><li><a href="#references"><span class="tocn">★</span><span class="toct">References</span></a></li></ol></nav>
+<nav class='toc'><ol><li><a href="#background"><span class="tocn">01</span><span class="toct">Background</span></a></li><li><a href="#a-theory-of-procedural-understanding"><span class="tocn">02</span><span class="toct">A theory of procedural understanding</span></a></li><li><a href="#why-procedural-representations-matter"><span class="tocn">03</span><span class="toct">Why procedural representations matter</span></a></li><li><a href="#natural-studies-with-procedural-representations"><span class="tocn">04</span><span class="toct">Natural studies with procedural representations</span></a></li><li><a href="#controlled-evaluations-with-procedural-controls"><span class="tocn">05</span><span class="toct">Controlled evaluations with procedural controls</span></a></li><li><a href="#sec:distillation"><span class="tocn">06</span><span class="toct">Do students behave like their teachers? (a distilled model case study)</span></a></li><li><a href="#conclusion"><span class="tocn">07</span><span class="toct">Conclusion</span></a></li><li><a href="#appendix"><span class="tocn">08</span><span class="toct">Appendix</span></a></li><li><a href="#references"><span class="tocn">★</span><span class="toct">References</span></a></li></ol></nav>
 
 <article>
 <section id="background" class="level1">
@@ -531,7 +537,7 @@ details.anatomy .codecard{margin:14px 18px}
 <p>Given a set of procedures that we might want to compare, which we can call a procedural space, we need a vocabulary or a set of actions that we can use to describe all of them. The contributions of this framework comes from being able to define this vocabulary bottom-up instead of with a more hard-coded or classifier based approach. We benchmark our methods against prompt-based classifiers, finding that across four judge models, prompt-based classifiers have near-zero agreement across model families and struggle to identify compositional trajectories. This affirms our motivations for having representations that can be shared across models and instances to allow for comparative analysis (Table <a href="#tab:judge_comparison" data-reference-type="ref" data-reference="tab:judge_comparison">10</a>).</p>
 <p>This means that there are features of the full vocabulary or alphabet which we can study in itself and can form the basis of insights. To define our vocabulary, we need to be able to extract these procedures and label them to understand what they are. Each procedure should be composable and collapse into one another because steps are taken in sequence for specific tasks and to avoid redundancy—where each procedure of the trajectory should be meaningfully unique or composed of unique sub-procedures. We find that procedural diversity does not correspond with capabilities, where stronger and newer extended-thinking models do better with fewer procedures (Claude-3.7 = 32, Claude-4 = 35) compared to older Claude-3/3.5 models, which have repertoires of 42–44 procedures—which is relatively counter-intuitive.</p>
 <figure id="fig:vocab_tree" data-latex-placement="H">
-<img loading="lazy" src="figures/induced_vocab_tree/induced_vocab_tree.png" style="width:100.0%" width="1300" height="974" />
+<img loading="lazy" src="figures/induced_vocab_tree/induced_vocab_tree.png" style="width:100.0%" width="1300" height="988" />
 <figcaption>Induced vocabulary tree, showing how different action verbs collapse with each other.</figcaption>
 </figure>
 </section>
@@ -759,11 +765,11 @@ details.anatomy .codecard{margin:14px 18px}
 <p>With this data, we can also validate other kinds of inferences regarding the shapes of problems and model behavior. For example, past work has found that models struggle with compositional generalization—this means that they are brittle in contexts where they need to do incremental work. We validate this in the wild and find that problems that require compositional generalization, defined by problems that have nested procedures, are especially difficult for agents, as evidenced by their failure rates. We define compositional problems as ones where the subproblems are ones that have been solved by the agent before, but when put together the agent failed. Looking at Figure <a href="#fig:compositional_failure" data-reference-type="ref" data-reference="fig:compositional_failure">6</a> we can observe that compositionality is a relatively strong signal of failure, followed by novel actions, and familiar procedures yield the lowest failure rates. However, the pattern holds the most strongly for RLHF-trained models and much more modest for more classically trained models. Across models, similar trends hold, but open-weight agents have lower failure rates to compositional problems—when computing the difference of open-weight model failure at all points compared to other model families is <span class="math inline">{\sim}9\%</span>.</p>
 <figure id="fig:composition_analysis" data-latex-placement="H">
 <figure id="fig:compositional_failure">
-<img loading="lazy" src="figures/failure_mix_by_agent_84/failure_mix_by_agent_84.png" width="1260" height="940" />
-<figcaption>Pass rate by compositional difficulty.</figcaption>
+<img loading="lazy" src="figures/failure_mix_by_agent_84/failure_mix_by_agent_84.png" width="1408" height="1074" />
+<figcaption>Task resolution and novel-composition share among classified failures.</figcaption>
 </figure>
 <figure id="fig:failure_by_family">
-<img loading="lazy" src="figures/failure_by_family/failure_by_family.png" width="1779" height="688" />
+<img loading="lazy" src="figures/failure_by_family/failure_by_family.png" width="2167" height="810" />
 <figcaption>Failure types by model family. Model behavior on compositional tasks.</figcaption>
 </figure>
 </figure>
@@ -802,7 +808,7 @@ details.anatomy .codecard{margin:14px 18px}
 </table>
 <!-- AUTHOR: write the lead-in framing + bridge sentence for the interface matrix here, in your own words. -->
 <figure id="fig:interface_jsd">
-<img loading="lazy" src="figures/fig_interface_jsd_matrix/fig_interface_jsd_matrix.png" style="width:62.0%" width="1214" height="1019" />
+<img loading="lazy" src="figures/fig_interface_jsd_matrix/fig_interface_jsd_matrix.png" style="width:100%" width="1211" height="1049" />
 <figcaption><!-- caption is yours to write --></figcaption>
 </figure>
 <section id="how-agents-acquire-context" class="level2">
@@ -1462,7 +1468,7 @@ P ← ∅
   - <span class="cc-key">name</span><span class="cc-punc">:</span> edit_streak    penalty: <span class="cc-num">0.10</span>
     <span class="cc-key">pattern</span><span class="cc-punc">:</span> [edit, edit, edit, edit, edit]    contiguous: true</code></pre></div>
 <figure id="fig:bpe_vs_prefixspan" data-latex-placement="H">
-<img loading="lazy" src="figures/fig_bpe_vs_prefixspan/fig_bpe_vs_prefixspan.png" style="width:60.0%" width="1245" height="626" />
+<img loading="lazy" src="figures/fig_bpe_vs_prefixspan/fig_bpe_vs_prefixspan.png" style="width:100%" width="1388" height="674" />
 <figcaption>BPE separates agents better than PrefixSpan, scored by V-measure against agent labels. The golden set, derived from the evaluation dataset, treats a clustering as correct when every trajectory from a given agent is grouped with the others from that agent (e.g., all GPT-4o trajectories together, all Claude-3.5 trajectories together, and so on).</figcaption>
 </figure>
 <figure id="fig:jsd_full" data-latex-placement="H">

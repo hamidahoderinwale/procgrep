@@ -1,0 +1,1259 @@
+{
+  "_meta": {
+    "repo": "SALT-NLP/SWE-chat",
+    "revision": "f66cca95b14caaa4177f7ed5eaa424608dadcffa",
+    "code_revision": "413ef3d08defc0e1da31043cfc2f71fb5a3199c3",
+    "index_rows": 5851,
+    "join": "one_to_one",
+    "selected": 100,
+    "transcript_bytes": 281268974,
+    "included_by_agent": {
+      "Claude Code": 25,
+      "OpenCode": 23,
+      "Codex": 16,
+      "Gemini CLI": 25
+    },
+    "purpose": "Historical vocabulary underlying the published tree; no new corpus used for styling",
+    "recovery": "Original code and the only dataset revision preceding figure creation reproduce all displayed leaves, merge structures and agent-presence marks."
+  },
+  "atoms": [
+    "edit",
+    "lint",
+    "other",
+    "package",
+    "read_file",
+    "run_code",
+    "run_test",
+    "search_repo",
+    "think",
+    "version_control"
+  ],
+  "merges": [
+    [
+      "edit",
+      "edit"
+    ],
+    [
+      "read_file",
+      "read_file"
+    ],
+    [
+      "search_repo",
+      "search_repo"
+    ],
+    [
+      "version_control",
+      "version_control"
+    ],
+    [
+      "edit",
+      "run_test"
+    ],
+    [
+      "edit\u2581edit",
+      "edit\u2581edit"
+    ],
+    [
+      "edit",
+      "read_file"
+    ],
+    [
+      "read_file\u2581read_file",
+      "read_file\u2581read_file"
+    ],
+    [
+      "search_repo",
+      "read_file"
+    ],
+    [
+      "other",
+      "other"
+    ],
+    [
+      "edit\u2581edit",
+      "run_test"
+    ],
+    [
+      "run_test",
+      "run_test"
+    ],
+    [
+      "read_file\u2581read_file",
+      "read_file"
+    ],
+    [
+      "edit\u2581run_test",
+      "edit\u2581run_test"
+    ],
+    [
+      "search_repo\u2581search_repo",
+      "search_repo\u2581search_repo"
+    ],
+    [
+      "edit",
+      "other"
+    ],
+    [
+      "version_control\u2581version_control",
+      "version_control\u2581version_control"
+    ],
+    [
+      "read_file",
+      "edit\u2581edit"
+    ],
+    [
+      "edit",
+      "search_repo"
+    ],
+    [
+      "edit",
+      "run_code"
+    ],
+    [
+      "think",
+      "think"
+    ],
+    [
+      "search_repo",
+      "read_file\u2581read_file"
+    ],
+    [
+      "edit\u2581read_file",
+      "edit\u2581edit"
+    ],
+    [
+      "search_repo\u2581search_repo",
+      "search_repo"
+    ],
+    [
+      "other",
+      "edit"
+    ],
+    [
+      "version_control",
+      "read_file"
+    ],
+    [
+      "edit\u2581edit\u2581edit\u2581edit",
+      "edit\u2581edit\u2581edit\u2581edit"
+    ],
+    [
+      "search_repo\u2581search_repo",
+      "read_file"
+    ],
+    [
+      "edit\u2581read_file",
+      "edit\u2581read_file"
+    ],
+    [
+      "run_code",
+      "run_code"
+    ],
+    [
+      "version_control\u2581version_control",
+      "version_control"
+    ],
+    [
+      "edit\u2581run_test",
+      "run_test"
+    ],
+    [
+      "other",
+      "read_file"
+    ],
+    [
+      "search_repo",
+      "read_file\u2581read_file\u2581read_file\u2581read_file"
+    ],
+    [
+      "other\u2581other",
+      "other\u2581other"
+    ],
+    [
+      "edit",
+      "think"
+    ],
+    [
+      "other",
+      "run_test"
+    ],
+    [
+      "edit\u2581run_test",
+      "edit\u2581edit\u2581run_test"
+    ]
+  ],
+  "users": {
+    "edit": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "other": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "run_code": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "search_repo": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "think": [
+      "Claude Code",
+      "Codex",
+      "OpenCode"
+    ],
+    "version_control": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "edit\u2581edit": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "read_file\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "search_repo\u2581search_repo": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "version_control\u2581version_control": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581edit\u2581edit\u2581edit": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "read_file\u2581read_file\u2581read_file\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "search_repo\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581edit\u2581run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "run_test\u2581run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "read_file\u2581read_file\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581run_test\u2581edit\u2581run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "search_repo\u2581search_repo\u2581search_repo\u2581search_repo": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581other": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "version_control\u2581version_control\u2581version_control\u2581version_control": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581search_repo": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581run_code": [
+      "Claude Code",
+      "Gemini CLI"
+    ],
+    "search_repo\u2581read_file\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "version_control\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "search_repo\u2581search_repo\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "version_control\u2581version_control\u2581version_control": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581run_test\u2581run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "other\u2581read_file": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "edit\u2581think": [
+      "Claude Code",
+      "OpenCode"
+    ],
+    "other\u2581run_test": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "other\u2581other": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "read_file\u2581edit\u2581edit": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "other\u2581edit": [
+      "Claude Code",
+      "Gemini CLI"
+    ],
+    "run_code\u2581run_code": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "search_repo\u2581search_repo\u2581search_repo": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581read_file\u2581edit\u2581read_file": [
+      "Claude Code",
+      "Gemini CLI"
+    ],
+    "other\u2581other\u2581other\u2581other": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "edit\u2581run_test\u2581edit\u2581edit\u2581run_test": [
+      "Claude Code",
+      "Gemini CLI"
+    ],
+    "edit\u2581edit\u2581edit\u2581edit\u2581edit\u2581edit\u2581edit\u2581edit": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "edit\u2581read_file\u2581edit\u2581edit": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "think\u2581think": [
+      "Claude Code",
+      "Codex"
+    ],
+    "lint": [
+      "Claude Code",
+      "Codex",
+      "Gemini CLI"
+    ],
+    "search_repo\u2581read_file\u2581read_file\u2581read_file\u2581read_file": [
+      "Codex",
+      "Gemini CLI",
+      "OpenCode"
+    ],
+    "package": [
+      "Gemini CLI",
+      "OpenCode"
+    ]
+  },
+  "n_traces": 89,
+  "deepest": 3,
+  "shown": [
+    "search_repo\u2581read_file\u2581read_file\u2581read_file\u2581read_file",
+    "edit\u2581run_test\u2581edit\u2581edit\u2581run_test",
+    "edit\u2581edit\u2581edit\u2581edit\u2581edit\u2581edit\u2581edit\u2581edit"
+  ],
+  "records": [
+    {
+      "session_id": "2026-01-15-43b2bd6e-ccc5-4d83-bbe5-9cd1cd19cc82",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-15-43b2bd6e-ccc5-4d83-bbe5-9cd1cd19cc82.jsonl",
+      "sha256": "cbc1df642417f4966a4a22e0deefa2d2e6c1bb96874ffcd02cb54206e7e780dd",
+      "atoms": 228,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-16-cde341db-b80a-44f5-b0f2-94db2ef7a164",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-16-cde341db-b80a-44f5-b0f2-94db2ef7a164.jsonl",
+      "sha256": "8068fd6b6360a9d131a22ebe85f9e97b17cc74d81ad8db8075013a1bebaeabda",
+      "atoms": 70,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-16-eb4bcc15-3ff5-4d73-bac5-9bc1d786b2bb",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-16-eb4bcc15-3ff5-4d73-bac5-9bc1d786b2bb.jsonl",
+      "sha256": "a8a60507f1efde86be63d174e1b2ed47f3528f5724b0100193734bd160fb6232",
+      "atoms": 157,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-19-8b418ea5-895d-4ad5-abe8-4489d36e454f",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-19-8b418ea5-895d-4ad5-abe8-4489d36e454f.jsonl",
+      "sha256": "dcbca1258299f2441eac97374c0b86ab945d55e9e6fa7e7721b5782ef38b79bc",
+      "atoms": 39,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-19-1b3e6441-62e3-4b41-8a0c-9d252f531f7a",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-19-1b3e6441-62e3-4b41-8a0c-9d252f531f7a.jsonl",
+      "sha256": "8aef498b34176b1be405517aae7d2d1ebe0ac631c1d8e0083a33d85453d25d26",
+      "atoms": 3,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-19-85cc202e-0e74-46ce-a485-e5fcd11f7a8c",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-19-85cc202e-0e74-46ce-a485-e5fcd11f7a8c.jsonl",
+      "sha256": "ec89d91398e9f62ca84b374d209c2f74503bf85ea71b939b2f85dcd51aa44fc9",
+      "atoms": 45,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-19-c2b51eb0-d0e9-43cf-b431-42c05d49450b",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-19-c2b51eb0-d0e9-43cf-b431-42c05d49450b.jsonl",
+      "sha256": "13a37da8ac1d2afec6189c7c2ee7159a848a7ca942734d033dc14249099caf91",
+      "atoms": 83,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-19-38917d7d-9f69-4210-a3b0-eed0a9e97575",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-19-38917d7d-9f69-4210-a3b0-eed0a9e97575.jsonl",
+      "sha256": "2335ef3ed488deca1d7876902ac952db0aed1622c0f19f68f70890e02657ae28",
+      "atoms": 32,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-20-67301a0a-4291-420f-a8dd-79119820e9c6",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-20-67301a0a-4291-420f-a8dd-79119820e9c6.jsonl",
+      "sha256": "227caa291d9caab234e9cfac465d316fe4503888766d1b9dd651e2c24478a2bd",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-20-86cc3044-7515-43f1-9c25-1444738c64c9",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-20-86cc3044-7515-43f1-9c25-1444738c64c9.jsonl",
+      "sha256": "0d23f3fdfc02e1af4b9d5c87aa26b448968f06c08168e0bf4d01e88c79577971",
+      "atoms": 63,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-20-e1bc91d1-2731-4b12-bf00-44f4dcddffd1",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-20-e1bc91d1-2731-4b12-bf00-44f4dcddffd1.jsonl",
+      "sha256": "e4e123f9c7469875491fbfc269ce1921c008902deade13fb2ae3375afcc8eadf",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-20-343fadd6-9346-4d05-b43b-eeef3de1b4a8",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-20-343fadd6-9346-4d05-b43b-eeef3de1b4a8.jsonl",
+      "sha256": "b1716d73e782215b82c86d7bcbddf09f522dda21c78d3163625fbef5935044bf",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-20-20b81bf8-77cd-4205-8ac9-727b573a70e4",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-20-20b81bf8-77cd-4205-8ac9-727b573a70e4.jsonl",
+      "sha256": "c93dff01e1014082872cec9094fec3bdd635acbbf430c9e0e36d61b0b56969f1",
+      "atoms": 58,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-0cd9edf7-459c-4900-af40-cf2c64dea525",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-21-0cd9edf7-459c-4900-af40-cf2c64dea525.jsonl",
+      "sha256": "197edcebbef4833f8b47b3b1aada977c96d2d58bf3c19b9ed2576333e104bcfe",
+      "atoms": 59,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-0cf3db51-1c73-43bb-8d05-dc02739514a5",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-21-0cf3db51-1c73-43bb-8d05-dc02739514a5.jsonl",
+      "sha256": "f770a07ee6670ffb2c5d3adf5c153f81691a65b7c5ac3c9bf0fdd8a1803f9619",
+      "atoms": 88,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-839b35f7-4dbd-4d93-9772-3c272cc87caa",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-21-839b35f7-4dbd-4d93-9772-3c272cc87caa.jsonl",
+      "sha256": "7ca3e2c6263ab043dcafa725d176ee60bf3cb338c19a6b04a4ba89d80e1fef6b",
+      "atoms": 112,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-f8e05984-93e4-45b7-b638-e6f011442db9",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-21-f8e05984-93e4-45b7-b638-e6f011442db9.jsonl",
+      "sha256": "6074ee3d5c81ac103079dfc077d9bdc0f463b6307ef37263ebcdfef7f7e67c8f",
+      "atoms": 25,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-0cf3db51-1c73-43bb-8d05-dc02739514a5",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-0cf3db51-1c73-43bb-8d05-dc02739514a5.jsonl",
+      "sha256": "b8d0b1a2d17462119caa10dafcdd03b3f079e8c81a179595114f14cea53be9ce",
+      "atoms": 499,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-130d7b7e-5801-4345-9bd6-f32fd9b8429b",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-21-130d7b7e-5801-4345-9bd6-f32fd9b8429b.jsonl",
+      "sha256": "066df401187842174aba2752eaecba5dca133a5a3f41f629b589412fd6aaa97f",
+      "atoms": 50,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-48f428f9-72d8-40b2-9594-953019809473",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-48f428f9-72d8-40b2-9594-953019809473.jsonl",
+      "sha256": "4fb7348bc75c20ae78849331391fc8dce60c1f8ea95476d8957730d348edf215",
+      "atoms": 42,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-0c29f7c5-19e4-4d5a-9340-ab23773711e6",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-0c29f7c5-19e4-4d5a-9340-ab23773711e6.jsonl",
+      "sha256": "57b00825efd58d343b263eafaee6518b047671e7495691db2b626385b715ade8",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-0bdbfa06-acf1-473a-b3e4-6a03313d1d0e",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-0bdbfa06-acf1-473a-b3e4-6a03313d1d0e.jsonl",
+      "sha256": "13b4c0077fad4508608d8f0cd36e48663784147abdcd1f649a03c9a93af645b1",
+      "atoms": 42,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-f36e9487-32ca-4c29-9163-93f97b36e2f9",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-f36e9487-32ca-4c29-9163-93f97b36e2f9.jsonl",
+      "sha256": "791465f39ab2e970a3d0acf11839842400a4ed5b2c70d64c49d3d095aae80f9c",
+      "atoms": 296,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-be437104-4a61-49d9-b754-592ad3e357ce",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-be437104-4a61-49d9-b754-592ad3e357ce.jsonl",
+      "sha256": "111df744bdd89a5f0263ac03a505de0827dc84374958a5c5b44cf3a5c0cf17c6",
+      "atoms": 79,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-22-ab8c5aa0-e11b-4b16-9be3-c470a9483829",
+      "agent": "Claude Code",
+      "transcript_path": "transcripts/2026-01-22-ab8c5aa0-e11b-4b16-9be3-c470a9483829.jsonl",
+      "sha256": "ffe8f8c4c7864aeaeee16ea754e8780c5aa42e6fb8e6b984f5d4d5e5483adaa0",
+      "atoms": 36,
+      "included": true
+    },
+    {
+      "session_id": "ses_360fbcdadffelFMCArPrxrETEL",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_360fbcdadffelFMCArPrxrETEL.jsonl",
+      "sha256": "32ee329ac09aec4bf7bed2498e546c2426f8165bacfd3c8eb7bc63259b2e1ca5",
+      "atoms": 35,
+      "included": true
+    },
+    {
+      "session_id": "ses_36555ea93ffewDwy0AfYCBslGl",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_36555ea93ffewDwy0AfYCBslGl.jsonl",
+      "sha256": "5228f0efa60502f1ac02e95c56ca116d11a5ccec1b26430baa35e94922a90a2f",
+      "atoms": 11,
+      "included": true
+    },
+    {
+      "session_id": "ses_35b66304fffevQvOY7DFX0mHiz",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_35b66304fffevQvOY7DFX0mHiz.jsonl",
+      "sha256": "b74479ad479906ee8fdf2118847d7ebad1063a3ab39037784c7655ea8e9cd625",
+      "atoms": 18,
+      "included": true
+    },
+    {
+      "session_id": "ses_359ffa105ffevoJjlp0T5aixO9",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_359ffa105ffevoJjlp0T5aixO9.jsonl",
+      "sha256": "cf9059a624518f470427c6292b3bdd2c2eb5881a05b22dc8747dd60f0eba74dc",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "ses_352d80804ffeTvswGRy5NQmK5H",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352d80804ffeTvswGRy5NQmK5H.jsonl",
+      "sha256": "156943d64d5784b4efabad4571347c8007196733e48760aa92d6d92a6b54a41a",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "ses_352b9ecbbffe7LC6BGIUMOMwzs",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352b9ecbbffe7LC6BGIUMOMwzs.jsonl",
+      "sha256": "7dabee39041a99358c82e129bb975ef764b1d4c7e5bf3899271f886418640ddb",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "ses_352d4cbcbffel8FbUWdBnGlEID",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352d4cbcbffel8FbUWdBnGlEID.jsonl",
+      "sha256": "a894668321a6302f9f741c2776860d298f0e1d883d65d1fc92975a7d567fb7f5",
+      "atoms": 51,
+      "included": true
+    },
+    {
+      "session_id": "ses_352d4cbd2ffebgktA1cWQ95g0s",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352d4cbd2ffebgktA1cWQ95g0s.jsonl",
+      "sha256": "e464b840ca7c2d4b8789d43ed0bb83107f911e2e5e0d63095c8c610e188f1657",
+      "atoms": 38,
+      "included": true
+    },
+    {
+      "session_id": "ses_352d4cbe9ffePttZc9hmh9aWev",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352d4cbe9ffePttZc9hmh9aWev.jsonl",
+      "sha256": "d67bf72c0393f938b9cd298e803590c7e768fda4eb2456778b662e074cca9f48",
+      "atoms": 38,
+      "included": true
+    },
+    {
+      "session_id": "ses_352e105adffenIb8Yb8b43lVGF",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352e105adffenIb8Yb8b43lVGF.jsonl",
+      "sha256": "b223ae96bf64c8a553c0cfd187cc5592e70509572ecb5583ed01a99fd9818faa",
+      "atoms": 10,
+      "included": true
+    },
+    {
+      "session_id": "ses_352e105b7ffeD52eDLRnEM7Mcy",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352e105b7ffeD52eDLRnEM7Mcy.jsonl",
+      "sha256": "72b061aa390e1dbcc333d943beddfb4f3266618953c2392b4e69f1fe67b632da",
+      "atoms": 15,
+      "included": true
+    },
+    {
+      "session_id": "ses_352e105ccffeyjzpiegwmFpjhT",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352e105ccffeyjzpiegwmFpjhT.jsonl",
+      "sha256": "315c008fbf16ec5f2670c7cd54b26f1c2cb13125420ae35934df6ba2dba97481",
+      "atoms": 7,
+      "included": true
+    },
+    {
+      "session_id": "ses_352e74832ffe3u4W77EyrqUszw",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352e74832ffe3u4W77EyrqUszw.jsonl",
+      "sha256": "e7a963f8d7d05504ff23593e58e23ce4555cc0ddf0cf7748dfa8462809a63d22",
+      "atoms": 33,
+      "included": true
+    },
+    {
+      "session_id": "ses_352e74839ffeXJcYFbiroAcVr6",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352e74839ffeXJcYFbiroAcVr6.jsonl",
+      "sha256": "7d0753d34d3b8f6b8037aed9aa9ab2475cf5f339498bd6e2d6882c08a34db900",
+      "atoms": 34,
+      "included": true
+    },
+    {
+      "session_id": "ses_352e7484fffePCPugKAGB4QHpS",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352e7484fffePCPugKAGB4QHpS.jsonl",
+      "sha256": "ef061271ab7b1142607d2ecc54fa0a46d171b126a66bc3f68fea1b104ea15b2d",
+      "atoms": 18,
+      "included": true
+    },
+    {
+      "session_id": "ses_352ec3b3affe9q536qT0QXhLIN",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352ec3b3affe9q536qT0QXhLIN.jsonl",
+      "sha256": "5041f1663f230d085fc55d25feaa97ac58cbd0f18a4546f7242a5ca800e5574c",
+      "atoms": 48,
+      "included": true
+    },
+    {
+      "session_id": "ses_352ed7031ffe8q7HXHyVO2roqu",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_352ed7031ffe8q7HXHyVO2roqu.jsonl",
+      "sha256": "4b9a82513416dc3dd468beef8c7535799e817d28988dddb9d1ed689ec2ac61ac",
+      "atoms": 6,
+      "included": true
+    },
+    {
+      "session_id": "ses_34f0fe1d2ffeH3PJRyokYati7T",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34f0fe1d2ffeH3PJRyokYati7T.jsonl",
+      "sha256": "c31c049c263526d337551441d198de0840795df3e846b8158a3a93d418a96d0b",
+      "atoms": 7,
+      "included": true
+    },
+    {
+      "session_id": "ses_34ebc12c1ffePWN7yC0z9iz5Lw",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34ebc12c1ffePWN7yC0z9iz5Lw.jsonl",
+      "sha256": "61f592f209e8914752f30f2f94c1cfa8a0916dbd7fe991aebeccbf00a65bb91c",
+      "atoms": 10,
+      "included": true
+    },
+    {
+      "session_id": "ses_34ec18cadffeoVVSjfPXGJaxBu",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34ec18cadffeoVVSjfPXGJaxBu.jsonl",
+      "sha256": "e3d53a10005a352f4a1ec4907c787e43968f32305b66bdc4196a4a526d56601a",
+      "atoms": 29,
+      "included": true
+    },
+    {
+      "session_id": "ses_34e68d081ffeyr3uWQwm5venHp",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34e68d081ffeyr3uWQwm5venHp.jsonl",
+      "sha256": "737b0db24233888adeabf39388fb9cf4d056ce67f7d66ca8a1fc590db17175bb",
+      "atoms": 39,
+      "included": true
+    },
+    {
+      "session_id": "ses_34dfc44d5ffedfgo4G9wPONyXC",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34dfc44d5ffedfgo4G9wPONyXC.jsonl",
+      "sha256": "4fbb85cf7450f063a3f8872ca4e78313c2e34f5a1091264f73c492ca1c0892a9",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "ses_34dfda207ffeiBV2rCgJW708ip",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34dfda207ffeiBV2rCgJW708ip.jsonl",
+      "sha256": "fcb40e24c167c2959f440d11f41d10efa2a375ae57db0fa8b1907fd99e941112",
+      "atoms": 59,
+      "included": true
+    },
+    {
+      "session_id": "ses_34d1fa4b1ffeH4sVbjXkh5P6IY",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_34d1fa4b1ffeH4sVbjXkh5P6IY.jsonl",
+      "sha256": "4f859b34967bf2fe1513901004620c42abc26a743306f1e1b233ad4e6081fe9e",
+      "atoms": 19,
+      "included": true
+    },
+    {
+      "session_id": "ses_3482bd29effeffrOfnc6yzAkx5",
+      "agent": "OpenCode",
+      "transcript_path": "transcripts/ses_3482bd29effeffrOfnc6yzAkx5.jsonl",
+      "sha256": "c25d3bb97560388f9d435bd3cc6267dc3e5601648438657a86ad13d0264da924",
+      "atoms": 18,
+      "included": true
+    },
+    {
+      "session_id": "019d3d40-1cf6-7771-90cd-7b972aaa8f17",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d3d40-1cf6-7771-90cd-7b972aaa8f17.jsonl",
+      "sha256": "a510b7aa33d75d977345257eb44df507c5b63518674134ce3813276f89c39be2",
+      "atoms": 162,
+      "included": true
+    },
+    {
+      "session_id": "019d4c8b-db43-7f22-86de-bb2c1dea8484",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d4c8b-db43-7f22-86de-bb2c1dea8484.jsonl",
+      "sha256": "116bcf6d509794e567048568072de57ee9072374b7d001e66cbef94cf71bd62f",
+      "atoms": 422,
+      "included": true
+    },
+    {
+      "session_id": "019d4cae-ca3d-75f2-869f-a5eedc6e5d7f",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d4cae-ca3d-75f2-869f-a5eedc6e5d7f.jsonl",
+      "sha256": "a8b3f6c1fe8d6946b45bfe5a857bcc8e907358952a588a77d7b5d29d920aeb00",
+      "atoms": 5,
+      "included": true
+    },
+    {
+      "session_id": "019d4f6b-d767-7a61-acfb-cf125b294890",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d4f6b-d767-7a61-acfb-cf125b294890.jsonl",
+      "sha256": "916593e63ea9e9234d453ac6ba2fd619fb14b502c0ed9666d8ee59c729b695fa",
+      "atoms": 18,
+      "included": true
+    },
+    {
+      "session_id": "019d4f73-67a7-7b03-861d-a24ef4c88307",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d4f73-67a7-7b03-861d-a24ef4c88307.jsonl",
+      "sha256": "8a8f45010c0502cbdc70086f0505cd2a958a8277b423b1870f3363df51597362",
+      "atoms": 40,
+      "included": true
+    },
+    {
+      "session_id": "019d52c8-ef0c-7de2-9b06-8205aa4240c5",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d52c8-ef0c-7de2-9b06-8205aa4240c5.jsonl",
+      "sha256": "431c40260912f11388fd9639c8e057937b8a1f3c86ab9f12a3afb642650e1023",
+      "atoms": 2,
+      "included": true
+    },
+    {
+      "session_id": "019d52c8-f233-7fe0-b582-d5810b5b0fb8",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d52c8-f233-7fe0-b582-d5810b5b0fb8.jsonl",
+      "sha256": "bc7693c6f56cdb5c12d8310abfd807f508c99d09a07387340f7f082c6cbc3fb1",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d52cd-bc6b-7a50-a4c3-b1c1134357a6",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d52cd-bc6b-7a50-a4c3-b1c1134357a6.jsonl",
+      "sha256": "1ee15b01bdf5a7b6a4e0ee0294ad08e585833b39e0137d90b5a828bf767922c1",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d52cd-be7f-73a3-8561-380e64a09c4b",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d52cd-be7f-73a3-8561-380e64a09c4b.jsonl",
+      "sha256": "ad2f15c4ff0bc98af069d5f151f2e13c0e033013e8e1d9407cc244204ebe747b",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d5498-78f9-7eb0-9b95-38b77a69a68f",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d5498-78f9-7eb0-9b95-38b77a69a68f.jsonl",
+      "sha256": "d0edf61823dcf2e2f46c530f6a2ca8ba7d1365b1b4954d7bd0af0845046b6d14",
+      "atoms": 10,
+      "included": true
+    },
+    {
+      "session_id": "019d549f-96a2-7482-b237-a66a8d274f46",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d549f-96a2-7482-b237-a66a8d274f46.jsonl",
+      "sha256": "e750ec410ea94ef0d9bfda439e8e23ece48357ce92d725e27b55038794ea4658",
+      "atoms": 19,
+      "included": true
+    },
+    {
+      "session_id": "019d54a8-d737-7493-94ff-ecd1141aa658",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d54a8-d737-7493-94ff-ecd1141aa658.jsonl",
+      "sha256": "f06deeb41e9ee46e0ca00983499358498fa7dab5fc3733da4bf449c33e5b9c25",
+      "atoms": 20,
+      "included": true
+    },
+    {
+      "session_id": "019d54b6-d1c8-7af3-b50f-3c07a8ffa90c",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d54b6-d1c8-7af3-b50f-3c07a8ffa90c.jsonl",
+      "sha256": "cd854d46f5aa919cd122639b48d4aeec76b6710b37ac938d73d6ea98b18201ea",
+      "atoms": 33,
+      "included": true
+    },
+    {
+      "session_id": "019d54d9-1ddf-7992-9353-121e7cd350d7",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d54d9-1ddf-7992-9353-121e7cd350d7.jsonl",
+      "sha256": "5abc99a8345d405607e8728e41daeb4f7e03826e379944f135207c3ba581865c",
+      "atoms": 10,
+      "included": true
+    },
+    {
+      "session_id": "019d54e5-271f-7523-a046-46233d1585f8",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d54e5-271f-7523-a046-46233d1585f8.jsonl",
+      "sha256": "38b341005bafa58196513c3306a3d16b6b6b5ef43bff5fe693d87104461a007b",
+      "atoms": 29,
+      "included": true
+    },
+    {
+      "session_id": "019d54ff-2d6f-7360-a607-fbe2bfdde496",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d54ff-2d6f-7360-a607-fbe2bfdde496.jsonl",
+      "sha256": "41473cc012e48cb1e0b98b5b956aea2d1ac78682ef25f3a7b94e707320eb74df",
+      "atoms": 18,
+      "included": true
+    },
+    {
+      "session_id": "019d5644-b45d-76a1-8a29-a5c0e187253e",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d5644-b45d-76a1-8a29-a5c0e187253e.jsonl",
+      "sha256": "fc05c529523ac51808f3e99a9565d85f49e178d1603fa51844ce0eac155aab21",
+      "atoms": 23,
+      "included": true
+    },
+    {
+      "session_id": "019d4efc-401d-7a12-93e2-c318fe9ed717",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d4efc-401d-7a12-93e2-c318fe9ed717.jsonl",
+      "sha256": "d22f7f705290cab028d15393f60613b3b5100630fceb78fff177d2b537f13d11",
+      "atoms": 1,
+      "included": false
+    },
+    {
+      "session_id": "019d4f07-9f80-7eb1-8569-0174f64b539a",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d4f07-9f80-7eb1-8569-0174f64b539a.jsonl",
+      "sha256": "45df9c7a5a6c4e31331535f6bc424ceab6c7c492d63c6fd94f2c485030d23929",
+      "atoms": 202,
+      "included": true
+    },
+    {
+      "session_id": "019d6302-46a7-7e93-8cb0-a2a163e80f68",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d6302-46a7-7e93-8cb0-a2a163e80f68.jsonl",
+      "sha256": "1dbdcb2d618946bc5828d75aef6e23e07e4f23192ef93220c1555efedda0b97d",
+      "atoms": 93,
+      "included": true
+    },
+    {
+      "session_id": "019d6304-3e9c-7720-b962-8b14b6d24306",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d6304-3e9c-7720-b962-8b14b6d24306.jsonl",
+      "sha256": "6897a87702cae4fc77deacf103e9a103e33ccf297bfe24c58b67f4a75bf1a05b",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d6304-3e9c-7fb3-9738-1178ecc4c159",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d6304-3e9c-7fb3-9738-1178ecc4c159.jsonl",
+      "sha256": "6fc8cc448dcfe5d240c8dfcc6725a12599cf90a5c4fc75cfe718eba8f927f00e",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d6304-8cba-7e73-8a93-be8bc9fb7dbe",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d6304-8cba-7e73-8a93-be8bc9fb7dbe.jsonl",
+      "sha256": "2825ffa1e676a01a08354a7346b4a6a5acac210be9d415af554dc96042abc1e9",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d6314-b36c-7102-9028-f996571c253e",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d6314-b36c-7102-9028-f996571c253e.jsonl",
+      "sha256": "4a90d80a489f0a4d13a12ead94723e5202388c93e33710257fc29225753f5a33",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "019d6314-cb7b-78c0-8580-597ecde4d662",
+      "agent": "Codex",
+      "transcript_path": "transcripts/019d6314-cb7b-78c0-8580-597ecde4d662.jsonl",
+      "sha256": "50a60f92ae8f262420aa67ce74e1bf117fa31810cea4d7e1be58ec92b7daa3e9",
+      "atoms": 0,
+      "included": false
+    },
+    {
+      "session_id": "2026-01-21-cd3a73d3-7f7e-402a-a889-91c5404cd10e",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/2026-01-21-cd3a73d3-7f7e-402a-a889-91c5404cd10e.jsonl",
+      "sha256": "8654db47f4226b25d1642c8592ace69838582ce9efdeae1b74300ce13a59c14f",
+      "atoms": 7,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-3a4a4468-815f-4494-a1ad-5681a263b5d4",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/2026-01-21-3a4a4468-815f-4494-a1ad-5681a263b5d4.jsonl",
+      "sha256": "51af79ec4547605f9eab80843241e7794b818addf87361c26f60b80795e4456d",
+      "atoms": 54,
+      "included": true
+    },
+    {
+      "session_id": "2026-01-21-de1ed521-f8fc-44f4-b8a3-970e99616ca2",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/2026-01-21-de1ed521-f8fc-44f4-b8a3-970e99616ca2.jsonl",
+      "sha256": "a518958ef15d4b36a6664b3a96ceac386e40c32423f4c21bf1355dc65078ec0f",
+      "atoms": 195,
+      "included": true
+    },
+    {
+      "session_id": "4d291cc7-5979-492a-9eba-c9c717b12af8",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/4d291cc7-5979-492a-9eba-c9c717b12af8.jsonl",
+      "sha256": "c2c36dee3843e3bbcdd4bccfdb4d97c3fb7be9ddd6b8941d3738b80d49b64862",
+      "atoms": 8,
+      "included": true
+    },
+    {
+      "session_id": "8a1e1550-97cc-45c4-85f2-40538d20a7c2",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/8a1e1550-97cc-45c4-85f2-40538d20a7c2.jsonl",
+      "sha256": "c72bc16d710374ea3edf8f3260ad48c66092be76a512c3607152fd45cc60ea9a",
+      "atoms": 39,
+      "included": true
+    },
+    {
+      "session_id": "50fec202-4a39-46a0-980e-d91507fed163",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/50fec202-4a39-46a0-980e-d91507fed163.jsonl",
+      "sha256": "4ffd29b1ed651f37d76c88aee03b4ecf4d246d608703dd1f10ae2b8860323e73",
+      "atoms": 12,
+      "included": true
+    },
+    {
+      "session_id": "5180c3f8-2838-42a7-9699-5c93f026dbd8",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/5180c3f8-2838-42a7-9699-5c93f026dbd8.jsonl",
+      "sha256": "4373ec6be6e366f1a697be2905e25bf083366eda1d00588c93fff8a9ed97d88b",
+      "atoms": 52,
+      "included": true
+    },
+    {
+      "session_id": "ff6d7de8-8956-473a-af4a-8e9c8daa31c1",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/ff6d7de8-8956-473a-af4a-8e9c8daa31c1.jsonl",
+      "sha256": "49c75317fd410357560b1b49eb58eb45609b7b24178a6ad0c009b06466139b39",
+      "atoms": 87,
+      "included": true
+    },
+    {
+      "session_id": "d01dbdd7-ff84-481a-90e1-6bd5af20ef8e",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/d01dbdd7-ff84-481a-90e1-6bd5af20ef8e.jsonl",
+      "sha256": "2901a635621f5b1fce45be83d2ace40178b3b637f5add7011c9dbb3e7e223d9d",
+      "atoms": 103,
+      "included": true
+    },
+    {
+      "session_id": "97b2f44e-fa5b-487f-9be8-565936acee52",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/97b2f44e-fa5b-487f-9be8-565936acee52.jsonl",
+      "sha256": "6d6506e70d637e50ee0f046fea78926f49853b78c4fcb6768901d88e82f0e54b",
+      "atoms": 173,
+      "included": true
+    },
+    {
+      "session_id": "4b974a02-d803-4c62-b0e5-480862bc649b",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/4b974a02-d803-4c62-b0e5-480862bc649b.jsonl",
+      "sha256": "00f9d8d72b54e7d0bd038bac788ca00b100c10decbde3ef2fda157c2c4936c28",
+      "atoms": 11,
+      "included": true
+    },
+    {
+      "session_id": "601cddf7-f515-4584-b84a-b2eba4a5e8fa",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/601cddf7-f515-4584-b84a-b2eba4a5e8fa.jsonl",
+      "sha256": "f3b600f39695cae7ed7e895d79f06b8b08a6cb4812d7a1db57b5b368c5d7fc85",
+      "atoms": 83,
+      "included": true
+    },
+    {
+      "session_id": "a36a3f68-3b57-4317-8ee5-909c3697d781",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/a36a3f68-3b57-4317-8ee5-909c3697d781.jsonl",
+      "sha256": "9a8393bce8eef80a985a9c08bc51917f3ffd4a4539f553f76b449b561fd67d30",
+      "atoms": 28,
+      "included": true
+    },
+    {
+      "session_id": "7fa89228-9e37-4004-83eb-851e5b816bca",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/7fa89228-9e37-4004-83eb-851e5b816bca.jsonl",
+      "sha256": "23a53685b15eccb6ca53753ad785ba9b56432dabba20b5b68a07a29c6bfbf2b4",
+      "atoms": 24,
+      "included": true
+    },
+    {
+      "session_id": "06c96f70-5293-40f9-af81-a96b0e63ad55",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/06c96f70-5293-40f9-af81-a96b0e63ad55.jsonl",
+      "sha256": "58c7e7467e02ab4f4a11be918cacc92a0b700bcb8cd7d78f7da871f74fc4ea62",
+      "atoms": 677,
+      "included": true
+    },
+    {
+      "session_id": "ac5c9013-3197-4d9e-9d60-457bba41097f",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/ac5c9013-3197-4d9e-9d60-457bba41097f.jsonl",
+      "sha256": "13d01979100b40159400735284b2093f4eba3dbeed77cf00c1ae7367b9468f6d",
+      "atoms": 95,
+      "included": true
+    },
+    {
+      "session_id": "8d20645f-5494-461e-879e-51b81898c68e",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/8d20645f-5494-461e-879e-51b81898c68e.jsonl",
+      "sha256": "48ddf4c266b45d249585ead6577ca035562f8479ce3b61e2880824955c13f429",
+      "atoms": 66,
+      "included": true
+    },
+    {
+      "session_id": "d9393025-3c10-4d9b-83e9-5c06b6c06f1b",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/d9393025-3c10-4d9b-83e9-5c06b6c06f1b.jsonl",
+      "sha256": "ee35ce2d7b054811a1940391f977312bd23673db5e03c980bc566b06a3375137",
+      "atoms": 543,
+      "included": true
+    },
+    {
+      "session_id": "dd8ea7a3-cd1c-40d3-ad6f-0df9a8ef31bc",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/dd8ea7a3-cd1c-40d3-ad6f-0df9a8ef31bc.jsonl",
+      "sha256": "688f9db2c19b7fadb17ebd70aebf0ff2b5e9849321c46953514feb1308b3e226",
+      "atoms": 26,
+      "included": true
+    },
+    {
+      "session_id": "fa88d7dc-7f4e-4275-a328-e631e24a316d",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/fa88d7dc-7f4e-4275-a328-e631e24a316d.jsonl",
+      "sha256": "a97314721401176f64110c26c8b20d56cc55869b15a8bf419cbd093addf41db6",
+      "atoms": 41,
+      "included": true
+    },
+    {
+      "session_id": "9a8fc489-0a9c-4d79-af5b-53ce3c6abb49",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/9a8fc489-0a9c-4d79-af5b-53ce3c6abb49.jsonl",
+      "sha256": "b84180b2e452cebcecf631c7f5867deffa31a1005a791710b5452eb98445d47e",
+      "atoms": 41,
+      "included": true
+    },
+    {
+      "session_id": "0f248a49-2992-4c92-b89a-08385f95ca13",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/0f248a49-2992-4c92-b89a-08385f95ca13.jsonl",
+      "sha256": "a09749519291c8417db948a0ee11dbd55704dfda667576f31a92a262261e322c",
+      "atoms": 316,
+      "included": true
+    },
+    {
+      "session_id": "2467a967-8bb3-4074-bc5e-fb1c5c147557",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/2467a967-8bb3-4074-bc5e-fb1c5c147557.jsonl",
+      "sha256": "46a577704bd950be8d84af3f10ad4a6ba522cca08751c78442346a6a55d3f9ba",
+      "atoms": 183,
+      "included": true
+    },
+    {
+      "session_id": "0b5e18b7-24c6-4b94-a85d-f4266212910d",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/0b5e18b7-24c6-4b94-a85d-f4266212910d.jsonl",
+      "sha256": "eabcfbe2ca99bf8b8629bc525935a0a07ca7b06f8d6599215a2e9c2fdf17e5ec",
+      "atoms": 150,
+      "included": true
+    },
+    {
+      "session_id": "31566263-b8da-4c4d-88be-01efe50acf51",
+      "agent": "Gemini CLI",
+      "transcript_path": "transcripts/31566263-b8da-4c4d-88be-01efe50acf51.jsonl",
+      "sha256": "b63f6bcc68c2a58676f4ef9e3fb3d93e52ed4daa97a1a7747beb2f8b6c54ea25",
+      "atoms": 37,
+      "included": true
+    }
+  ]
+}

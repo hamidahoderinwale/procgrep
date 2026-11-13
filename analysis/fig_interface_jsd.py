@@ -8,9 +8,8 @@ Design decisions (benefit / price):
    rather than recompute. Benefit: self-contained and reproducible from the repo
    alone. Price: the divergence numbers are produced upstream of this figure and
    checked in as the validated asset; this figure only renders them.
-2. Match the canonical agent matrix exactly: same teal sequential ramp, mono
-   labels, top-left title, JSD colorbar. Benefit: the two matrices read as one
-   family. Price: the ramp is hardcoded to that figure, not figtheme's palette.
+2. Match the canonical agent matrix exactly: Instrument Sans labels and the shared saved-data renderer.
+   Preserve the interactive companion outputs for existing callers.
 """
 
 from __future__ import annotations
@@ -19,15 +18,13 @@ import json
 import sys
 from pathlib import Path
 
-import matplotlib.pyplot as plt
-from matplotlib.colors import LinearSegmentedColormap
+from render_essay_figures import render_one
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "scripts"))
-from figtheme import INK, OLIVE, init  # noqa: E402
 
 RESULTS = ROOT / "docs" / "paper" / "data" / "interface_jsd_matrix.json"
-OUT = ROOT / "docs" / "figures" / "fig_interface_jsd_matrix.png"
+OUT = ROOT / "docs/figures/fig_interface_jsd_matrix/fig_interface_jsd_matrix.png"
 OUT_JSON = ROOT / "docs" / "paper" / "data" / "interface_jsd.json"
 OUT_HTML = ROOT / "docs" / "figures" / "interface_jsd.html"
 D3CHARTS = ROOT / "docs" / "explorer" / "d3charts.js"
@@ -38,8 +35,9 @@ PAGE = """<!doctype html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>cross-interface procedural divergence</title>
+<link rel="stylesheet" href="../assets/fonts.css">
 <style>body{{margin:0;background:#F7F5F2;color:#14110E;
-font-family:ui-monospace,Menlo,monospace;font-size:13px}}
+font-family:"Instrument Sans",Arial,sans-serif;font-size:13px}}
 .wrap{{max-width:620px;margin:0 auto;padding:24px}}</style>
 </head><body><div class="wrap"><div id="interface-jsd"></div></div>
 <script src="https://cdn.jsdelivr.net/npm/d3@7"></script>
@@ -63,9 +61,6 @@ DRAW_JS = """
 })();
 """
 
-# Teal sequential ramp matching the canonical agent matrix (light tint -> deep teal).
-TEAL = LinearSegmentedColormap.from_list("procgrep_teal", ["#dcebe5", "#3f9183", "#16544b"])
-
 
 def main() -> int:
     mat = json.loads(RESULTS.read_text())
@@ -73,37 +68,7 @@ def main() -> int:
     z = [[mat[r][c] for c in labels] for r in labels]
 
     vmax = max(v for row in z for v in row)
-    init()
-    fig, ax = plt.subplots(figsize=(6.4, 5.2))
-    im = ax.imshow(z, cmap=TEAL, vmin=0.0, vmax=vmax)
-
-    # Print the JSD in each cell (parity with the plateau procedure_jsd matrix);
-    # flip text to paper-white on dark cells for contrast, mute the zero diagonal.
-    for i in range(len(labels)):
-        for j in range(len(labels)):
-            v = z[i][j]
-            color = OLIVE if i == j else ("#F7F5F2" if v > vmax * 0.55 else INK)
-            ax.text(j, i, f"{v:.2f}", ha="center", va="center", fontsize=9, color=color)
-
-    ax.set_xticks(range(len(labels)))
-    ax.set_yticks(range(len(labels)))
-    ax.set_xticklabels(labels, rotation=30, ha="right")
-    ax.set_yticklabels(labels)
-    ax.tick_params(colors=OLIVE, labelsize=9, length=0)
-    for sp in ax.spines.values():
-        sp.set_visible(False)
-    ax.set_title(
-        "Pairwise procedural divergence by interface", color=INK, size=11, loc="left", pad=12
-    )
-
-    cbar = fig.colorbar(im, ax=ax, fraction=0.046, pad=0.04)
-    cbar.outline.set_visible(False)
-    cbar.ax.tick_params(colors=OLIVE, labelsize=9, length=0)
-    cbar.set_label("JSD", color=INK, size=10)
-
-    fig.tight_layout()
-    OUT.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT, dpi=200, facecolor="white", bbox_inches="tight")
+    render_one("fig_interface_jsd_matrix")
 
     # Interactive companion for the web essay, sharing the d3charts matrix.
     data = {"labels": labels, "values": z, "vmax": round(vmax, 4)}

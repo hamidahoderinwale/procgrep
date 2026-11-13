@@ -1,0 +1,23 @@
+{
+  "artifact": "induced_vocab_tree.png",
+  "sha256": "6a462d50c9d315a47a382ee8d75e957998fbac8ab395779c527e619b81c43c2a",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "independent": true,
+    "agent": "/root/figure_review"
+  },
+  "inspected": true,
+  "local_checks_passed": true,
+  "checks": {
+    "purpose": "pass",
+    "order": "pass",
+    "language": "pass",
+    "readability": "pass",
+    "evidence": "pass",
+    "pruning": "pass"
+  },
+  "issues": [],
+  "verdict": "pass",
+  "first_glance": "Three nested procedures with interface columns indicating which emits each procedure",
+  "evidence": "All 18 leaves, 30 child edges and 12 presence states match original PNG and frozen merges; included-session counts and font hash checked."
+}

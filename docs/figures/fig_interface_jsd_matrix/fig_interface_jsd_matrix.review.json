@@ -1,0 +1,23 @@
+{
+  "artifact": "fig_interface_jsd_matrix.png",
+  "sha256": "f6a06cf0b781820eb38250009591a3bca7db7b5b9208961e1cd483a4fa37269e",
+  "reviewer": {
+    "model": "gpt-6.1-sol",
+    "independent": true,
+    "agent": "/root/figure_review"
+  },
+  "inspected": true,
+  "local_checks_passed": true,
+  "checks": {
+    "purpose": "pass",
+    "order": "pass",
+    "language": "pass",
+    "readability": "pass",
+    "evidence": "pass",
+    "pruning": "pass"
+  },
+  "issues": [],
+  "verdict": "pass",
+  "evidence": "Independent visual inspection and comparison with original source measurements; boundary clipping corrected and re-reviewed for both failure figures.",
+  "first_glance": "Claude Code\u2013Codex has the largest divergence; Claude Code\u2013Gemini CLI the smallest."
+}

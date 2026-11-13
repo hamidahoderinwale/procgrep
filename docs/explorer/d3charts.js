@@ -16,7 +16,7 @@
     paper: "#F7F5F2", ink: "#14110E", rule: "#d9d4cc", copper: "#CB4D20",
     blue: "#5692E5", teal: "#20A380", olive: "#585E53", gray: "#b7b1a7",
   };
-  var MONO = 'ui-monospace,"SFMono-Regular",Menlo,monospace';
+  var MONO = '"Instrument Sans",Arial,sans-serif';
 
   // One shared tooltip element, positioned over the page on hover.
   var _tip = null;
@@ -429,7 +429,7 @@
         // mean label
         vlabelSel.push(g.append("text").attr("class", "vlabel")
           .attr("x", cx).attr("y", y(b.q3) - 7).attr("text-anchor", "middle")
-          .attr("font-family", MONO).attr("font-size", 9).attr("font-weight", "bold")
+          .attr("font-family", MONO).attr("font-size", 9).attr("font-weight", "normal")
           .attr("fill", PAL.ink).text(b.mean.toFixed(2)).node());
       });
     });
